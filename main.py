@@ -21,12 +21,13 @@ def main():
     format = None
     weight = 1.0
     graph = False
+    maxMessages = 0
 
     #
     # Parse command line options and do sanity checking on arguments
     #
     try:
-        (opts, args) = getopt.getopt(sys.argv[1:], "pagw:")
+        (opts, args) = getopt.getopt(sys.argv[1:], "pagw:m:")
     except:
         usage()
 
@@ -39,6 +40,8 @@ def main():
             weight = float(a)
         elif o in ["-g"]:
             graph = True
+        elif o in ["-m"]:
+            maxMessages = int(a)
         else:
             usage()
 
@@ -80,6 +83,10 @@ def main():
         sys.exit(-1)
     else:
         print "Found %d unique sequences in '%s'" % (len(sequences), file)
+    if maxMessages != 0 and len(sequences) > maxMessages:
+        print "Only considering the first %d messages for PI" % (maxMessages)
+        sequences = sequences[0:maxMessages]
+        print "Number of messages: %d" % (len(sequences))
 
     #
     # Create distance matrix (LocalAlignment, PairwiseIdentity, Entropic)
@@ -140,7 +147,10 @@ def usage():
     print "       -p\tpcap format"
     print "       -a\tascii format"
     print "       -w\tdifference weight for clustering"
+    print "       -m\tmaximum number of messages to use for PI"
     sys.exit(-1)
 
 if __name__ == "__main__":
     main()
+
+# vim: set sts=4 sw=4 cindent nowrap expandtab:
