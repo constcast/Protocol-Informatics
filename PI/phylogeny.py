@@ -1,3 +1,4 @@
+# vim: set sts=4 sw=4 cindent nowrap expandtab:
 
 """
 Phylogenetic tree module
