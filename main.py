@@ -141,7 +141,7 @@ def main():
         print ""
 
 def usage():
-    print "usage: %s [-gpa] [-w <weight>] <sequence file>" % \
+    print "usage: %s [-gpam] [-w <weight>] <sequence file>" % \
         sys.argv[0]
     print "       -g\toutput graphviz of phylogenetic trees"
     print "       -p\tpcap format"
