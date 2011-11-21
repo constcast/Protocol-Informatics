@@ -23,6 +23,14 @@ class Output:
     def _go(self):
         pass
 
+class TextBased(Output):
+    def __init__(self, sequences):
+        Output.__init__(self, sequences)
+
+    def _go(self):
+        print "Here should be my output!"
+        
+
 class Ansi(Output):
 
     def __init__(self, sequences):
