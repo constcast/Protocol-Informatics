@@ -1,4 +1,5 @@
-#!/usr/bin/python -u
+#!/usr/bin/env python -u
+
 
 #
 # Protocol Informatics Prototype
@@ -18,16 +19,17 @@ def main():
     print "Copyright (c) 2004 Baseline Research\n"
 
     # Defaults
-    format = None
+    format = "pcap"
     weight = 1.0
     graph = False
     maxMessages = 0
+    textBased = False
 
     #
     # Parse command line options and do sanity checking on arguments
     #
     try:
-        (opts, args) = getopt.getopt(sys.argv[1:], "pagw:m:")
+        (opts, args) = getopt.getopt(sys.argv[1:], "pagtw:m:")
     except:
         usage()
 
@@ -42,6 +44,8 @@ def main():
             graph = True
         elif o in ["-m"]:
             maxMessages = int(a)
+        elif o in ["-t"]:
+            textBased = bool(a)
         else:
             usage()
 
@@ -77,6 +81,9 @@ def main():
     else:
         print "FATAL: Specify file format"
         sys.exit(-1)
+
+    #for i in range(len(sequences)):
+    print sequences.set
 
     if len(sequences) == 0:
         print "FATAL: No sequences found in '%s'" % file
@@ -136,21 +143,26 @@ def main():
     i = 1
     for seqs in alist:
         print "Output of cluster %d" % i
-        output.Ansi(seqs)
+        if textBased:
+            output.TextBased(seqs)
+        else:
+            output.Ansi(seqs)
         i += 1
         print ""
 
 def usage():
-    print "usage: %s [-gpam] [-w <weight>] <sequence file>" % \
+    print "usage: %s [-gtpa] [-m <messages>]  [-w <weight>] <sequence file>" % \
         sys.argv[0]
     print "       -g\toutput graphviz of phylogenetic trees"
     print "       -p\tpcap format"
     print "       -a\tascii format"
     print "       -w\tdifference weight for clustering"
     print "       -m\tmaximum number of messages to use for PI"
+    print "       -t\texpected a text-based protocol"
     sys.exit(-1)
 
 if __name__ == "__main__":
     main()
 
 # vim: set sts=4 sw=4 cindent nowrap expandtab:
+
