@@ -16,6 +16,7 @@ Licensed under the LGPL
 #
 
 import align, zlib
+import util
 from numpy import *
 
 __all__ = [ "Distance", "Entropic", "PairwiseIdentity", "LocalAlignment" ]
@@ -191,8 +192,13 @@ class LocalAlignment(Distance):
         #
         # Compute similarity matrix of SW scores
         #
+        progress = 0
         for i in range(self.N):
             for j in range(self.N):
+
+                if progress % (self.N * self.N / 100) == 0:
+                    util.progress(100, float(progress) / (self.N * self.N) * 100)
+                progress += 1
 
                 if similar[i][j] >= 0:
                     continue

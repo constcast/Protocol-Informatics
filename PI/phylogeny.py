@@ -19,6 +19,9 @@ Licensed under the LGPL
 from tree import *
 from pydot import *
 
+
+import util
+
 class Phylogeny:
 
     """Implementation of base phylogenetic class"""
@@ -76,6 +79,14 @@ class UPGMA(Phylogeny):
         for i in range(n):
             min = 10000
 
+            if n > 100:
+                 if i % (n / 100) == 0:
+                    util.progress(100, float(i) / n * 100)
+            elif n > 10:
+                if i % (n / 10) == 0:
+                    util.progress(100, float(i) / n * 100)
+        
+        
             for A in Cu:
                 for B in Cu:
                     if A == B:
@@ -108,6 +119,7 @@ class UPGMA(Phylogeny):
             Cu.remove(C.getRight())
             Cu.add(C)
 
+        util.progress(100, 100)
         self.tree = Cu.pop()
 
         self._cluster(self.tree)
