@@ -11,6 +11,7 @@ Licensed under the LGPL
 """
 
 from curses.ascii import *
+import sys
 
 class Output:
 
@@ -25,10 +26,28 @@ class Output:
 
 class TextBased(Output):
     def __init__(self, sequences):
+        self.gap = "\033[41;30m%s\033[0m"
+        self.printable = "\033[42;30m%s\033[0m"
+        self.space = "\033[43;30m%s\033[0m"
+        self.binary = "\033[44;30m%s\033[0m"
+        self.zero = "\033[45;30m%s\033[0m"
+        self.bit = "\033[46;30m%s\033[0m"
+        self.default = "\033[47;30m%s\033[0m"
+
         Output.__init__(self, sequences)
 
     def _go(self):
-        print "Here should be my output!"
+        for id, seq in self.sequences:
+            for byte in seq:
+                if byte == 256:
+                    sys.stdout.write("_")
+                elif isspace(byte):
+                    sys.stdout.write("%d" %byte)
+                elif isprint(byte):
+                    sys.stdout.write(chr(byte))
+                else:
+                    sys.stdout.write(".")
+            print ""
         
 
 class Ansi(Output):
