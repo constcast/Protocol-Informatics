@@ -29,7 +29,7 @@ def main():
     # Parse command line options and do sanity checking on arguments
     #
     try:
-        (opts, args) = getopt.getopt(sys.argv[1:], "pagtw:m:")
+        (opts, args) = getopt.getopt(sys.argv[1:], "pabgtw:m:")
     except:
         usage()
 
@@ -38,6 +38,8 @@ def main():
             format = "pcap"
         elif o in ["-a"]:
             format = "ascii"
+        elif o in ["-b"]:
+            format = "bro"
         elif o in ["-w"]:
             weight = float(a)
         elif o in ["-g"]:
@@ -66,20 +68,18 @@ def main():
     #
     # Open file and get sequences
     #
-    if format == "pcap":
-        try:
+    try:
+        if format == "pcap":
             sequences = input.Pcap(file)
-        except IOError:
-            print "FATAL: Error opening '%s'" % file
-            sys.exit(-1)
-    elif format == "ascii":
-        try:
+        elif format == "ascii":
             sequences = input.ASCII(file)
-        except IOError:
-            print "FATAL: Error opening '%s'" % file
+        elif format == "bro":
+            sequences = input.Bro(file)
+        else:
+            print "FATAL: Specify file format"
             sys.exit(-1)
-    else:
-        print "FATAL: Specify file format"
+    except Exception as inst:
+        print "FATAL: Error opening '%s': %s" % (file, inst)
         sys.exit(-1)
 
     #for i in range(len(sequences)):
@@ -151,11 +151,12 @@ def main():
         print ""
 
 def usage():
-    print "usage: %s [-gtpa] [-m <messages>]  [-w <weight>] <sequence file>" % \
+    print "usage: %s [-gtpab] [-m <messages>]  [-w <weight>] <sequence file>" % \
         sys.argv[0]
     print "       -g\toutput graphviz of phylogenetic trees"
     print "       -p\tpcap format"
     print "       -a\tascii format"
+    print "       -b\tBro adu output format"
     print "       -w\tdifference weight for clustering"
     print "       -m\tmaximum number of messages to use for PI"
     print "       -t\texpected a text-based protocol"
