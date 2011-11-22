@@ -45,7 +45,7 @@ def main():
         elif o in ["-m"]:
             maxMessages = int(a)
         elif o in ["-t"]:
-            textBased = bool(a)
+            textBased = True
         else:
             usage()
 
@@ -98,16 +98,16 @@ def main():
     #
     # Create distance matrix (LocalAlignment, PairwiseIdentity, Entropic)
     #
-    print "Creating distance matrix ..",
+    print "Creating distance matrix ..."
     dmx = distance.LocalAlignment(sequences)
     print "complete"
 
     #
     # Pass distance matrix to phylogenetic creation function
     #
-    print "Creating phylogenetic tree ..",
+    print "Creating phylogenetic tree ..."
     phylo = phylogeny.UPGMA(sequences, dmx, minval=weight)
-    print "complete"
+    print ""
 
     #
     # Output some pretty graphs of each cluster

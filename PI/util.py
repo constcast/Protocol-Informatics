@@ -1,4 +1,4 @@
-import sys
+import sys, math
 
 # width defines bar width
 # percent defines current percentage
