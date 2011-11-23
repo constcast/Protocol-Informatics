@@ -79,11 +79,12 @@ def main():
             print "FATAL: Specify file format"
             sys.exit(-1)
     except Exception as inst:
-        print "FATAL: Error opening '%s': %s" % (file, inst)
+        print ("FATAL: Error reading input file '%s':\n %s" % (file, inst))
         sys.exit(-1)
 
     #for i in range(len(sequences)):
-    print sequences.set
+    #print sequences.set
+    #print sequences
 
     if len(sequences) == 0:
         print "FATAL: No sequences found in '%s'" % file

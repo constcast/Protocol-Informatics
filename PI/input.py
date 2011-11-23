@@ -1,4 +1,3 @@
-# vim: set sts=4 sw=4 cindent nowrap expandtab:
 
 """
 Input module
@@ -13,8 +12,9 @@ Licensed under the LGPL
 
 from pcapy  import *
 from socket import *
+import re
 
-__all__ = ["Input", "Pcap", "ASCII" ]
+__all__ = ["Input", "Pcap", "ASCII", "Bro"]
 
 class Input:
 
@@ -57,10 +57,7 @@ class Pcap(Input):
         self.pktNumber = 0
         self.offset = offset
 
-        try:
-            pd = open_offline(filename)
-        except:
-            raise IOError
+        pd = open_offline(filename)
 
         pd.dispatch(-1, self.handler)
 
@@ -127,10 +124,7 @@ class ASCII(Input):
     def __init__(self, filename):
         Input.__init__(self, filename)
 
-        try:
-            fd = open(filename, "r")
-        except:
-            raise IOError
+        fd = open(filename, "r")
 
         lineno = 0
 
@@ -153,3 +147,70 @@ class ASCII(Input):
                 digitalSeq.append(ord(c))
 
             self.sequences.append((lineno, digitalSeq))
+
+class Bro(Input):
+    """ Handle output files from Bro-IDS with bro-scripts/adu_writer.bro running.
+         The file format is texted-based and error prone (and someone should fix this).
+         The format for each message is
+         BLOCKSEPARATOR ConnectionID MessageNumber Content-Length Message
+         where 
+         BLOCKSEPARTOR == ******************************************
+         ConnectionID  == alphnumeric unique connection identifier 
+         MessageNumber == the message number of the message within the connection
+         Content-Length == the length of the message 
+         message == the message itself which has a length of Content-Length
+    """
+
+    def consumeMessageBlock(self, data, connectionID, messageNumber, contentLength):
+        if len(data) != contentLength:
+            raise Exception("Error while parsing input file. Message:\n\n%s\n\nReal length %d does not match ContentLength %s" % (data, len(data), contentLength))
+
+        # only insert uniq messages into the list of seuqences. avoid duplicates
+        l = len(self.set)
+        self.set.add(data)
+        if len(self.set) == l:
+            return
+
+        # convert message content  to ascii codes
+        digitSeq = []
+        for c in data:
+            digitSeq.append(ord(c))
+
+        self.mNumber += 1
+        self.sequences.append((self.mNumber, digitSeq))
+
+    def __init__(self, filename):
+        Input.__init__(self, filename)
+
+        self.blockseparator = "******************************************"
+        self.mNumber = 0
+
+        sequence = ""
+        connectionID = ""
+        messageNumber = 0
+        contentLength = 0
+        content = ""
+
+        fd = open(filename, "r")
+        for line in fd:
+            if line.startswith(self.blockseparator):
+                # found a new block. push the old one
+                self.consumeMessageBlock(content, connectionID, messageNumber, contentLength)
+
+                # parse next block header
+                regexstring = '\*+ (\w+) ([0-9]+) ([0-9]+) (.*)'
+                m = re.match(regexstring, line)
+                if m: 
+                    connectionID = m.group(1)
+                    messageNumber = int(m.group(2))
+                    contentLength = int(m.group(3))
+                    content = m.group(4)
+                else:
+                    errorstring =  "Format missmatch in file. Expected a new message, got: " + line
+                    raise Exception(errorstring)
+            else:
+                content.append(line)
+
+        # try to assign last message block to last message
+        self.consumeMessageBlock(content, connectionID, messageNumber, contentLength)
+
