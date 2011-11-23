@@ -4,21 +4,21 @@
 #
 # Protocol Informatics Prototype
 # Written by Marshall Beddoe <mbeddoe@baselineresearch.net>
+# Extended by Lothar Braun <braun@net.in.tum.de>
 # Copyright (c) 2004 Baseline Research
+#           (c) 2011 Lothar Braun
 #
 # Licensed under the LGPL
 #
 
-from PI import *
+import PI
+import entropy
+
 import sys, getopt
 
 def main():
 
-    print "Protocol Informatics Prototype (v0.01 beta)"
-    print "Written by Marshall Beddoe <mbeddoe@baselineresearch.net>"
-    print "Copyright (c) 2004 Baseline Research\n"
-
-    # Defaults
+     # Defaults
     format = "pcap"
     weight = 1.0
     graph = False
@@ -30,7 +30,7 @@ def main():
     # Parse command line options and do sanity checking on arguments
     #
     try:
-        (opts, args) = getopt.getopt(sys.argv[1:], "pabgtw:m:")
+        (opts, args) = getopt.getopt(sys.argv[1:], "pabgtw:m:e")
     except:
         usage()
 
@@ -73,21 +73,17 @@ def main():
     #
     try:
         if format == "pcap":
-            sequences = input.Pcap(file)
+            sequences = PI.input.Pcap(file)
         elif format == "ascii":
-            sequences = input.ASCII(file)
+            sequences = PI.input.ASCII(file)
         elif format == "bro":
-            sequences = input.Bro(file)
+            sequences = PI.input.Bro(file)
         else:
             print "FATAL: Specify file format"
             sys.exit(-1)
     except Exception as inst:
         print ("FATAL: Error reading input file '%s':\n %s" % (file, inst))
         sys.exit(-1)
-
-    #for i in range(len(sequences)):
-    #print sequences.set
-    #print sequences
 
     if len(sequences) == 0:
         print "FATAL: No sequences found in '%s'" % file
@@ -100,9 +96,9 @@ def main():
         print "Number of messages: %d" % (len(sequences))
 
     if entropyBased:
-        entropy_core(sequences)
+        entropy.entropy.entropy_core(sequences)
     else:
-        core.pi_core(sequences, weight, graph, textBased)
+        PI.core.pi_core(sequences, weight, graph, textBased)
 
 def usage():
     print "usage: %s [-gtpab] [-m <messages>]  [-w <weight>] <sequence file>" % \
@@ -111,13 +107,11 @@ def usage():
     print "       -p\tpcap format"
     print "       -a\tascii format"
     print "       -b\tBro adu output format"
+    print "       -e\tentropy based analysis"
     print "       -w\tdifference weight for clustering"
     print "       -m\tmaximum number of messages to use for PI"
     print "       -t\texpected a text-based protocol"
     sys.exit(-1)
-
-def entropy_core(sequences):
-    pass
 
 if __name__ == "__main__":
     main()
