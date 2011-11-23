@@ -24,6 +24,7 @@ def main():
     graph = False
     maxMessages = 0
     textBased = False
+    entropyBased = False
 
     #
     # Parse command line options and do sanity checking on arguments
@@ -48,6 +49,8 @@ def main():
             maxMessages = int(a)
         elif o in ["-t"]:
             textBased = True
+        elif o in ["-e"]:
+            entropyBased = True
         else:
             usage()
 
@@ -96,60 +99,10 @@ def main():
         sequences = sequences[0:maxMessages]
         print "Number of messages: %d" % (len(sequences))
 
-    #
-    # Create distance matrix (LocalAlignment, PairwiseIdentity, Entropic)
-    #
-    print "Creating distance matrix ..."
-    dmx = distance.LocalAlignment(sequences)
-    print "complete"
-
-    #
-    # Pass distance matrix to phylogenetic creation function
-    #
-    print "Creating phylogenetic tree ..."
-    phylo = phylogeny.UPGMA(sequences, dmx, minval=weight)
-    print ""
-
-    #
-    # Output some pretty graphs of each cluster
-    #
-    if graph:
-        cnum = 1
-        for cluster in phylo:
-            out = "graph-%d" % cnum
-            print "Creating %s .." % out,
-            cluster.graph(out)
-            print "complete"
-            cnum += 1
-
-    print "\nDiscovered %d clusters using a weight of %.02f" % \
-        (len(phylo), weight)
-
-    #
-    # Perform progressive multiple alignment against clusters
-    #
-    i = 1
-    alist = []
-    for cluster in phylo:
-        print "Performing multiple alignment on cluster %d .." % i,
-        aligned = multialign.NeedlemanWunsch(cluster)
-        print "complete"
-        alist.append(aligned)
-        i += 1
-    print ""
-
-    #
-    # Display each cluster of aligned sequences
-    #
-    i = 1
-    for seqs in alist:
-        print "Output of cluster %d" % i
-        if textBased:
-            output.TextBased(seqs)
-        else:
-            output.Ansi(seqs)
-        i += 1
-        print ""
+    if entropyBased:
+        entropy_core(sequences)
+    else:
+        core.pi_core(sequences, weight, graph, textBased)
 
 def usage():
     print "usage: %s [-gtpab] [-m <messages>]  [-w <weight>] <sequence file>" % \
@@ -162,6 +115,9 @@ def usage():
     print "       -m\tmaximum number of messages to use for PI"
     print "       -t\texpected a text-based protocol"
     sys.exit(-1)
+
+def entropy_core(sequences):
+    pass
 
 if __name__ == "__main__":
     main()
