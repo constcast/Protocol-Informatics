@@ -82,6 +82,7 @@ class Tree:
         #if format == "raw":
         self.graph.write_raw(output + ".dot", prog="dot")
         self.graph.write_png(output + ".png", prog="dot")
+        self.graph.write_eps(output + ".eps", prog="dot")
         #elif format == "png":
         #    self.graph.write_png(output + ".png", prog="dot")
         #else:
