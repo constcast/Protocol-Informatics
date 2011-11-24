@@ -21,10 +21,11 @@ numpy               http://numpy.scipy.org/
 Pyrex               http://www.cosc.canterbury.ac.nz/~greg/python/Pyrex/
 Pcapy               http://oss.coresecurity.com/projects/pcapy.html
 Pydot               http://code.google.com/p/pydot/
+PyYAML              http://pyyaml.org/
 
 These requirements are available using pip or easy_install:
 
-    $ pip install numpy pydot pcapy
+    $ pip install numpy pydot pcapy pyyaml
     $ make
 
 This software has been tested and works correctly under:

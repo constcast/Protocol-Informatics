@@ -1,0 +1,6 @@
+format: bro
+weight: 1.0
+graph: False
+maxMessages: 50
+textBased: False
+entropyBased: False

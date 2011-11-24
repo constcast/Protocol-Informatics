@@ -14,7 +14,7 @@
 import PI
 import entropy
 
-import sys, getopt
+import sys, getopt, yaml
 
 def main():
 
@@ -25,37 +25,52 @@ def main():
     maxMessages = 0
     textBased = False
     entropyBased = False
+    configFile = None
+    config = None
 
     #
     # Parse command line options and do sanity checking on arguments
     #
     try:
-        (opts, args) = getopt.getopt(sys.argv[1:], "pabgtw:m:e")
+        (opts, args) = getopt.getopt(sys.argv[1:], "c:")
     except:
         usage()
 
     for o,a in opts:
-        if o in ["-p"]:
-            format = "pcap"
-        elif o in ["-a"]:
-            format = "ascii"
-        elif o in ["-b"]:
-            format = "bro"
-        elif o in ["-w"]:
-            weight = float(a)
-        elif o in ["-g"]:
-            graph = True
-        elif o in ["-m"]:
-            maxMessages = int(a)
-        elif o in ["-t"]:
-            textBased = True
-        elif o in ["-e"]:
-            entropyBased = True
+        if o in ["-c"]:
+            configFile = a
         else:
             usage()
 
     if len(args) == 0:
         usage()
+
+    if not configFile:
+        print "FATAL: No config file given. Don't know how to proceed!"
+        
+    config = parseConfig(configFile)
+
+    # extract necessary config parameters from config file
+    if not config['weight']:
+        print "FATAL: No weight configured!"
+        sys.exit(-1)
+    else:
+        weigth = config['weight']
+
+    if not config['format']:
+        print "FATAL: No input format configured!"
+        sys.exit(-1)
+    else:
+        format = config['format']
+
+    if config['graph']:
+        graph = True
+
+    if config['textBased']:
+        textBased = True
+
+    if config['entropyBased']:
+        entropyBased = True
 
     if weight < 0.0 or weight > 1.0:
         print "FATAL: Weight must be between 0 and 1"
@@ -101,17 +116,20 @@ def main():
         PI.core.pi_core(sequences, weight, graph, textBased)
 
 def usage():
-    print "usage: %s [-gtpab] [-m <messages>]  [-w <weight>] <sequence file>" % \
+    print "usage: %s  -c <config> <sequence file>" % \
         sys.argv[0]
-    print "       -g\toutput graphviz of phylogenetic trees"
-    print "       -p\tpcap format"
-    print "       -a\tascii format"
-    print "       -b\tBro adu output format"
-    print "       -e\tentropy based analysis"
-    print "       -w\tdifference weight for clustering"
-    print "       -m\tmaximum number of messages to use for PI"
-    print "       -t\texpected a text-based protocol"
+    print "       -c\tconfig file in yaml format"
     sys.exit(-1)
+
+def parseConfig(f):
+    try:
+        cf = file(f, 'r')
+        config = yaml.load(cf)
+        return config
+    except Exception as e:
+        print "Could not parse config file \"%s\": %s" % (f, e)
+        sys.exit(-1)
+        
 
 if __name__ == "__main__":
     main()
