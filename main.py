@@ -51,26 +51,29 @@ def main():
     config = parseConfig(configFile)
 
     # extract necessary config parameters from config file
-    if not config['weight']:
+    if not 'weight' in  config:
         print "FATAL: No weight configured!"
         sys.exit(-1)
     else:
         weigth = config['weight']
 
-    if not config['format']:
+    if not 'format' in  config:
         print "FATAL: No input format configured!"
         sys.exit(-1)
     else:
         format = config['format']
 
-    if config['graph']:
-        graph = True
+    if 'maxMessages' in config:
+        maxMessages = int(config['maxMessages'])
 
-    if config['textBased']:
-        textBased = True
+    if 'graph' in config:
+        graph = config['graph']
 
-    if config['entropyBased']:
-        entropyBased = True
+    if 'textBased' in config:
+        textBased = config['textBased']
+
+    if 'entropyBased' in config:
+        entropyBased = config['entropyBased']
 
     if weight < 0.0 or weight > 1.0:
         print "FATAL: Weight must be between 0 and 1"
