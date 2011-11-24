@@ -66,14 +66,20 @@ class Ansi(Output):
         Output.__init__(self, sequences)
 
     def _go(self):
+        # how many bytes to print by default
+        # output will be split into multiple blocks according to this
+        # a byte is printed using three charactes (e.g. x52) and invidiual
+        # bytes are separated via one space. 18 is a good default value for
+        # 80 character terminals
+        term_width = 18
 
         seqLength = len(self.sequences[0][1])
-        rounds = seqLength / 18
-        remainder = seqLength % 18
+        rounds = seqLength / term_width
+        remainder = seqLength % term_width
         l = len(self.sequences[0][1])
 
         start = 0
-        end = 18
+        end = term_width
 
         dtConsensus = []
         mtConsensus = []
@@ -100,6 +106,8 @@ class Ansi(Output):
             for j in range(start, end):
                 column = []
                 for id, seq in self.sequences:
+                    if len(seq) == 0:
+                        continue
                     column.append(seq[j])
                 dt = self._dtConsensus(column)
                 print dt,
@@ -110,14 +118,16 @@ class Ansi(Output):
             for j in range(start, end):
                 column = []
                 for id, seq in self.sequences:
+                    if len(seq) == 0:
+                        continue
                     column.append(seq[j])
                 rate = self._mutationRate(column)
                 print "%03d" % (rate * 100),
                 mtConsensus.append(rate)
             print "\n"
 
-            start += 18
-            end += 18
+            start += term_width
+            end += term_width
 
         if remainder:
             for id, seq in self.sequences:
@@ -139,6 +149,8 @@ class Ansi(Output):
             for j in range(start, start + remainder):
                 column = []
                 for id, seq in self.sequences:
+                    if len(seq) == 0:
+                        continue
                     column.append(seq[j])
                 dt = self._dtConsensus(column)
                 print dt,
@@ -149,6 +161,8 @@ class Ansi(Output):
             for j in range(start, start + remainder):
                 column = []
                 for id, seq in self.sequences:
+                    if len(seq) == 0:
+                        continue
                     column.append(seq[j])
                 rate = self._mutationRate(column)
                 mtConsensus.append(rate)
@@ -161,6 +175,9 @@ class Ansi(Output):
         for i in range(l):
             histogram = {}
             for id, seq in self.sequences:
+                if len(seq) == 0:
+                    continue
+
                 try:
                     histogram[seq[i]] += 1
                 except:
