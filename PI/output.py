@@ -172,6 +172,7 @@ class Ansi(Output):
         # Calculate consensus sequence
         l = len(self.sequences[0][1])
 
+        real = []
         for i in range(l):
             histogram = {}
             for id, seq in self.sequences:
