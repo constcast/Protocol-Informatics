@@ -168,19 +168,29 @@ class Bro(Input):
         if len(data) != contentLength:
             raise Exception("Error while parsing input file. Message:\n\n%s\n\nReal length %d does not match ContentLength %s" % (data, len(data), contentLength))
 
-        # only insert uniq messages into the list of seuqences. avoid duplicates
-        l = len(self.set)
-        self.set.add(data)
-        if len(self.set) == l:
-            return
+	# try to split the reassembled message into parts if a message delimiter is known
+	if self.messageDelimiter:
+		sequences = data.split(self.messageDelimiter)
+	else:
+		sequences = data
 
-        # convert message content  to ascii codes
-        digitSeq = []
-        for c in data:
-            digitSeq.append(ord(c))
+	for seq in sequences:
+		if len(seq) == 0:
+			continue
 
-        self.mNumber += 1
-        self.sequences.append((self.mNumber, digitSeq))
+	        # only insert uniq messages into the list of seuqences. avoid duplicate
+	        l = len(self.set)
+	        self.set.add(seq)
+	        if len(self.set) == l:
+       		     continue
+
+	        # convert message content  to ascii codes
+	        digitSeq = []
+	        for c in seq:
+	            digitSeq.append(ord(c))
+
+		self.mNumber += 1
+      		self.sequences.append((self.mNumber, digitSeq))
 
     def __init__(self, filename, messageDelimiter, fieldDelimiter):
     	self.messageDelimiter = messageDelimiter

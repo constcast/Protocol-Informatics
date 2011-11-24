@@ -41,8 +41,6 @@ class TextBased(Output):
             for byte in seq:
                 if byte == 256:
                     sys.stdout.write("_")
-                elif isspace(byte):
-                    sys.stdout.write("%d" %byte)
                 elif isprint(byte):
                     sys.stdout.write(chr(byte))
                 else:
@@ -172,7 +170,7 @@ class Ansi(Output):
         # Calculate consensus sequence
         l = len(self.sequences[0][1])
 
-        real = []
+#real = []
         for i in range(l):
             histogram = {}
             for id, seq in self.sequences:

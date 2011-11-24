@@ -23,6 +23,8 @@ def main():
     weight = 1.0
     graph = False
     maxMessages = 0
+    messageDelimiter = None
+    fieldDelimiter = None
     textBased = False
     entropyBased = False
     configFile = None
@@ -55,7 +57,7 @@ def main():
         print "FATAL: No weight configured!"
         sys.exit(-1)
     else:
-        weigth = config['weight']
+        weight = config['weight']
 
     if not 'format' in  config:
         print "FATAL: No input format configured!"
@@ -74,6 +76,12 @@ def main():
 
     if 'entropyBased' in config:
         entropyBased = config['entropyBased']
+
+    if 'messageDelimiter' in config:
+        messageDelimiter = config['messageDelimiter']
+
+    if 'fieldDelimiter' in config:
+        fieldDelimiter = config['fieldDelimiter']
 
     if weight < 0.0 or weight > 1.0:
         print "FATAL: Weight must be between 0 and 1"
@@ -95,7 +103,7 @@ def main():
         elif format == "ascii":
             sequences = PI.input.ASCII(file)
         elif format == "bro":
-            sequences = PI.input.Bro(file)
+            sequences = PI.input.Bro(file, messageDelimiter, fieldDelimiter)
         else:
             print "FATAL: Specify file format"
             sys.exit(-1)
