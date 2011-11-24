@@ -162,6 +162,9 @@ class Bro(Input):
     """
 
     def consumeMessageBlock(self, data, connectionID, messageNumber, contentLength):
+    	if len (data ) == 0:
+		return 
+
         if len(data) != contentLength:
             raise Exception("Error while parsing input file. Message:\n\n%s\n\nReal length %d does not match ContentLength %s" % (data, len(data), contentLength))
 
@@ -179,7 +182,9 @@ class Bro(Input):
         self.mNumber += 1
         self.sequences.append((self.mNumber, digitSeq))
 
-    def __init__(self, filename):
+    def __init__(self, filename, messageDelimiter, fieldDelimiter):
+    	self.messageDelimiter = messageDelimiter
+	self.fieldDelimiter = fieldDelimiter
         Input.__init__(self, filename)
 
         self.blockseparator = "******************************************"
