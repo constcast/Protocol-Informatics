@@ -26,8 +26,8 @@ def main():
     messageDelimiter = None
     fieldDelimiter = None
     textBased = False
-    entropyBased = False
     configFile = None
+    analysis = None
     config = None
 
     #
@@ -68,14 +68,16 @@ def main():
     if 'maxMessages' in config:
         maxMessages = int(config['maxMessages'])
 
+    if not 'analysis' in config:
+        print "FATAL: analysis module not configured!"
+    else:
+        analysis = config['analysis']
+
     if 'graph' in config:
         graph = config['graph']
 
     if 'textBased' in config:
         textBased = config['textBased']
-
-    if 'entropyBased' in config:
-        entropyBased = config['entropyBased']
 
     if 'messageDelimiter' in config:
         messageDelimiter = config['messageDelimiter']
@@ -117,14 +119,19 @@ def main():
     else:
         print "Found %d unique sequences in '%s'" % (len(sequences), file)
     if maxMessages != 0 and len(sequences) > maxMessages:
-        print "Only considering the first %d messages for PI" % (maxMessages)
+        print "Only considering the first %d messages for analysis" % (maxMessages)
         sequences = sequences[0:maxMessages]
         print "Number of messages: %d" % (len(sequences))
 
-    if entropyBased:
+    if analysis == "entropy":
         entropy.entropy.entropy_core(sequences)
-    else:
+    elif analysis == "PI":
         PI.core.pi_core(sequences, weight, graph, textBased)
+    elif analysis == "reverx":
+        pass
+    else:
+        print "FATAL: Unknown analysis module %s configured" % (analysis)
+        sys.exit(-1)
 
 def usage():
     print "usage: %s  -c <config> <sequence file>" % \

@@ -1,6 +1,10 @@
-format: bro
-weight: 1.0
-graph: False
-maxMessages: 50
-textBased: False
-entropyBased: False
+format: <bro|pcap|ascii>
+weight: [0, 1.0]
+graph: [ False | True ]
+maxMessages: [0 - ...]
+textBased: [ False | True ]
+
+analysis: [PI | reverx | entropy ]
+
+messageDelimiter: '\r\n'
+fieldDelimiter: ' '
