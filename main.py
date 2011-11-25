@@ -29,6 +29,7 @@ def main():
     configFile = None
     analysis = None
     config = None
+    gnuplotFile = None
 
     #
     # Parse command line options and do sanity checking on arguments
@@ -85,6 +86,9 @@ def main():
     if 'fieldDelimiter' in config:
         fieldDelimiter = config['fieldDelimiter']
 
+    if 'entropyGnuplotFile' in config:
+        gnuplotFile = config['entropyGnuplotFile']
+
     if weight < 0.0 or weight > 1.0:
         print "FATAL: Weight must be between 0 and 1"
         sys.exit(-1)
@@ -124,7 +128,7 @@ def main():
         print "Number of messages: %d" % (len(sequences))
 
     if analysis == "entropy":
-        entropy.entropy.entropy_core(sequences)
+        entropy.entropy.entropy_core(sequences, gnuplotFile)
     elif analysis == "PI":
         PI.core.pi_core(sequences, weight, graph, textBased)
     elif analysis == "reverx":
