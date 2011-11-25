@@ -17,8 +17,6 @@ Licensed under the LGPL
 """
 
 from tree import *
-from pydot import *
-
 
 import util
 

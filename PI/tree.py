@@ -11,8 +11,6 @@ Copyright (c) 2004 Baseline Research
 Licensed under the LGPL
 """
 
-from pydot import *
-
 class Tree:
 
     def __init__(self):
@@ -71,9 +69,10 @@ class Tree:
         """Graph tree from root using graphviz"""
 
         self.i = 0
-        self.graph = Dot(center="TRUE",rankdir="TB")
+        import pydot
+        self.graph = pydot.Dot(center="TRUE",rankdir="TB")
         #self.graph = Dot(size="3.5,4",page="4.5,6",center="TRUE",rankdir="TB")
-        self.subgraph = Subgraph("subG", rank="same")
+        self.subgraph = pydot.Subgraph("subG", rank="same")
 
         self._traverse(self)
 
@@ -104,16 +103,16 @@ class Tree:
             l = "%.02f%%" % (weight * 100.0)
 
             if v1 >= 10000:
-                node1 = Node(v1, shape="plaintext", ratio="auto", label=l)
+                node1 = pydot.Node(v1, shape="plaintext", ratio="auto", label=l)
             else:
-                node1 = Node(v1, shape="house", ratio="auto")
+                node1 = pydot.Node(v1, shape="house", ratio="auto")
                 node1.set("style", "filled")
                 node1.set("fillcolor", "cyan")
 
             if v2 >= 10000:
                 weight = root.getParent().getValue()[1]
                 l = "%.02f%%" % (weight * 100.0)
-                node2 = Node(v2, shape="plaintext", ratio="auto", label=l)
+                node2 = pydot.Node(v2, shape="plaintext", ratio="auto", label=l)
 
             if root.getIsLeaf():
                 self.subgraph.add_node(node1)
@@ -121,7 +120,7 @@ class Tree:
             self.graph.add_node(node1)
             self.graph.add_node(node2)
 
-            edge = Edge(v2, v1)
+            edge = pydot.Edge(v2, v1)
 
             self.graph.add_edge(edge)
 
