@@ -20,12 +20,14 @@ class Input:
 
     """Implementation of base input class"""
 
-    def __init__(self, filename):
+    def __init__(self, filename, maxMessages):
         """Import specified filename"""
 
         self.set = set()
         self.sequences = []
         self.index = 0
+        self.maxMessages = maxMessages
+        self.readMessages = 0
 
     def __iter__(self):
         self.index = 0
@@ -52,18 +54,30 @@ class Pcap(Input):
 
     """Handle the pcap file format"""
 
-    def __init__(self, filename, offset=14):
-        Input.__init__(self, filename)
+    def __init__(self, filename, maxMessages, offset=14):
+        Input.__init__(self, filename, maxMessages)
         self.pktNumber = 0
         self.offset = offset
 
         pd = open_offline(filename)
 
-        pd.dispatch(-1, self.handler)
+        try:
+            # we might escape this handler by raising an exception if maxmessages are read
+            # we also 
+            pd.dispatch(-1, self.handler)
+        except Exception as inst:
+            print "Finished reading packets from PCAP with reason: %s" % (inst)
 
     def handler(self, hdr, pkt):
         if hdr.getlen() <= 0:
             return
+
+        # only store as much as self.maxMessages messages
+        # we cannot restrict the calls to handler to 50 packets since
+        # we only consider UNIQ payloads as messages. we therefore
+        # need to count 50 messages in this handler
+        if self.maxMessages != 0 and self.readMessages >= self.maxMessages:
+            raise Exception("Extracted %d messages from PCAP file. Stopped reading file as configured" % (self.maxMessages))
 
         # Increment packet counter
         self.pktNumber += 1
@@ -110,6 +124,8 @@ class Pcap(Input):
         if len(self.set) == l:
             return
 
+        self.readMessages += 1
+
         # Digitize sequence
         digitalSeq = []
         for c in seq:
@@ -121,8 +137,8 @@ class ASCII(Input):
 
     """Handle newline delimited ASCII input files"""
 
-    def __init__(self, filename):
-        Input.__init__(self, filename)
+    def __init__(self, filename, maxMessages):
+        Input.__init__(self, filename, maxMessages)
 
         fd = open(filename, "r")
 
@@ -135,11 +151,17 @@ class ASCII(Input):
             if not line:
                 break
 
+            if self.maxMessages != 0 and self.readMessages > self.maxMessages:
+                # we already have enough messages. stop reading
+                break
+
             l = len(self.set)
             self.set.add(line)
 
             if len(self.set) == l:
                 continue
+            
+            self.readMessages += 1
 
             # Digitize sequence
             digitalSeq = []
@@ -184,6 +206,8 @@ class Bro(Input):
 	        if len(self.set) == l:
        		     continue
 
+                self.readMessages += 1
+
 	        # convert message content  to ascii codes
 	        digitSeq = []
 	        for c in seq:
@@ -192,10 +216,10 @@ class Bro(Input):
 		self.mNumber += 1
       		self.sequences.append((self.mNumber, digitSeq))
 
-    def __init__(self, filename, messageDelimiter, fieldDelimiter):
+    def __init__(self, filename, maxMessages, messageDelimiter, fieldDelimiter):
     	self.messageDelimiter = messageDelimiter
 	self.fieldDelimiter = fieldDelimiter
-        Input.__init__(self, filename)
+        Input.__init__(self, filename, maxMessages)
 
         self.blockseparator = "******************************************"
         self.mNumber = 0
@@ -208,6 +232,10 @@ class Bro(Input):
 
         fd = open(filename, "r")
         for line in fd:
+            if self.maxMessages != 0 and self.readMessages > self.maxMessages:
+                # already consumed maxMessages. stop reading more messages
+                return
+
             if line.startswith(self.blockseparator):
                 # found a new block. push the old one
                 self.consumeMessageBlock(content, connectionID, messageNumber, contentLength)

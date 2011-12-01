@@ -33,5 +33,5 @@ def entropy_core(sequences, gnuplotFile):
         uniqbytes = set(byteseq)
         entropy = float(len(uniqbytes)) /  float(seqlen)
         fileDesc.write("%d %f %d %d\n" % (bytenum, entropy, len(uniqbytes), seqlen))
-        byteNum += 1
+        bytenum += 1
 

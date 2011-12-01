@@ -65,7 +65,7 @@ def main():
         sys.exit(-1)
     else:
         format = config['format']
-
+        
     if 'maxMessages' in config:
         maxMessages = int(config['maxMessages'])
 
@@ -105,11 +105,11 @@ def main():
     #
     try:
         if format == "pcap":
-            sequences = PI.input.Pcap(file)
+            sequences = PI.input.Pcap(file, maxMessages)
         elif format == "ascii":
-            sequences = PI.input.ASCII(file)
+            sequences = PI.input.ASCII(file, maxMessages)
         elif format == "bro":
-            sequences = PI.input.Bro(file, messageDelimiter, fieldDelimiter)
+            sequences = PI.input.Bro(file, maxMessages, messageDelimiter, fieldDelimiter)
         else:
             print "FATAL: Specify file format"
             sys.exit(-1)
