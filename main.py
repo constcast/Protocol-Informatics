@@ -30,6 +30,7 @@ def main():
     analysis = None
     config = None
     gnuplotFile = None
+    onlyUniq = False
 
     #
     # Parse command line options and do sanity checking on arguments
@@ -59,6 +60,9 @@ def main():
         sys.exit(-1)
     else:
         weight = config['weight']
+
+    if 'onlyUniqMessages' in config:
+        onlyUniq = config['onlyUniqMessages']
 
     if not 'format' in  config:
         print "FATAL: No input format configured!"
@@ -105,11 +109,11 @@ def main():
     #
     try:
         if format == "pcap":
-            sequences = PI.input.Pcap(file, maxMessages)
+            sequences = PI.input.Pcap(file, maxMessages, onlyUniq)
         elif format == "ascii":
-            sequences = PI.input.ASCII(file, maxMessages)
+            sequences = PI.input.ASCII(file, maxMessages, onlyUniq)
         elif format == "bro":
-            sequences = PI.input.Bro(file, maxMessages, messageDelimiter, fieldDelimiter)
+            sequences = PI.input.Bro(file, maxMessages, onlyUniq, messageDelimiter, fieldDelimiter)
         else:
             print "FATAL: Specify file format"
             sys.exit(-1)

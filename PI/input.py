@@ -20,7 +20,7 @@ class Input:
 
     """Implementation of base input class"""
 
-    def __init__(self, filename, maxMessages):
+    def __init__(self, filename, maxMessages, onlyUniq):
         """Import specified filename"""
 
         self.set = set()
@@ -28,6 +28,7 @@ class Input:
         self.index = 0
         self.maxMessages = maxMessages
         self.readMessages = 0
+        self.onlyUniq = onlyUniq
 
     def __iter__(self):
         self.index = 0
@@ -54,8 +55,8 @@ class Pcap(Input):
 
     """Handle the pcap file format"""
 
-    def __init__(self, filename, maxMessages, offset=14):
-        Input.__init__(self, filename, maxMessages)
+    def __init__(self, filename, maxMessages, onlyUniq, offset=14):
+        Input.__init__(self, filename, maxMessages, onlyUniq)
         self.pktNumber = 0
         self.offset = offset
 
@@ -121,7 +122,7 @@ class Pcap(Input):
         l = len(self.set)
         self.set.add(seq)
 
-        if len(self.set) == l:
+        if len(self.set) == l and self.onlyUniq:
             return
 
         self.readMessages += 1
@@ -137,8 +138,8 @@ class ASCII(Input):
 
     """Handle newline delimited ASCII input files"""
 
-    def __init__(self, filename, maxMessages):
-        Input.__init__(self, filename, maxMessages)
+    def __init__(self, filename, maxMessages, onlyUniq):
+        Input.__init__(self, filename, maxMessages, onlyUniq)
 
         fd = open(filename, "r")
 
@@ -158,7 +159,7 @@ class ASCII(Input):
             l = len(self.set)
             self.set.add(line)
 
-            if len(self.set) == l:
+            if len(self.set) == l and self.onlyUniq:
                 continue
             
             self.readMessages += 1
@@ -203,7 +204,7 @@ class Bro(Input):
 	        # only insert uniq messages into the list of seuqences. avoid duplicate
 	        l = len(self.set)
 	        self.set.add(seq)
-	        if len(self.set) == l:
+	        if len(self.set) == l and self.onlyUniq:
        		     continue
 
                 self.readMessages += 1
@@ -216,10 +217,10 @@ class Bro(Input):
 		self.mNumber += 1
       		self.sequences.append((self.mNumber, digitSeq))
 
-    def __init__(self, filename, maxMessages, messageDelimiter, fieldDelimiter):
+    def __init__(self, filename, maxMessages, onlyUniq, messageDelimiter, fieldDelimiter):
     	self.messageDelimiter = messageDelimiter
 	self.fieldDelimiter = fieldDelimiter
-        Input.__init__(self, filename, maxMessages)
+        Input.__init__(self, filename, maxMessages, onlyUniq)
 
         self.blockseparator = "******************************************"
         self.mNumber = 0
