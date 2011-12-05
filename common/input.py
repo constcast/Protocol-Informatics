@@ -13,6 +13,7 @@ Licensed under the LGPL
 from pcapy  import *
 from socket import *
 import re
+import sequences
 
 __all__ = ["Input", "Pcap", "ASCII", "Bro"]
 
@@ -24,32 +25,13 @@ class Input:
         """Import specified filename"""
 
         self.set = set()
-        self.sequences = []
         self.index = 0
         self.maxMessages = maxMessages
         self.readMessages = 0
         self.onlyUniq = onlyUniq
 
-    def __iter__(self):
-        self.index = 0
-        return self
-
-    def next(self):
-        if self.index == len(self.sequences):
-            raise StopIteration
-
-        self.index += 1
-
-        return self.sequences[self.index - 1]
-
-    def __len__(self):
-        return len(self.sequences)
-
-    def __repr__(self):
-        return "%s" % self.sequences
-
-    def __getitem__(self, index):
-        return self.sequences[index]
+    def getConnections(self):
+        raise Exception("getConnections not implemented ...")
 
 class Pcap(Input):
 
@@ -59,6 +41,11 @@ class Pcap(Input):
         Input.__init__(self, filename, maxMessages, onlyUniq)
         self.pktNumber = 0
         self.offset = offset
+
+        # we do not perform reassembling or connection tracking
+        # therefore we store all messages in a single flow-instance
+        # without message numbers (this is the original PI behavior)
+        self.connection = sequences.FlowInfo()
 
         pd = open_offline(filename)
 
@@ -127,12 +114,10 @@ class Pcap(Input):
 
         self.readMessages += 1
 
-        # Digitize sequence
-        digitalSeq = []
-        for c in seq:
-            digitalSeq.append(ord(c))
+        self.connection.addSequence(sequences.Sequence(seq), self.readMessages)
 
-        self.sequences.append((self.pktNumber, digitalSeq))
+    def getConnections(self):
+        return [ self.connection ]
 
 class ASCII(Input):
 
@@ -140,6 +125,11 @@ class ASCII(Input):
 
     def __init__(self, filename, maxMessages, onlyUniq):
         Input.__init__(self, filename, maxMessages, onlyUniq)
+
+        # we do not perform reassembling or connection tracking
+        # therefore we store all messages in a single flow-instance
+        # without message numbers (this is the original PI behavior)
+        self.connection = sequences.FlowInfo()
 
         fd = open(filename, "r")
 
@@ -164,12 +154,11 @@ class ASCII(Input):
             
             self.readMessages += 1
 
-            # Digitize sequence
-            digitalSeq = []
-            for c in line:
-                digitalSeq.append(ord(c))
+            self.connection.addSequence(sequences.Sequence(line, self.readMessages))
 
-            self.sequences.append((lineno, digitalSeq))
+    def getConnections(self):
+        return [ self.connection ]
+
 
 class Bro(Input):
     """ Handle output files from Bro-IDS with bro-scripts/adu_writer.bro running.
@@ -193,11 +182,11 @@ class Bro(Input):
 
 	# try to split the reassembled message into parts if a message delimiter is known
 	if self.messageDelimiter:
-		sequences = data.split(self.messageDelimiter)
+		messageParts = data.split(self.messageDelimiter)
 	else:
-		sequences = data
+		messageParts = data
 
-	for seq in sequences:
+	for seq in messageParts:
 		if len(seq) == 0:
 			continue
 
@@ -209,21 +198,22 @@ class Bro(Input):
 
                 self.readMessages += 1
 
-	        # convert message content  to ascii codes
-	        digitSeq = []
-	        for c in seq:
-	            digitSeq.append(ord(c))
+                if not connectionID in self.connections:
+                    self.connections[connectionID] = sequences.FlowInfo(connectionID)
+                    
+                self.connections[connectionID].addSequence(sequences.Sequence(seq, messageNumber))
 
-		self.mNumber += 1
-      		self.sequences.append((self.mNumber, digitSeq))
+    def getConnections(self):
+        return self.connections
+
 
     def __init__(self, filename, maxMessages, onlyUniq, messageDelimiter, fieldDelimiter):
     	self.messageDelimiter = messageDelimiter
 	self.fieldDelimiter = fieldDelimiter
+        self.connections = dict()
         Input.__init__(self, filename, maxMessages, onlyUniq)
 
         self.blockseparator = "******************************************"
-        self.mNumber = 0
 
         sequence = ""
         connectionID = ""

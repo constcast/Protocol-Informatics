@@ -110,15 +110,17 @@ def main():
     #
     try:
         if format == "pcap":
-            sequences = PI.input.Pcap(file, maxMessages, onlyUniq)
+            sequences = common.input.Pcap(file, maxMessages, onlyUniq).getConnections()
         elif format == "ascii":
-            sequences = PI.input.ASCII(file, maxMessages, onlyUniq)
+            sequences = common.input.ASCII(file, maxMessages, onlyUniq).getConnections()
         elif format == "bro":
-            sequences = PI.input.Bro(file, maxMessages, onlyUniq, messageDelimiter, fieldDelimiter)
+            sequences = common.input.Bro(file, maxMessages, onlyUniq, messageDelimiter, fieldDelimiter).getConnections()
         else:
             print "FATAL: Specify file format"
             sys.exit(-1)
     except Exception as inst:
+        import traceback
+        print traceback.print_exc(file=sys.stdout)
         print ("FATAL: Error reading input file '%s':\n %s" % (file, inst))
         sys.exit(-1)
 
