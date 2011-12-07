@@ -152,7 +152,8 @@ def parseConfig(f):
         sys.exit(-1)
 
 def command_line_interface():
-    cmdline = common.cli.CommandLineInterface()
+    import cmdinterface
+    cmdline = cmdinterface.cli.CommandLineInterface()
     cmdline.cmdloop()
 
 if __name__ == "__main__":
