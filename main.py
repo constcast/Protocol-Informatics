@@ -119,20 +119,8 @@ def main():
             print "FATAL: Specify file format"
             sys.exit(-1)
     except Exception as inst:
-        import traceback
-        print traceback.print_exc(file=sys.stdout)
         print ("FATAL: Error reading input file '%s':\n %s" % (file, inst))
         sys.exit(-1)
-
-    if len(sequences) == 0:
-        print "FATAL: No sequences found in '%s'" % file
-        sys.exit(-1)
-    else:
-        print "Found %d unique sequences in '%s'" % (len(sequences), file)
-    if maxMessages != 0 and len(sequences) > maxMessages:
-        print "Only considering the first %d messages for analysis" % (maxMessages)
-        sequences = sequences[0:maxMessages]
-        print "Number of messages: %d" % (len(sequences))
 
     if analysis == "entropy":
         entropy.entropy.entropy_core(sequences, gnuplotFile)
