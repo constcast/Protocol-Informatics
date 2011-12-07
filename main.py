@@ -18,6 +18,10 @@ import common
 import sys, getopt, yaml
 
 def main():
+    # go into command line mode if no arguments are given
+    if len(sys.argv) == 1:
+        command_line_interface()
+        sys.exit(0)
 
      # Defaults
     format = "pcap"
@@ -146,7 +150,10 @@ def parseConfig(f):
     except Exception as e:
         print "Could not parse config file \"%s\": %s" % (f, e)
         sys.exit(-1)
-        
+
+def command_line_interface():
+    cmdline = common.cli.CommandLineInterface()
+    cmdline.cmdloop()
 
 if __name__ == "__main__":
     main()
