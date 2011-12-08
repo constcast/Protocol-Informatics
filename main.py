@@ -18,6 +18,7 @@ import common
 import sys, getopt, yaml
 
 def main():
+    
     # go into command line mode if no arguments are given
     if len(sys.argv) == 1:
         command_line_interface()
@@ -59,48 +60,6 @@ def main():
         
     config = parseConfig(configFile)
 
-    # extract necessary config parameters from config file
-    if not 'weight' in  config:
-        print "FATAL: No weight configured!"
-        sys.exit(-1)
-    else:
-        weight = config['weight']
-
-    if 'onlyUniqMessages' in config:
-        onlyUniq = config['onlyUniqMessages']
-
-    if not 'format' in  config:
-        print "FATAL: No input format configured!"
-        sys.exit(-1)
-    else:
-        format = config['format']
-        
-    if 'maxMessages' in config:
-        maxMessages = int(config['maxMessages'])
-
-    if not 'analysis' in config:
-        print "FATAL: analysis module not configured!"
-    else:
-        analysis = config['analysis']
-
-    if 'graph' in config:
-        graph = config['graph']
-
-    if 'textBased' in config:
-        textBased = config['textBased']
-
-    if 'messageDelimiter' in config:
-        messageDelimiter = config['messageDelimiter']
-
-    if 'fieldDelimiter' in config:
-        fieldDelimiter = config['fieldDelimiter']
-
-    if 'entropyGnuplotFile' in config:
-        gnuplotFile = config['entropyGnuplotFile']
-
-    if weight < 0.0 or weight > 1.0:
-        print "FATAL: Weight must be between 0 and 1"
-        sys.exit(-1)
 
     file = sys.argv[len(sys.argv) - 1]
 
@@ -152,6 +111,7 @@ def parseConfig(f):
         sys.exit(-1)
 
 def command_line_interface():
+    print "Welcome to Protocol-Informatics. What do you want to do today?"
     import cmdinterface
     cmdline = cmdinterface.cli.CommandLineInterface()
     cmdline.cmdloop()
