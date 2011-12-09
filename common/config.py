@@ -1,3 +1,6 @@
+import yaml, sys
+
+
 class Configuration:
     def __init__(self, filename):
         # Defaults
@@ -12,6 +15,8 @@ class Configuration:
         self.analysis = None
         self.gnuplotFile = None
         self.onlyUniq = False
+        self.interactive = True
+        self.inputFile = None
 
         cf = file(filename, 'r')
         self.config = yaml.load(cf)
@@ -20,7 +25,7 @@ class Configuration:
     def checkConfig(self):
         # extract necessary config parameters from config file
         if 'weight' in  self.config:
-            self.weight = config['weight']
+            self.weight = self.config['weight']
 
         if 'onlyUniqMessages' in self.config:
             self.onlyUniq = self.config['onlyUniqMessages']
@@ -32,24 +37,30 @@ class Configuration:
             maxMessages = int(self.config['maxMessages'])
 
         if 'analysis' in self.config:
-            self.analysis = config['analysis']
+            self.analysis = self.config['analysis']
 
-        if 'graph' in config:
-            graph = config['graph']
+        if 'graph' in self.config:
+            self.graph = self.config['graph']
 
-    if 'textBased' in config:
-        textBased = config['textBased']
+        if 'textBased' in self.config:
+            self.textBased = self.config['textBased']
 
-    if 'messageDelimiter' in config:
-        messageDelimiter = config['messageDelimiter']
+        if 'messageDelimiter' in self.config:
+            self.messageDelimiter = self.config['messageDelimiter']
 
-    if 'fieldDelimiter' in config:
-        fieldDelimiter = config['fieldDelimiter']
+        if 'fieldDelimiter' in self.config:
+            self.fieldDelimiter = config.config['fieldDelimiter']
 
-    if 'entropyGnuplotFile' in config:
-        gnuplotFile = config['entropyGnuplotFile']
+        if 'entropyGnuplotFile' in self.config:
+            self.gnuplotFile = self.config['entropyGnuplotFile']
 
-    if weight < 0.0 or weight > 1.0:
-        print "FATAL: Weight must be between 0 and 1"
-        sys.exit(-1)
+        if 'interactive' in self.config:
+            self.interactive = self.config['interactive']
+            
+        if 'inputFile' in self.config:
+            self.inputFile = self.config['inputFile']
+
+        if self.weight < 0.0 or self.weight > 1.0:
+            print "FATAL: Weight must be between 0 and 1"
+            sys.exit(-1)
 

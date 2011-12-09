@@ -18,25 +18,7 @@ import common
 import sys, getopt, yaml
 
 def main():
-    
-    # go into command line mode if no arguments are given
-    if len(sys.argv) == 1:
-        command_line_interface()
-        sys.exit(0)
-
-     # Defaults
-    format = "pcap"
-    weight = 1.0
-    graph = False
-    maxMessages = 0
-    messageDelimiter = None
-    fieldDelimiter = None
-    textBased = False
     configFile = None
-    analysis = None
-    config = None
-    gnuplotFile = None
-    onlyUniq = False
 
     #
     # Parse command line options and do sanity checking on arguments
@@ -52,63 +34,55 @@ def main():
         else:
             usage()
 
-    if len(args) == 0:
-        usage()
-
     if not configFile:
-        print "FATAL: No config file given. Don't know how to proceed!"
-        
-    config = parseConfig(configFile)
+        # if we are started without a config file, we just drop into 
+        # interactive mode ...
+        command_line_interface()
 
+    conf = common.config.Configuration(configFile)
 
-    file = sys.argv[len(sys.argv) - 1]
+    if conf.interactive:
+        command_line_interface()
 
-    try:
-        file
-    except:
-        usage()
+    
+    if conf.inputFile != None:
+        file = conf.inputFile
+    else:
+        print "FATAL: You specified non-interactive mode, but didn't specify an inputFile. This is illegal ..."
+        sys.exit(-1)
 
     #
     # Open file and get sequences
     #
     try:
-        if format == "pcap":
-            sequences = common.input.Pcap(file, maxMessages, onlyUniq).getConnections()
-        elif format == "ascii":
-            sequences = common.input.ASCII(file, maxMessages, onlyUniq).getConnections()
-        elif format == "bro":
-            sequences = common.input.Bro(file, maxMessages, onlyUniq, messageDelimiter, fieldDelimiter).getConnections()
+        if conf.format == "pcap":
+            sequences = common.input.Pcap(file, conf.maxMessages, conf.onlyUniq, conf.messageDelimiter, conf.fieldDelimiter).getConnections()
+        elif conf.format == "ascii":
+            sequences = common.input.ASCII(file, conf.maxMessages, conf.onlyUniq, conf.messageDelimiter, conf.fieldDelimiter).getConnections()
+        elif conf.format == "bro":
+            sequences = common.input.Bro(file, conf.maxMessages, conf.onlyUniq, conf.messageDelimiter, conf.fieldDelimiter).getConnections()
         else:
-            print "FATAL: Specify file format"
+            print "FATAL: Unknown file format"
             sys.exit(-1)
     except Exception as inst:
         print ("FATAL: Error reading input file '%s':\n %s" % (file, inst))
         sys.exit(-1)
 
-    if analysis == "entropy":
-        entropy.entropy.entropy_core(sequences, gnuplotFile)
-    elif analysis == "PI":
-        PI.core.pi_core(sequences, weight, graph, textBased)
-    elif analysis == "reverx":
+    if conf.analysis == "entropy":
+        entropy.entropy.entropy_core(sequences, conf.gnuplotFile)
+    elif conf.analysis == "PI":
+        PI.core.pi_core(sequences, conf.weight, conf.graph, textBased)
+    elif conf.analysis == "reverx":
         pass
     else:
         print "FATAL: Unknown analysis module %s configured" % (analysis)
         sys.exit(-1)
 
 def usage():
-    print "usage: %s  -c <config> <sequence file>" % \
+    print "usage: %s [ -c <config> ]" % \
         sys.argv[0]
-    print "       -c\tconfig file in yaml format"
+    print "       -c\tconfig file in yaml format (optional)"
     sys.exit(-1)
-
-def parseConfig(f):
-    try:
-        cf = file(f, 'r')
-        config = yaml.load(cf)
-        return config
-    except Exception as e:
-        print "Could not parse config file \"%s\": %s" % (f, e)
-        sys.exit(-1)
 
 def command_line_interface():
     print "Welcome to Protocol-Informatics. What do you want to do today?"
