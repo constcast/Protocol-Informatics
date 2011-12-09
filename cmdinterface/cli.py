@@ -8,6 +8,9 @@ class CommandLineInterface(cmd.Cmd):
         self.prompt = "inf> "
         sys.path.append("../")
 
+        import common
+        self.configuration = common.config.Configuration()
+
     def do_EOF(self, string):
         print string
         sys.exit(0)
@@ -40,6 +43,29 @@ class CommandLineInterface(cmd.Cmd):
         args = sys.argv[:]
         args.insert(0, sys.executable)
         os.execvp(executable, args)
+
+    def do_configuration(self, string):
+        import common
+
+        try:
+            newConfig = common.config.Configuration(string)
+        except Exception as inst:
+            print "Error: Could not read configuration file \"%s\": %s" % (string, inst)
+            print "Using old config ..."
+            return
+        self.configuration = newConfig
+
+
+        
+    def help_configuration(self):
+        print "Command syntax: configuration <file>"
+        print ""
+        print "Reads a configuration from <file>. Configuration format"
+        print "is yaml. It needs to be in the same format as the configuration"
+        print "files presented to the command line switch -c"
+
+        
+        
 
     def do_read(self, string):
         import common

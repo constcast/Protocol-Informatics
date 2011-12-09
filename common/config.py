@@ -2,7 +2,7 @@ import yaml, sys
 
 
 class Configuration:
-    def __init__(self, filename):
+    def __init__(self, filename = None):
         # Defaults
         self.format = "pcap"
         self.weight = 1.0
@@ -18,6 +18,12 @@ class Configuration:
         self.interactive = True
         self.inputFile = None
 
+        if filename != None:
+            self.configFile = filename
+            self.importConfig(filename)
+
+
+    def importConfig(self, filename):
         cf = file(filename, 'r')
         self.config = yaml.load(cf)
         self.checkConfig()
