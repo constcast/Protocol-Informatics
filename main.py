@@ -87,7 +87,7 @@ def usage():
 def command_line_interface(config):
     print "Welcome to Protocol-Informatics. What do you want to do today?"
     import cmdinterface
-    cmdline = cmdinterface.cli.CommandLineInterface()
+    cmdline = cmdinterface.cli.CommandLineInterface(config)
     cmdline.cmdloop()
 
 if __name__ == "__main__":

@@ -7,14 +7,15 @@ class CommandLineInterface(cmd.Cmd):
         cmd.Cmd.__init__(self)
         self.prompt = "inf> "
         sys.path.append("../")
+        
+        self.env = dict()
 
         import common
         if config != None:
             self.config = config
+            self.applyConfig()
         else:
             self.config = common.config.Configuration()
-
-        self.env = dict()
 
     def cmdloop(self):
         try:
@@ -34,11 +35,11 @@ class CommandLineInterface(cmd.Cmd):
     def do_exit(self, string):
         sys.exit(0)
 
-    def do_help(self, string):
-        if string == "":
-            print "You can get a list of possible commands using the command \"list\". Good Luck!"
-        else:
-            cmd.Cmd.do_help(self, string)
+#     def do_help(self, string):
+#         if string == "":
+#             print "You can get a list of possible commands using the command \"list\". Good Luck!"
+#         else:
+#             cmd.Cmd.do_help(self, string)
 
     def do_list(self, string):
         print "read\t\t- Reads messages from a file"
@@ -52,7 +53,7 @@ class CommandLineInterface(cmd.Cmd):
         print "exit\t\t- quits the program"
 
     def do_restart(self, string):
-        print "Trying to restart"
+        print "Trying to restart Protocol Informatics..."
         executable = sys.executable
         args = sys.argv[:]
         args.insert(0, sys.executable)
@@ -86,7 +87,12 @@ class CommandLineInterface(cmd.Cmd):
         self.config = newConfig
         self.env['config'] = self.config
 
+    def applyConfig(self):
         print "Read configuration file. Trying to apply immediate changes"
+        if self.config.inputFile != None:
+            print "Found input file in configuration. Trying to read it ..."
+            readString = self.config.inputFile + " " + self.config.format
+            self.do_read(readString)
         
         
     def help_config(self):
@@ -115,6 +121,7 @@ class CommandLineInterface(cmd.Cmd):
             
         elif len(words) == 2:
             try:
+                print "Attempting to read file \"%s\" as \"%s\" file" % (words[0], words[1])
                 # we expect a file and a format string
                 if words[1] == "pcap":
                     sequences = common.input.Pcap(words[0], self.config.maxMessages, self.config.onlyUniq, self.config.messageDelimiter, self.config.fieldDelimiter)
