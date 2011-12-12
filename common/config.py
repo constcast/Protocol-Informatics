@@ -45,5 +45,7 @@ class Configuration:
         return True
 
     def print_config(self):
- 
-        pass
+        elems = vars(self)
+        for i in elems:
+             print i + ":\t\t" + str(getattr(self, i))
+

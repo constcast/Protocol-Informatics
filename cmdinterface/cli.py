@@ -156,7 +156,10 @@ class CommandLineInterface(cmd.Cmd):
             self.help_set()
 
         # try to set an object in the configuration object
-        # TODO: implement
+        try:
+            setattr(self.config, words[0], words[1])
+        except Exception as inst:
+            print "Error: Could not set \"%s\" to \"%s\": %s" % (words[0], words[1], inst)
 
     def help_set(self):
         print "Command synatx: set <variable> <value>"
