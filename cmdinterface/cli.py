@@ -10,9 +10,9 @@ class CommandLineInterface(cmd.Cmd):
 
         import common
         if config != None:
-            self.configuration = config
+            self.config = config
         else:
-            self.configuration = common.config.Configuration()
+            self.config = common.config.Configuration()
 
         self.env = dict()
 
@@ -72,7 +72,7 @@ class CommandLineInterface(cmd.Cmd):
     def do_config(self, string):
         if string == "":
             print "Current configuration: "
-            self.configuration.print_config()
+            self.config.print_config()
             return
 
         import common
@@ -83,10 +83,11 @@ class CommandLineInterface(cmd.Cmd):
             print "Error: Could not read configuration file \"%s\": %s" % (string, inst)
             print "Using old config ..."
             return
-        self.configuration = newConfig
-        self.env['config'] = self.configuration
+        self.config = newConfig
+        self.env['config'] = self.config
 
         print "Read configuration file. Trying to apply immediate changes"
+        
         
     def help_config(self):
         print "Command syntax: configuration <file>"
@@ -116,11 +117,11 @@ class CommandLineInterface(cmd.Cmd):
             try:
                 # we expect a file and a format string
                 if words[1] == "pcap":
-                    sequences = common.input.Pcap(words[0], self.configuration.maxMessages, self.configuration.onlyUniq, self.configuration.messageDelimiter, self.configuration.fieldDelimiter)
+                    sequences = common.input.Pcap(words[0], self.config.maxMessages, self.config.onlyUniq, self.config.messageDelimiter, self.config.fieldDelimiter)
                 elif words[1] == "bro":
-                    sequences = common.input.Bro(words[0], self.configuration.maxMessages, self.configuration.onlyUniq, self.configuration.messageDelimiter, self.configuration.fieldDelimiter)
+                    sequences = common.input.Bro(words[0], self.config.maxMessages, self.config.onlyUniq, self.config.messageDelimiter, self.config.fieldDelimiter)
                 elif words[2] == "ascii":
-                    sequences = common.input.ASCII(words[0], self.configuration.maxMessages, self.configuration.onlyUniq, self.configuration.messageDelimiter, self.configuration.fieldDelimiter)
+                    sequences = common.input.ASCII(words[0], self.config.maxMessages, self.config.onlyUniq, self.config.messageDelimiter, self.config.fieldDelimiter)
                 else:
                     print "Error: Format \"" + words[1] + "\" unknown to reader"
             except Exception as inst:
@@ -165,6 +166,6 @@ class CommandLineInterface(cmd.Cmd):
             help_saveconfig()
             return
         try:
-            self.configuration.saveConfig()
+            self.config.saveConfig()
         except Exception as inst:
             print "Error: Could not save config file: %s" % (inst)
