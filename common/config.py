@@ -28,6 +28,20 @@ class Configuration:
         self.config = yaml.load(cf)
         self.checkConfig()
 
+    def saveConfig(self, filename):
+        cf = file(filename, 'w')
+        self.storeToDict()
+        yaml.save(cf, self.config)
+        
+    def storeToDict(self):
+        # we access the variables using class variables.
+        # But we store the stuff as dict in a yaml file. 
+        # Before saving, we therefore have to update the
+        # dictionary since configuration paramters could
+        # be changed by the user while loading th config
+        # TODO: implement
+        pass
+
     def checkConfig(self):
         # extract necessary config parameters from config file
         if 'weight' in  self.config:

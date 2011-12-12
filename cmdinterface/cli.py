@@ -85,6 +85,8 @@ class CommandLineInterface(cmd.Cmd):
             return
         self.configuration = newConfig
         self.env['config'] = self.configuration
+
+        print "Read configuration file. Trying to apply immediate changes"
         
     def help_config(self):
         print "Command syntax: configuration <file>"
@@ -157,3 +159,12 @@ class CommandLineInterface(cmd.Cmd):
         print "Sets the configuration variable <variable> to value"
         print "<vlaue>. This change is temporary and will be erased"
         print "on the next restart of Protocol Informatics. Use"
+
+    def do_saveconfig(self, string):
+        if string == "":
+            help_saveconfig()
+            return
+        try:
+            self.configuration.saveConfig()
+        except Exception as inst:
+            print "Error: Could not save config file: %s" % (inst)
