@@ -58,7 +58,7 @@ class CommandLineInterface(cmd.Cmd):
             return
             
         import picli
-        inst = picli.PICommandLineInterface(self.env)
+        inst = picli.PICommandLineInterface(self.env, self.config)
         inst.prompt = self.prompt[:-1]+':PI> '
         inst.cmdloop()
 
@@ -195,3 +195,19 @@ class CommandLineInterface(cmd.Cmd):
         print "Command syntax: env"
         print ""
         print "Prints the current environment content."
+
+    def do_show(self, string):
+        if string == "":
+            self.do_env("")
+            return
+
+        if not string in self.env:
+            print "\"%s\" not in env!" % (string)
+            return
+        print self.env[string]
+
+    def help_show(self, string):
+        print "Command syntax: show <variable>"
+        print ""
+        print "Show the contents of the environment variable"
+        print "<variable>."
