@@ -35,7 +35,8 @@ class Distance:
         for i in flowBasedSequences:
             flowInfo = flowBasedSequences[i]
             for seq in flowInfo.sequences:
-                sequences.append((i, seq.sequence))
+                sequences.append((counter, seq.sequence))
+                counter += 1
             
         self.sequences = sequences
         self.N = len(sequences)

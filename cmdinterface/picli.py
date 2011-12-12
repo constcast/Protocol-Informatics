@@ -79,7 +79,7 @@ class PICommandLineInterface(cli.CommandLineInterface):
         i = 1
         for seqs in self.env['alist']:
             print "Output of cluster %d" % i
-            if self.config.textBased:
+            if self.config.textBased == True:
                 PI.output.TextBased(seqs)
             else:
                 PI.output.Ansi(seqs)
