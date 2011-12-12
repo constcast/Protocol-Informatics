@@ -150,6 +150,11 @@ class CommandLineInterface(cmd.Cmd):
             self.help_set()
             return
 
+        words = string.split(' ')
+        if len(words) != 2:
+            print "Invalid command syntax"
+            self.help_set()
+
         # try to set an object in the configuration object
         # TODO: implement
 
@@ -162,9 +167,17 @@ class CommandLineInterface(cmd.Cmd):
 
     def do_saveconfig(self, string):
         if string == "":
-            help_saveconfig()
+            print "Invalid command syntax."
+            self.help_saveconfig()
             return
         try:
-            self.config.saveConfig()
+            self.config.saveConfig(string)
         except Exception as inst:
             print "Error: Could not save config file: %s" % (inst)
+
+    def help_saveconfig(self):
+        print "Command syntax: saveconfig <filename>"
+        print ""
+        print "Save a yml configuration file to <filename>, which"
+        print "can be used as a command line argument or as input"
+        print "for config <filename>"
