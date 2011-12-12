@@ -39,7 +39,7 @@ def main():
         # interactive mode ...
         command_line_interface(None)
 
-    conf = common.config.Configuration(configFile)
+    conf = common.config.loadConfig(configFile)
 
     if conf.interactive:
         command_line_interface(conf)

@@ -71,7 +71,7 @@ class CommandLineInterface(cmd.Cmd):
         import common
 
         try:
-            newConfig = common.config.Configuration(string)
+            newConfig = common.config.loadConfig(string)
         except Exception as inst:
             print "Error: Could not read configuration file \"%s\": %s" % (string, inst)
             print "Using old config ..."
@@ -171,7 +171,8 @@ class CommandLineInterface(cmd.Cmd):
             self.help_saveconfig()
             return
         try:
-            self.config.saveConfig(string)
+            import common
+            common.config.saveConfig(self.config, string)
         except Exception as inst:
             print "Error: Could not save config file: %s" % (inst)
 

@@ -1,8 +1,19 @@
 import yaml, sys
 
+def loadConfig(filename):
+    cf = file(filename, 'r')
+    config = yaml.load(cf)
+    return Configuration(config)
+
+def loadConfigFromDict(d):
+    return Configuration(config)
+
+def saveConfig(configuration, filename):
+    cf = file(filename, 'w')
+    yaml.dump(vars(configuration), cf)
 
 class Configuration:
-    def __init__(self, filename = None):
+    def __init__(self, d = None):
         # Defaults
         self.format = "pcap"
         self.weight = 1.0
@@ -18,61 +29,21 @@ class Configuration:
         self.interactive = True
         self.inputFile = None
 
-        if filename != None:
-            self.configFile = filename
-            self.importConfig(filename)
+        # update from the config dictionary if available
+        if d != None:
+            self.__dict__.update(d)
+            if not self.checkConfig():
+                print "FATAL: Could not initialize from configuration."
+                sys.exit(-1)
 
-
-    def importConfig(self, filename):
-        cf = file(filename, 'r')
-        self.config = yaml.load(cf)
-        self.checkConfig()
-
-    def saveConfig(self, filename):
-        cf = file(filename, 'w')
-        yaml.dump( vars(self), cf)
 
     def checkConfig(self):
-        # extract necessary config parameters from config file
-        if 'weight' in  self.config:
-            self.weight = self.config['weight']
-
-        if 'onlyUniqMessages' in self.config:
-            self.onlyUniq = self.config['onlyUniqMessages']
-
-        if 'format' in  self.config:
-            self.format = self.config['format']
-        
-        if 'maxMessages' in self.config:
-            maxMessages = int(self.config['maxMessages'])
-
-        if 'analysis' in self.config:
-            self.analysis = self.config['analysis']
-
-        if 'graph' in self.config:
-            self.graph = self.config['graph']
-
-        if 'textBased' in self.config:
-            self.textBased = self.config['textBased']
-
-        if 'messageDelimiter' in self.config:
-            self.messageDelimiter = self.config['messageDelimiter']
-
-        if 'fieldDelimiter' in self.config:
-            self.fieldDelimiter = self.config['fieldDelimiter']
-
-        if 'entropyGnuplotFile' in self.config:
-            self.gnuplotFile = self.config['entropyGnuplotFile']
-
-        if 'interactive' in self.config:
-            self.interactive = self.config['interactive']
-            
-        if 'inputFile' in self.config:
-            self.inputFile = self.config['inputFile']
-
+        # do sanity checks
         if self.weight < 0.0 or self.weight > 1.0:
             print "FATAL: Weight must be between 0 and 1"
-            sys.exit(-1)
+            return False
+        return True
 
     def print_config(self):
+ 
         pass
