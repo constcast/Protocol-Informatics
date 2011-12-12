@@ -116,11 +116,11 @@ class CommandLineInterface(cmd.Cmd):
                 print "Attempting to read file \"%s\" as \"%s\" file" % (words[0], words[1])
                 # we expect a file and a format string
                 if words[1] == "pcap":
-                    sequences = common.input.Pcap(words[0], self.config.maxMessages, self.config.onlyUniq, self.config.messageDelimiter, self.config.fieldDelimiter)
+                    sequences = common.input.Pcap(words[0], self.config.maxMessages, self.config.onlyUniq, self.config.messageDelimiter, self.config.fieldDelimiter).getConnections()
                 elif words[1] == "bro":
-                    sequences = common.input.Bro(words[0], self.config.maxMessages, self.config.onlyUniq, self.config.messageDelimiter, self.config.fieldDelimiter)
+                    sequences = common.input.Bro(words[0], self.config.maxMessages, self.config.onlyUniq, self.config.messageDelimiter, self.config.fieldDelimiter).getConnections()
                 elif words[2] == "ascii":
-                    sequences = common.input.ASCII(words[0], self.config.maxMessages, self.config.onlyUniq, self.config.messageDelimiter, self.config.fieldDelimiter)
+                    sequences = common.input.ASCII(words[0], self.config.maxMessages, self.config.onlyUniq, self.config.messageDelimiter, self.config.fieldDelimiter).getConnections()
                 else:
                     print "Error: Format \"" + words[1] + "\" unknown to reader"
             except Exception as inst:
