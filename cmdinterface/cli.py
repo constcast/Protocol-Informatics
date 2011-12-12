@@ -189,7 +189,7 @@ class CommandLineInterface(cmd.Cmd):
     def do_env(self, string):
         print "Currently contained in env:"
         for i in self.env:
-            print i + ":\t\t" + env[i]
+            print i + ":\t\t" + str(self.env[i])
             
     def help_env(self):
         print "Command syntax: env"
