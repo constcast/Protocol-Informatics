@@ -88,6 +88,7 @@ class Tree:
         #    raise "UnknownFormat"
 
     def _traverse(self, root):
+        import pydot
 
         if root.getParent():
 

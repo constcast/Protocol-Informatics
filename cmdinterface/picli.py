@@ -33,8 +33,67 @@ class PICommandLineInterface(cli.CommandLineInterface):
             print "Error: No distance matrix created. Do this first ..."
             return
         
-        phylo =  PI.phylogeny.UPGMA(self.env['sequences'], self.env['dmx'], self.configuration.weight)
+        phylo =  PI.phylogeny.UPGMA(self.env['sequences'], self.env['dmx'], self.config.weight)
         self.env['phylo'] = phylo
-    
+        print "\nDiscovered %d clusters using a weight of %.02f" % (len(phylo), self.config.weight)
 
+    def do_graph(self, string):
+        if not 'phylo' in self.env:
+            print "Error: No phylogentic tree to graph."
+            return
+        #
+        # Output some pretty graphs of each cluster
+        #
+        cnum = 1
+        for cluster in self.env['phylo']:
+            out = "graph-%d" % cnum
+            print "Creating %s .." % out,
+            cluster.graph(out)
+            print "complete"
+            cnum += 1
 
+    def do_align(self, string):
+        if not 'phylo' in self.env:
+            print "Error:No phylogentic tree. Please create one first!"
+            return
+
+        i = 1
+        alist = []
+        for cluster in self.env['phylo']:
+            print "Performing multiple alignment on cluster %d .." % i,
+            aligned = PI.multialign.NeedlemanWunsch(cluster)
+            print "complete"
+            alist.append(aligned)
+            i += 1
+        print ""
+        self.env['alist'] = alist
+        
+
+    def do_output(self, string):
+        if not 'alist' in self.env:
+            print "Error: No list of aligned sequences. Please create one first"
+            return
+        #
+        # Display each cluster of aligned sequences
+        #
+        i = 1
+        for seqs in self.env['alist']:
+            print "Output of cluster %d" % i
+            if self.config.textBased:
+                PI.output.TextBased(seqs)
+            else:
+                PI.output.Ansi(seqs)
+            i += 1
+            print ""
+
+    def do_go(self, string):
+        print "Creating distance matrix ..."
+        self.do_distance("")
+        print "Creating phylogenetic tree ..."
+        self.do_phylogeny("")
+        print "Creating graphs ..."
+        self.do_graph("")
+        print "Perfroming multiple sequence aligning ..."
+        self.do_align("")
+        print "Preparing output!"
+        self.do_output("")

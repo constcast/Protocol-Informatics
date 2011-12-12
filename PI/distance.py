@@ -25,7 +25,18 @@ class Distance:
 
     """Implementation of classify base class"""
 
-    def __init__(self, sequences):
+    def __init__(self, flowBasedSequences):
+        # Note: messages may now be grouped by flow/connection identifiers
+        # Since we neither have any notion to distinguish different flow
+        # directions nor distingush between different connections, we 
+        # now need to merge this into a single sequences field
+        counter = 0
+        sequences = []
+        for i in flowBasedSequences:
+            flowInfo = flowBasedSequences[i]
+            for seq in flowInfo.sequences:
+                sequences.append((i, seq.sequence))
+            
         self.sequences = sequences
         self.N = len(sequences)
 
@@ -211,6 +222,7 @@ class LocalAlignment(Distance):
 
                 similar[i][j] = similar[j][i] = score
 
+        util.progress(100,100)
         #
         # Compute distance matrix of SW scores
         #

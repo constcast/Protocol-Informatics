@@ -24,7 +24,18 @@ class Phylogeny:
 
     """Implementation of base phylogenetic class"""
 
-    def __init__(self, sequences, dmx, minval=1.0):
+    def __init__(self, flowBasedSequences, dmx, minval=1.0):
+        # Note: messages may now be grouped by flow/connection identifiers
+        # Since we neither have any notion to distinguish different flow
+        # directions nor distingush between different connections, we 
+        # now need to merge this into a single sequences field
+        counter = 0
+        sequences = []
+        for i in flowBasedSequences:
+            flowInfo = flowBasedSequences[i]
+            for seq in flowInfo.sequences:
+                sequences.append((i, seq.sequence))
+
         self.dmx = dmx
         self.index = 0
         self.tree = None
