@@ -70,3 +70,5 @@ class Configuration:
             print "FATAL: Weight must be between 0 and 1"
             sys.exit(-1)
 
+    def print_config(self):
+        pass

@@ -69,9 +69,10 @@ class CommandLineInterface(cmd.Cmd):
         inst.prompt = self.prompt[:-1]+':PI> '
         inst.cmdloop()
 
-    def do_configuration(self, string):
+    def do_config(self, string):
         if string == "":
-            self.print_configuration()
+            print "Current configuration: "
+            self.configuration.print_config()
             return
 
         import common
@@ -85,7 +86,7 @@ class CommandLineInterface(cmd.Cmd):
         self.configuration = newConfig
         self.env['config'] = self.configuration
         
-    def help_configuration(self):
+    def help_config(self):
         print "Command syntax: configuration <file>"
         print ""
         print "Reads a configuration from <file>. Configuration format"
@@ -139,5 +140,20 @@ class CommandLineInterface(cmd.Cmd):
         print "format, of either bro, pcap, or ascii, the appropriate reader will be"
         print "called."
             
-        def emptyline(self):
-            pass
+    def emptyline(self):
+        pass
+
+    def do_set(self, string):
+        if string == "":
+            self.help_set()
+            return
+
+        # try to set an object in the configuration object
+        # TODO: implement
+
+    def help_set(self):
+        print "Command synatx: set <variable> <value>"
+        print ""
+        print "Sets the configuration variable <variable> to value"
+        print "<vlaue>. This change is temporary and will be erased"
+        print "on the next restart of Protocol Informatics. Use"
