@@ -47,6 +47,50 @@ class TextBased(Output):
                     sys.stdout.write(".")
             print ""
         
+        # Calculate consensus sequence
+        l = len(self.sequences[0][1])
+
+#real = []
+        for i in range(l):
+            histogram = {}
+            for id, seq in self.sequences:
+                if len(seq) == 0:
+                    continue
+
+                try:
+                    histogram[seq[i]] += 1
+                except:
+                    histogram[seq[i]] = 1
+
+            items = histogram.items()
+            items.sort()
+
+            m = 1
+            v = 257
+            for j in items:
+                if j[1] > m:
+                    m = j[1]
+                    v = j[0]
+
+            self.consensus.append(v)
+
+            real = []
+
+            for i in range(len(self.consensus)):
+                if self.consensus[i] == 256:
+                    continue
+                real.append(self.consensus[i])
+
+        print "\nUngapped Consensus:"
+        for byte in real:
+            if byte == 256:
+                sys.stdout.write("_")
+            elif isprint(byte):
+                sys.stdout.write(chr(byte))
+            else:
+                sys.stdout.write(".")
+        print ""
+        
 
 class Ansi(Output):
 
