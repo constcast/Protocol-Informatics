@@ -185,3 +185,13 @@ class CommandLineInterface(cmd.Cmd):
         print "Save a yml configuration file to <filename>, which"
         print "can be used as a command line argument or as input"
         print "for config <filename>"
+
+    def do_env(self, string):
+        print "Currently contained in env:"
+        for i in self.env:
+            print i + ":\t\t" + env[i]
+            
+    def help_env(self):
+        print "Command syntax: env"
+        print ""
+        print "Prints the current environment content."
