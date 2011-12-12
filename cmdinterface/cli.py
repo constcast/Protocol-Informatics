@@ -35,22 +35,6 @@ class CommandLineInterface(cmd.Cmd):
     def do_exit(self, string):
         sys.exit(0)
 
-#     def do_help(self, string):
-#         if string == "":
-#             print "You can get a list of possible commands using the command \"list\". Good Luck!"
-#         else:
-#             cmd.Cmd.do_help(self, string)
-
-    def do_list(self, string):
-        print "read\t\t- Reads messages from a file"
-        print "configuration\t\t- enters the configuration module"
-        print "PI\t\t - Enters the Protocol Informatics analysis module"
-        print ""
-        print ""
-        print "restart\t\t- restarts the program"
-        print "^D\t\t- quits the program"
-        print "quit\t\t- quits the program"
-        print "exit\t\t- quits the program"
 
     def do_restart(self, string):
         print "Trying to restart Protocol Informatics..."
