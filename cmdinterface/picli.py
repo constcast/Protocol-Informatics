@@ -93,7 +93,7 @@ class PICommandLineInterface(cli.CommandLineInterface):
         self.do_phylogeny("")
         print "Creating graphs ..."
         self.do_graph("")
-        print "Perfroming multiple sequence aligning ..."
+        print "Performing multiple sequence aligning ..."
         self.do_align("")
         print "Preparing output!"
         self.do_output("")

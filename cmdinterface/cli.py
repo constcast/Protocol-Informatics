@@ -77,7 +77,8 @@ class CommandLineInterface(cmd.Cmd):
             print "Using old config ..."
             return
         self.config = newConfig
-        self.env['config'] = self.config
+        self.applyConfig()
+   
 
     def applyConfig(self):
         print "Read configuration file. Trying to apply immediate changes"
