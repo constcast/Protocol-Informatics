@@ -55,7 +55,7 @@ class Configuration:
             self.messageDelimiter = self.config['messageDelimiter']
 
         if 'fieldDelimiter' in self.config:
-            self.fieldDelimiter = config.config['fieldDelimiter']
+            self.fieldDelimiter = self.config['fieldDelimiter']
 
         if 'entropyGnuplotFile' in self.config:
             self.gnuplotFile = self.config['entropyGnuplotFile']

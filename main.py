@@ -37,12 +37,12 @@ def main():
     if not configFile:
         # if we are started without a config file, we just drop into 
         # interactive mode ...
-        command_line_interface()
+        command_line_interface(None)
 
     conf = common.config.Configuration(configFile)
 
     if conf.interactive:
-        command_line_interface()
+        command_line_interface(conf)
 
     
     if conf.inputFile != None:
@@ -84,7 +84,7 @@ def usage():
     print "       -c\tconfig file in yaml format (optional)"
     sys.exit(-1)
 
-def command_line_interface():
+def command_line_interface(config):
     print "Welcome to Protocol-Informatics. What do you want to do today?"
     import cmdinterface
     cmdline = cmdinterface.cli.CommandLineInterface()

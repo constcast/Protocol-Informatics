@@ -3,13 +3,16 @@
 import cmd, sys, os
 
 class CommandLineInterface(cmd.Cmd):
-    def __init__(self):
+    def __init__(self, config = None):
         cmd.Cmd.__init__(self)
         self.prompt = "inf> "
         sys.path.append("../")
 
         import common
-        self.configuration = common.config.Configuration()
+        if config != None:
+            self.configuration = config
+        else:
+            self.configuration = common.config.Configuration()
 
         self.env = dict()
 
@@ -67,6 +70,10 @@ class CommandLineInterface(cmd.Cmd):
         inst.cmdloop()
 
     def do_configuration(self, string):
+        if string == "":
+            self.print_configuration()
+            return
+
         import common
 
         try:
