@@ -35,6 +35,14 @@ class CommandLineInterface(cmd.Cmd):
     def do_exit(self, string):
         sys.exit(0)
 
+    def help_quit(self):
+        print "Quit the program."
+    
+    def help_EOF(self):
+        self.help_quit()
+
+    def help_exit(self):
+        self.help_quit()
 
     def do_restart(self, string):
         print "Trying to restart Protocol Informatics..."
