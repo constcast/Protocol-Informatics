@@ -158,7 +158,18 @@ class CommandLineInterface(cmd.Cmd):
 
         # try to set an object in the configuration object
         try:
-            setattr(self.config, words[0], words[1])
+            targetClassType = type(getattr(self.config, words[0]))
+            import types
+            if targetClassType == types.NoneType:
+                newVal = words[1]
+            elif targetClassType == types.BooleanType:
+                if words[1] == "True":
+                    newVal = True
+                elif words[1] == "False":
+                    newVal = False
+            else:
+                newVal = targetClassType(words[1])
+            setattr(self.config, words[0], newVal)
         except Exception as inst:
             print "Error: Could not set \"%s\" to \"%s\": %s" % (words[0], words[1], inst)
 
