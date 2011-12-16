@@ -37,7 +37,7 @@ class Pcap(Input):
 
     """Handle the pcap file format"""
 
-    def __init__(self, filename, maxMessages, onlyUniq, offset=14):
+    def __init__(self, filename, maxMessages, onlyUniq, messageDelimiter = None, fieldDelimiter = None, offset=14):
         Input.__init__(self, filename, maxMessages, onlyUniq)
         self.pktNumber = 0
         self.offset = offset
@@ -65,7 +65,8 @@ class Pcap(Input):
         # we only consider UNIQ payloads as messages. we therefore
         # need to count 50 messages in this handler
         if self.maxMessages != 0 and self.readMessages >= self.maxMessages:
-            raise Exception("Extracted %d messages from PCAP file. Stopped reading file as configured" % (self.maxMessages))
+#            raise Exception("Extracted %d messages from PCAP file. Stopped reading file as configured" % (self.maxMessages))
+            return 
 
         # Increment packet counter
         self.pktNumber += 1
@@ -114,10 +115,13 @@ class Pcap(Input):
 
         self.readMessages += 1
 
-        self.connection.addSequence(sequences.Sequence(seq), self.readMessages)
+
+        self.connection.addSequence(sequences.Sequence(seq, self.readMessages))
 
     def getConnections(self):
-        return [ self.connection ]
+        ret = dict()
+        ret["connection"] = self.connection
+        return ret
 
 class ASCII(Input):
 

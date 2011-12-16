@@ -77,14 +77,20 @@ class PICommandLineInterface(cli.CommandLineInterface):
         # Display each cluster of aligned sequences
         #
         i = 1
+        all_cons = []
         for seqs in self.env['alist']:
             print "Output of cluster %d" % i
             if self.config.textBased == True:
-                PI.output.TextBased(seqs)
+                out = PI.output.TextBased(seqs)
+                all_cons.append(out.cons)
             else:
                 PI.output.Ansi(seqs)
             i += 1
             print ""
+        
+        print "Summarizing the consenus: "
+        for cons in all_cons:
+            print cons
 
     def do_go(self, string):
         print "Creating distance matrix ..."

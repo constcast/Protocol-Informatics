@@ -37,6 +37,7 @@ class TextBased(Output):
         Output.__init__(self, sequences)
 
     def _go(self):
+        all_cons = []
         for id, seq in self.sequences:
             for byte in seq:
                 if byte == 256:
@@ -50,7 +51,6 @@ class TextBased(Output):
         # Calculate consensus sequence
         l = len(self.sequences[0][1])
 
-#real = []
         for i in range(l):
             histogram = {}
             for id, seq in self.sequences:
@@ -82,15 +82,19 @@ class TextBased(Output):
                 real.append(self.consensus[i])
 
         print "\nUngapped Consensus:"
+        self.cons = ""
         for byte in real:
             if byte == 256:
                 sys.stdout.write("_")
+                self.cons += "_"
             elif isprint(byte):
                 sys.stdout.write(chr(byte))
+                self.cons += chr(byte)
             else:
                 sys.stdout.write(".")
+                self.cons += "."
         print ""
-        
+                
 
 class Ansi(Output):
 
