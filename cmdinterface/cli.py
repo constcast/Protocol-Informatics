@@ -1,9 +1,20 @@
 # vim: set sts=4 sw=4 cindent nowrap expandtab:
 
-import cmd, sys, os, signal
+import cmd, sys, os, signal, time
+
+lastEOF = 0
 
 def sig_int_handler(signum, frame):
-    print "Received Sigint. Please use quit, EOF or exit to exit the program..."
+    global lastEOF
+    if lastEOF == 0 or lastEOF < int(time.time()):
+        print "Received Sigint. Please use quit, EOF or exit to exit the program. Or quickly tap a second time ..."
+        lastEOF = int(time.time())
+        return
+    print "Hard shutdown ..."
+    sys.exit(0)
+    
+
+    
 
 class CommandLineInterface(cmd.Cmd):
     def __init__(self, config = None):
