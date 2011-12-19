@@ -68,93 +68,17 @@ class CommandLineInterface(cmd.Cmd):
             self.config.print_config()
             return
 
-        import common
-
-        try:
-            newConfig = common.config.loadConfig(string)
-        except Exception as inst:
-            print "Error: Could not read configuration file \"%s\": %s" % (string, inst)
-            print "Using old config ..."
-            return
-        self.config = newConfig
-        self.applyConfig()
-   
-
-    def applyConfig(self):
-        print "Read configuration file. Trying to apply immediate changes"
-        if self.config.inputFile != None:
-            print "Found input file in configuration. Trying to read it ..."
-            readString = self.config.inputFile + " " + self.config.format
-            self.do_read(readString)
-        
-        
-    def help_config(self):
-        print "Command syntax: configuration <file>"
-        print ""
-        print "Reads a configuration from <file>. Configuration format"
-        print "is yaml. It needs to be in the same format as the configuration"
-        print "files presented to the command line switch -c"
-
-        
-    def do_read(self, string):
-        import common
+        # try to find a command like "config <variable> <value>
         words = string.split()
-        if len(words) == 1:
-            # we only received an input file. try to guess the format
-            print "ERROR: Format guessing not yet implemented ... Please specify format. "
-            self.help_read()
-            return
-            print "Trying to read file \"" + words[0] + "\"..."
-            print "No format specified. Trying to guess format. Please specify format"
-            return 
-
-            sequences = None
-            for reader in common.input.__all__[1:-1]:
-                print "Trying reader " + reader + "..."
-            
-        elif len(words) == 2:
-            try:
-                print "Attempting to read file \"%s\" as \"%s\" file" % (words[0], words[1])
-                # we expect a file and a format string
-                if words[1] == "pcap":
-                    sequences = common.input.Pcap(words[0], self.config.maxMessages, self.config.onlyUniq, self.config.messageDelimiter, self.config.fieldDelimiter).getConnections()
-                elif words[1] == "bro":
-                    sequences = common.input.Bro(words[0], self.config.maxMessages, self.config.onlyUniq, self.config.messageDelimiter, self.config.fieldDelimiter).getConnections()
-                elif words[2] == "ascii":
-                    sequences = common.input.ASCII(words[0], self.config.maxMessages, self.config.onlyUniq, self.config.messageDelimiter, self.config.fieldDelimiter).getConnections()
-                else:
-                    print "Error: Format \"" + words[1] + "\" unknown to reader"
-            except Exception as inst:
-                print ("FATAL: Error reading input file '%s':\n %s" % (file, inst))
-                return
-            self.env['sequences'] = sequences
-        else:
-            # unknown command format
-            print "Error in read syntax."
-            self.help_read()
-            return
-        print "Successfully read input file ..."
-
-    def help_read(self):
-        print "Command syntax: read <file> [<bro|pcap|ascii>]"
-        print ""
-        print "Tries to read messages from a file. You need to specify the filename."
-        print "The input module will try to guess the input format. If you specify a"
-        print "format, of either bro, pcap, or ascii, the appropriate reader will be"
-        print "called."
-            
-    def emptyline(self):
-        pass
-
-    def do_set(self, string):
-        if string == "":
-            self.help_set()
-            return
-
-        words = string.split(' ')
         if len(words) != 2:
-            print "Invalid command syntax"
-            self.help_set()
+            # ok, we didn't find it yet. lets trye for format 
+            # "config <variable>=<value>
+            words = string.split('=')
+            if len(words) != 2:
+                # ok, we have no idea what this should be ..."
+                print "Invalid command syntax"
+                self.help_config()
+                return
 
         # try to set an object in the configuration object
         try:
@@ -173,12 +97,77 @@ class CommandLineInterface(cmd.Cmd):
         except Exception as inst:
             print "Error: Could not set \"%s\" to \"%s\": %s" % (words[0], words[1], inst)
 
-    def help_set(self):
-        print "Command synatx: set <variable> <value>"
+
+    def applyConfig(self):
+        print "Read configuration file. Trying to apply immediate changes"
+        if self.config.inputFile != None:
+            print "Found input file in configuration. Trying to read it ..."
+            readString = self.config.inputFile + " " + self.config.format
+            self.do_read(readString)
+        
+        
+    def help_config(self):
+        print "Command synatx: config [<variable> <value>|<variable>=<value]"
         print ""
-        print "Sets the configuration variable <variable> to value"
-        print "<vlaue>. This change is temporary and will be erased"
+        print "If no argument is given to the config command, the current "
+        print "configuration set is printed."
+        print "Otherwise, this command Sets the configuration variable <variable>"
+        print "to value <vlaue>. This change is temporary and will be erased"
         print "on the next restart of Protocol Informatics. Use"
+
+
+        
+    def do_read(self, string):
+        import common
+        words = string.split()
+        if len(words) != 2:
+            self.help_read()
+            return
+
+        formatType = words[0]
+        filename = words[1]
+
+        sequences = None
+        try:
+            print "Attempting to read file \"%s\" as \"%s\" file" % (filename, formatType)
+            # we expect a file and a format string
+            if formatType == "pcap":
+                sequences = common.input.Pcap(filename, self.config.maxMessages, self.config.onlyUniq, self.config.messageDelimiter, self.config.fieldDelimiter).getConnections()
+            elif formatType == "bro":
+                sequences = common.input.Bro(filename, self.config.maxMessages, self.config.onlyUniq, self.config.messageDelimiter, self.config.fieldDelimiter).getConnections()
+            elif formatType == "ascii":
+                sequences = common.input.ASCII(filename, self.config.maxMessages, self.config.onlyUniq, self.config.messageDelimiter, self.config.fieldDelimiter).getConnections()
+            elif formatType == "config":
+                try:
+                    newConfig = common.config.loadConfig(filename)
+                except Exception as inst:
+                    print "Error: Could not read configuration file \"%s\": %s" % (filename, inst)
+                    print "Using old config ..."
+                    return
+                self.config = newConfig
+                self.applyConfig()
+            else:
+                print "Error: Format \"" + format + "\" unknown to reader"
+                return
+        except Exception as inst:
+            print ("FATAL: Error reading input file '%s':\n %s" % (filename, inst))
+            return
+
+        if sequences != None:
+            self.env['sequences'] = sequences
+
+        print "Successfully read input file ..."
+
+    def help_read(self):
+        print "Command syntax: read [<bro|pcap|ascii|config>] <file>"
+        print ""
+        print "Tries to read file <file> in the specified format. If format"
+        print "equals \"config\", a new configuration file is read from <file>."
+        print "In all other cases, input data for the protocol inferences are "
+        print "read in the specified format (bro, pcap, ascii)"
+            
+    def emptyline(self):
+        pass
 
     def do_saveconfig(self, string):
         import common
