@@ -1,9 +1,14 @@
 # vim: set sts=4 sw=4 cindent nowrap expandtab:
 
-import cmd, sys, os
+import cmd, sys, os, signal
+
+def sig_int_handler(signum, frame):
+    print "Received Sigint. Please use quit, EOF or exit to exit the program..."
 
 class CommandLineInterface(cmd.Cmd):
     def __init__(self, config = None):
+        signal.signal(signal.SIGINT, sig_int_handler)
+
         cmd.Cmd.__init__(self)
         self.prompt = "inf> "
         sys.path.append("../")
@@ -102,7 +107,8 @@ class CommandLineInterface(cmd.Cmd):
         print "Read configuration file. Trying to apply immediate changes"
         if self.config.inputFile != None:
             print "Found input file in configuration. Trying to read it ..."
-            readString = self.config.inputFile + " " + self.config.format
+            if self.config.format != None and self.config.inputFile != None and self.config.inputFile != "":
+                readString = self.config.format+ " " + self.config.inputFile
             self.do_read(readString)
         
         
@@ -116,7 +122,6 @@ class CommandLineInterface(cmd.Cmd):
         print "on the next restart of Protocol Informatics. Use"
 
 
-        
     def do_read(self, string):
         import common
         words = string.split()
