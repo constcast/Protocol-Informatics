@@ -181,13 +181,16 @@ class CommandLineInterface(cmd.Cmd):
         print "on the next restart of Protocol Informatics. Use"
 
     def do_saveconfig(self, string):
+        import common
         if string == "":
-            print "Invalid command syntax."
-            self.help_saveconfig()
-            return
+            if self.config.configFile == None:
+                print "No filename associated with config file. Please specify a filename"
+                return
+        else:
+            self.config.configFile = string
+
         try:
-            import common
-            common.config.saveConfig(self.config, string)
+            common.config.saveConfig(self.config, self.config.configFile)
         except Exception as inst:
             print "Error: Could not save config file: %s" % (inst)
 

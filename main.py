@@ -15,7 +15,7 @@ import PI
 import entropy
 import common
 
-import sys, getopt, yaml
+import sys, getopt, yaml, os
 
 def main():
     configFile = None
@@ -35,14 +35,26 @@ def main():
             usage()
 
     if not configFile:
-        # if we are started without a config file, we just drop into 
-        # interactive mode ...
-        command_line_interface(None)
+        # if we are started without a config file, we check for an existing file
+        # named config.yml in the current directory and try load it if available
+        if os.access("config.yml", os.R_OK):
+            print "Found default configuration file \"config.yml\". Trying to load the file ..."
+            conf = common.config.loadConfig("config.yml")
+            command_line_interface(conf)
+        else:
+            # ok, we didn't find a default config. We are now trying to create one
+            # from the default configuration
+            print "No default configuration found. Createing a default config file \"config.yml\"."
+            command_line_interface(None, True)
+
+        # this function should never return, but we make sure by exiting here
+        return
 
     conf = common.config.loadConfig(configFile)
 
     if conf.interactive:
         command_line_interface(conf)
+        return
 
     
     if conf.inputFile != None:
@@ -81,13 +93,19 @@ def main():
 def usage():
     print "usage: %s [ -c <config> ]" % \
         sys.argv[0]
-    print "       -c\tconfig file in yaml format (optional)"
+    print "       -c\tconfig file in yaml format (optional)."
+    print ""
+    print "If no config file is specified, the default configuration is read from config.yml in the current directory."
+    print "If no config.yml is available in the current directory, a new config.yml with default values is created."
     sys.exit(-1)
 
-def command_line_interface(config):
+def command_line_interface(config, savedefault = False):
     print "Welcome to Protocol-Informatics. What do you want to do today?"
     import cmdinterface
     cmdline = cmdinterface.cli.CommandLineInterface(config)
+    if savedefault:
+        cmdline.config.configFile = "config.yml"
+        cmdline.do_saveconfig("")
     cmdline.cmdloop()
 
 if __name__ == "__main__":
