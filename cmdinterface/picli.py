@@ -33,6 +33,7 @@ class PICommandLineInterface(cli.CommandLineInterface):
             print "Error: No distance matrix created. Do this first ..."
             return
         
+        print "Performing phylogeny tree creation with weight: %d" % (self.config.weight)
         phylo =  PI.phylogeny.UPGMA(self.env['sequences'], self.env['dmx'], self.config.weight)
         self.env['phylo'] = phylo
         print "\nDiscovered %d clusters using a weight of %.02f" % (len(phylo), self.config.weight)

@@ -16,7 +16,7 @@ class Configuration:
     def __init__(self, d = None):
         # Defaults
         self.format = "pcap"
-        self.weight = 1.0
+        self.weight = float(1.0)
         self.graph = False
         self.maxMessages = 0
         self.messageDelimiter = None
@@ -46,6 +46,14 @@ class Configuration:
 
     def print_config(self):
         elems = vars(self)
+        maxLen = 20
         for i in elems:
-             print i + ":\t\t" + str(getattr(self, i))
+            value = getattr(self,i)
+            print i,
+            for j in range(maxLen - len(i)):
+                print "",
+            print str(value),
+            for j in range(maxLen - len(str(value))):
+                print "", 
+            print "\t\t" + str(type(value))
 

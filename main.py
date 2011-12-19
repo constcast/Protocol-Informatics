@@ -100,13 +100,16 @@ def usage():
     sys.exit(-1)
 
 def command_line_interface(config, savedefault = False):
-    print "Welcome to Protocol-Informatics. What do you want to do today?"
     import cmdinterface
     cmdline = cmdinterface.cli.CommandLineInterface(config)
     if savedefault:
         cmdline.config.configFile = "config.yml"
         cmdline.do_saveconfig("")
+    print ""
+    print "Welcome to Protocol-Informatics. What do you want to do today?"
+    print ""
     cmdline.cmdloop()
+
 
 if __name__ == "__main__":
     main()

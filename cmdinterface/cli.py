@@ -66,6 +66,8 @@ class CommandLineInterface(cmd.Cmd):
         inst = picli.PICommandLineInterface(self.env, self.config)
         inst.prompt = self.prompt[:-1]+':PI> '
         inst.cmdloop()
+        print "Finishing PI mode ..."
+        self.config = inst.config
 
     def do_config(self, string):
         if string == "":
@@ -109,8 +111,8 @@ class CommandLineInterface(cmd.Cmd):
             print "Found input file in configuration. Trying to read it ..."
             if self.config.format != None and self.config.inputFile != None and self.config.inputFile != "":
                 readString = self.config.format+ " " + self.config.inputFile
-            self.do_read(readString)
-        
+                self.do_read(readString)
+            
         
     def help_config(self):
         print "Command synatx: config [<variable> <value>|<variable>=<value]"
