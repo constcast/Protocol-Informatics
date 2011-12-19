@@ -18,7 +18,7 @@ class Configuration:
         self.format = "pcap"
         self.weight = float(1.0)
         self.graph = False
-        self.maxMessages = 0
+        self.maxMessages = 50
         self.messageDelimiter = None
         self.fieldDelimiter = None
         self.textBased = False
