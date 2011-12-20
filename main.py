@@ -56,6 +56,8 @@ def main():
         command_line_interface(conf)
         return
 
+    print "ERROR: The non-interactive mode is broken right now. Please use the command line interface ..."
+    sys.exit(-1)
     
     if conf.inputFile != None:
         file = conf.inputFile
