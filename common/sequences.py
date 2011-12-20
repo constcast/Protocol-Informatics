@@ -32,6 +32,13 @@ class FlowInfo:
 			self.sequences.append(Sequence(i, mCounter))
 			mCounter += 1
 
+	def splitSequences(self, delim):
+		"""
+		Splits all messages into submessages according to the delimiter
+		specified in delim
+		"""
+		print "class FlowInfo method splitSequeces: TODO: implement."
+
 	def __repr__(self):
 		ret = ""
 		for seq in self.sequences:
