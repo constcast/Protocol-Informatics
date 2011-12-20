@@ -98,8 +98,9 @@ class PICommandLineInterface(cli.CommandLineInterface):
         self.do_distance("")
         print "Creating phylogenetic tree ..."
         self.do_phylogeny("")
-        print "Creating graphs ..."
-        self.do_graph("")
+        if self.config.graph:
+            print "Creating graphs ..."
+            self.do_graph("")
         print "Performing multiple sequence aligning ..."
         self.do_align("")
         print "Preparing output!"

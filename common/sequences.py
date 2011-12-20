@@ -15,6 +15,12 @@ class FlowInfo:
 	def addSequence(self, sequence):
 		self.sequences.append(sequence)
 
+	def __repr__(self):
+		ret = ""
+		for seq in self.sequences:
+			ret += "\n\t\t" + seq.message
+		return ret
+
 class Sequence:
 	def __init__(self, string, mnumber):
 		self.message = string
