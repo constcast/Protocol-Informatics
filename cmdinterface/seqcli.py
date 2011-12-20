@@ -49,3 +49,35 @@ class SequencesCommandLineInterface(cli.CommandLineInterface):
             conns[i].uniqSequences()
 
             
+    def do_split(self, string):
+        if string == "":
+            splitseq = self.config.messageDelimiter
+        else:
+            splitseq = string
+            
+        print "Trying to split messages according to delimiter: \"%s\"" % (splitseq)
+
+    def do_save(self, string):
+        if string == "":
+            filename = "working.pickle"
+        else:
+            filename = string
+
+        print "Saving to file \"%s\" ..." % (filename)
+        import cPickle
+        fd = file(filename, 'w')
+        cPickle.dump(self.env['sequences'], fd)
+        print "Success!"
+
+    def do_load(self, string):
+        if string == "":
+            filename = "working.pickle"
+        else:
+            filename = string
+
+        import cPickle
+        print "Loading from file \"%s\" ..." % (filename)
+        fd = file(filename, 'r')
+        self.env['sequences'] = cPickle.load(fd)
+        print "Success!"
+        

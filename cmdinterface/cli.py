@@ -74,8 +74,8 @@ class CommandLineInterface(cmd.Cmd):
         self.env = inst.env
 
     def do_seqs(self, string):
-        import seqs
-        inst = seqs.SequencesCommandLineInterface(self.env, self.config)
+        import seqcli
+        inst = seqcli.SequencesCommandLineInterface(self.env, self.config)
         inst.prompt = self.prompt[:-1]+':Seqs> '
         inst.cmdloop()
         print "Finishing sequence modify mode ..."
