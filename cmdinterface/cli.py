@@ -13,9 +13,6 @@ def sig_int_handler(signum, frame):
     print "Hard shutdown ..."
     sys.exit(0)
     
-
-    
-
 class CommandLineInterface(cmd.Cmd):
     def __init__(self, config = None):
         signal.signal(signal.SIGINT, sig_int_handler)
@@ -211,7 +208,7 @@ class CommandLineInterface(cmd.Cmd):
     def do_env(self, string):
         print "Currently contained in env:"
         for i in self.env:
-            print i + ":\t\t" + str(self.env[i])
+            self.show_type(self.env[i], i)
             
     def help_env(self):
         print "Command syntax: env"
@@ -226,10 +223,19 @@ class CommandLineInterface(cmd.Cmd):
         if not string in self.env:
             print "\"%s\" not in env!" % (string)
             return
-        print self.env[string]
+
+        self.show_type(self.env[string], string)
 
     def help_show(self, string):
         print "Command syntax: show <variable>"
         print ""
         print "Show the contents of the environment variable"
         print "<variable>."
+
+    def show_type(self, obj, objIdentifier = ""):
+        if type(obj) == type(dict()):
+            print "Found dictionary \"%s\" with content:" % (objIdentifier)
+            for i in obj:
+                print i + "\t\t" + str(obj[i])
+        else:
+            print objIdentifier + ":\t\t" + str(obj)
