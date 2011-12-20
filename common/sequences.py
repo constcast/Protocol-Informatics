@@ -15,12 +15,30 @@ class FlowInfo:
 	def addSequence(self, sequence):
 		self.sequences.append(sequence)
 
+	def getSequences(self):
+		return self.sequences
+
+	def uniqSequences(self):
+		"""
+		Removes duplicate sequences from the stored sequences
+		"""
+		tmpSet = set()
+		for i in self.sequences:
+			tmpSet.add(i.message)
+		self.sequences = []
+
+		mCounter = 0
+		for i in tmpSet:
+			self.sequences.append(Sequence(i, mCounter))
+			mCounter += 1
+
 	def __repr__(self):
 		ret = ""
 		for seq in self.sequences:
 			ret += "\n\t\t" + seq.message
 		return ret
 
+	
 class Sequence:
 	def __init__(self, string, mnumber):
 		self.message = string
@@ -32,3 +50,11 @@ class Sequence:
 			self.sequence.append(ord(c))
 
 	
+	def getMessage(self):
+		return self.messag
+
+	def getSequence(self):
+		return self.sequence
+
+	def getNumber(self):
+		return self.number

@@ -64,18 +64,24 @@ class CommandLineInterface(cmd.Cmd):
         args.insert(0, sys.executable)
         os.execvp(executable, args)
 
-    def do_PI(self, string):
-        # only enter PI if we have alrady read some sequences ...
-        if not 'sequences' in self.env:
-            print "Cannot enter PI mode. Please read some sequences before you do this ..."
-            return
-            
+    def do_PI(self, string):            
         import picli
         inst = picli.PICommandLineInterface(self.env, self.config)
         inst.prompt = self.prompt[:-1]+':PI> '
         inst.cmdloop()
         print "Finishing PI mode ..."
         self.config = inst.config
+        self.env = inst.env
+
+    def do_seqs(self, string):
+        import seqs
+        inst = seqs.SequencesCommandLineInterface(self.env, self.config)
+        inst.prompt = self.prompt[:-1]+':Seqs> '
+        inst.cmdloop()
+        print "Finishing sequence modify mode ..."
+        self.config = inst.config
+        self.env = inst.env
+        
 
     def do_config(self, string):
         if string == "":
@@ -147,11 +153,11 @@ class CommandLineInterface(cmd.Cmd):
             print "Attempting to read file \"%s\" as \"%s\" file" % (filename, formatType)
             # we expect a file and a format string
             if formatType == "pcap":
-                sequences = common.input.Pcap(filename, self.config.maxMessages, self.config.onlyUniq, self.config.messageDelimiter, self.config.fieldDelimiter).getConnections()
+                sequences = common.input.Pcap(filename, self.config.maxMessages).getConnections()
             elif formatType == "bro":
-                sequences = common.input.Bro(filename, self.config.maxMessages, self.config.onlyUniq, self.config.messageDelimiter, self.config.fieldDelimiter).getConnections()
+                sequences = common.input.Bro(filename, self.config.maxMessages).getConnections()
             elif formatType == "ascii":
-                sequences = common.input.ASCII(filename, self.config.maxMessages, self.config.onlyUniq, self.config.messageDelimiter, self.config.fieldDelimiter).getConnections()
+                sequences = common.input.ASCII(filename, self.config.maxMessages).getConnections()
             elif formatType == "config":
                 try:
                     newConfig = common.config.loadConfig(filename)

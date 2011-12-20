@@ -21,14 +21,13 @@ class Input:
 
     """Implementation of base input class"""
 
-    def __init__(self, filename, maxMessages, onlyUniq):
+    def __init__(self, filename, maxMessages):
         """Import specified filename"""
 
         self.set = set()
         self.index = 0
         self.maxMessages = maxMessages
         self.readMessages = 0
-        self.onlyUniq = onlyUniq
 
     def getConnections(self):
         raise Exception("getConnections not implemented ...")
@@ -37,8 +36,8 @@ class Pcap(Input):
 
     """Handle the pcap file format"""
 
-    def __init__(self, filename, maxMessages, onlyUniq, messageDelimiter = None, fieldDelimiter = None, offset=14):
-        Input.__init__(self, filename, maxMessages, onlyUniq)
+    def __init__(self, filename, maxMessages, offset=14):
+        Input.__init__(self, filename, maxMessages)
         self.pktNumber = 0
         self.offset = offset
 
@@ -107,11 +106,11 @@ class Pcap(Input):
 
         seq = pkt[offset:]
 
-        l = len(self.set)
-        self.set.add(seq)
+#         l = len(self.set)
+#         self.set.add(seq)
 
-        if len(self.set) == l and self.onlyUniq:
-            return
+#         if len(self.set) == l and self.onlyUniq:
+#             return
 
         self.readMessages += 1
 
@@ -127,8 +126,8 @@ class ASCII(Input):
 
     """Handle newline delimited ASCII input files"""
 
-    def __init__(self, filename, maxMessages, onlyUniq):
-        Input.__init__(self, filename, maxMessages, onlyUniq)
+    def __init__(self, filename, maxMessages):
+        Input.__init__(self, filename, maxMessages)
 
         # we do not perform reassembling or connection tracking
         # therefore we store all messages in a single flow-instance
@@ -150,11 +149,11 @@ class ASCII(Input):
                 # we already have enough messages. stop reading
                 break
 
-            l = len(self.set)
-            self.set.add(line)
+#             l = len(self.set)
+#             self.set.add(line)
 
-            if len(self.set) == l and self.onlyUniq:
-                continue
+#             if len(self.set) == l and self.onlyUniq:
+#                 continue
             
             self.readMessages += 1
 
@@ -184,38 +183,38 @@ class Bro(Input):
         if len(data) != contentLength:
             raise Exception("Error while parsing input file. Message:\n\n%s\n\nReal length %d does not match ContentLength %s" % (data, len(data), contentLength))
 
-	# try to split the reassembled message into parts if a message delimiter is known
-	if self.messageDelimiter:
-		messageParts = data.split(self.messageDelimiter)
-	else:
-		messageParts = data
+# 	# try to split the reassembled message into parts if a message delimiter is known
+# 	if self.messageDelimiter:
+# 		messageParts = data.split(self.messageDelimiter)
+# 	else:
+# 		messageParts = data
 
-	for seq in messageParts:
-		if len(seq) == 0:
-			continue
+# 	for seq in messageParts:
+# 		if len(seq) == 0:
+# 			continue
 
-	        # only insert uniq messages into the list of seuqences. avoid duplicate
-	        l = len(self.set)
-	        self.set.add(seq)
-	        if len(self.set) == l and self.onlyUniq:
-       		     continue
+# 	        # only insert uniq messages into the list of seuqences. avoid duplicate
+# 	        l = len(self.set)
+# 	        self.set.add(seq)
+# 	        if len(self.set) == l and self.onlyUniq:
+#        		     continue
 
-                self.readMessages += 1
+        self.readMessages += 1
 
-                if not connectionID in self.connections:
-                    self.connections[connectionID] = sequences.FlowInfo(connectionID)
+        if not connectionID in self.connections:
+            self.connections[connectionID] = sequences.FlowInfo(connectionID)
                     
-                self.connections[connectionID].addSequence(sequences.Sequence(seq, messageNumber))
+        self.connections[connectionID].addSequence(sequences.Sequence(data, messageNumber))
 
     def getConnections(self):
         return self.connections
 
 
-    def __init__(self, filename, maxMessages, onlyUniq, messageDelimiter, fieldDelimiter):
-    	self.messageDelimiter = messageDelimiter
-	self.fieldDelimiter = fieldDelimiter
+    def __init__(self, filename, maxMessages):
+#     	self.messageDelimiter = messageDelimiter
+# 	self.fieldDelimiter = fieldDelimiter
         self.connections = dict()
-        Input.__init__(self, filename, maxMessages, onlyUniq)
+        Input.__init__(self, filename, maxMessages)
 
         self.blockseparator = "******************************************"
 
