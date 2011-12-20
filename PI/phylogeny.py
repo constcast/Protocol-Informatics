@@ -18,7 +18,7 @@ Licensed under the LGPL
 
 from tree import *
 
-import util
+import util, copy
 
 class Phylogeny:
 
@@ -34,7 +34,7 @@ class Phylogeny:
         for i in flowBasedSequences:
             flowInfo = flowBasedSequences[i]
             for seq in flowInfo.sequences:
-                sequences.append((counter, seq.sequence))
+                sequences.append((counter, copy.copy(seq.sequence)))
                 counter += 1
 
         self.dmx = dmx

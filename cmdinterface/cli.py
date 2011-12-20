@@ -99,8 +99,8 @@ class CommandLineInterface(cmd.Cmd):
         try:
             targetClassType = type(getattr(self.config, words[0]))
             import types
-            if targetClassType == types.NoneType:
-                newVal = words[1]
+            if targetClassType == types.NoneType or words[0] == "None":
+                newVal = None
             elif targetClassType == types.BooleanType:
                 if words[1] == "True":
                     newVal = True

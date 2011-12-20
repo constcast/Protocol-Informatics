@@ -39,6 +39,7 @@ class Distance:
                 counter += 1
             
         self.sequences = sequences
+        print sequences
         self.N = len(sequences)
 
         # NxN Distance matrix

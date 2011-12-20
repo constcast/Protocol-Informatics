@@ -41,6 +41,7 @@ class TextBased(Output):
         for id, seq in self.sequences:
             for byte in seq:
                 if byte == 256:
+                    #pass
                     sys.stdout.write("_")
                 elif isprint(byte):
                     sys.stdout.write(chr(byte))
