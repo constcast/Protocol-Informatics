@@ -86,3 +86,14 @@ class SequencesCommandLineInterface(cli.CommandLineInterface):
         self.env['sequences'] = cPickle.load(fd)
         print "Success!"
         
+    def do_count(self, string):
+        conns = self.env['sequences']
+        counter = 0
+        for i in conns:
+            counter += len(conns[i].sequences)
+        print "Got %d messages in our data set" % (counter)
+
+    def do_randsample(self, string):
+        if string == "":
+            print "ERROR: You need to supply a number of strings to pick"
+            
