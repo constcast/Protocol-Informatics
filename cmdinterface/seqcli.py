@@ -94,6 +94,20 @@ class SequencesCommandLineInterface(cli.CommandLineInterface):
         print "Got %d messages in our data set" % (counter)
 
     def do_randsample(self, string):
+        randompicks = 0
         if string == "":
             print "ERROR: You need to supply a number of strings to pick"
+            return
+        else:
+            try:
+                randompicks = int(string)
+            except:
+                print "ERROR: Could not convert number of elements to number!"
+                return
+        
+        conns = self.env['sequences']
+        for i in conns:
+            conns[i].randomSample(randompicks)
+            
+        
             

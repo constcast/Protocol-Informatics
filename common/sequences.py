@@ -46,6 +46,24 @@ class FlowInfo:
 				mnumber += 1
 		self.sequences = splitSeqs
 
+	def randomSample(self, elements):
+		"""
+		Selects a random sample of <elements> elements for the set of its
+		sequences.
+		"""
+		newSeqs = []
+		
+		if elements >= len(self.sequences):
+			print "Error: Only got %d elements in the total set." % (len(self.sequences))
+			return
+		import random
+		random.seed()
+		for i in range(elements):		
+			idx = random.randrange(len(self.sequences))
+			print idx
+			newSeqs.append(self.sequences.pop(idx))
+		self.sequences = newSeqs
+
 	def __repr__(self):
 		ret = ""
 		for seq in self.sequences:
