@@ -37,7 +37,14 @@ class FlowInfo:
 		Splits all messages into submessages according to the delimiter
 		specified in delim
 		"""
-		print "class FlowInfo method splitSequeces: TODO: implement."
+		splitSeqs = []
+		mnumber = 0
+		for i in self.sequences:
+			splitStrings = i.getMessage().split(delim)
+			for str in splitStrings:
+				splitSeqs.append(Sequence(str, mnumber))
+				mnumber += 1
+		self.sequences = splitSeqs
 
 	def __repr__(self):
 		ret = ""
@@ -58,7 +65,7 @@ class Sequence:
 
 	
 	def getMessage(self):
-		return self.messag
+		return self.message
 
 	def getSequence(self):
 		return self.sequence

@@ -56,8 +56,11 @@ class SequencesCommandLineInterface(cli.CommandLineInterface):
             splitseq = string
             
         print "Trying to split messages according to delimiter: \"%s\"" % (splitseq)
-        
-        print "TODO: implement me"
+        seqs = self.env['sequences']
+        for i in seqs:
+            seqs[i].splitSequences(splitseq)
+        print "Sucess!"
+
 
     def do_save(self, string):
         if string == "":
