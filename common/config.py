@@ -19,6 +19,7 @@ class Configuration:
         self.weight = float(1.0)
         self.graph = False
         self.maxMessages = 50
+        self.ethOffset = 14
         self.messageDelimiter = None
         self.fieldDelimiter = None
         self.textBased = False
