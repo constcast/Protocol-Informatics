@@ -233,5 +233,9 @@ class LocalAlignment(Distance):
                 if self.dmx[i][j] >= 0:
                     continue
 
-                self.dmx[i][j] = 1 - (similar[i][j] / similar[i][i])
+                #print similar[i][j], " ",similar[i][i]
+                if similar[i][i] != 0:
+                    self.dmx[i][j] = 1 - (similar[i][j] / similar[i][i])
+                else:
+                    self.dmx[i][j] = 1
                 self.dmx[j][i] = self.dmx[i][j]

@@ -219,7 +219,7 @@ class Ansi(Output):
         # Calculate consensus sequence
         l = len(self.sequences[0][1])
 
-#real = []
+        real = []
         for i in range(l):
             histogram = {}
             for id, seq in self.sequences:
@@ -230,6 +230,7 @@ class Ansi(Output):
                     histogram[seq[i]] += 1
                 except:
                     histogram[seq[i]] = 1
+
 
             items = histogram.items()
             items.sort()

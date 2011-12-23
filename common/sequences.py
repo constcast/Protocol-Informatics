@@ -60,7 +60,6 @@ class FlowInfo:
 		random.seed()
 		for i in range(elements):		
 			idx = random.randrange(len(self.sequences))
-			print idx
 			newSeqs.append(self.sequences.pop(idx))
 		self.sequences = newSeqs
 
