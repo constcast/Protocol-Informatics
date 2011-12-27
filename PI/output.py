@@ -15,17 +15,18 @@ import sys
 
 class Output:
 
-    def __init__(self, sequences):
+    def __init__(self, sequences, gapped):
 
         self.sequences = sequences
         self.consensus = []
+        self.gapped = gapped
         self._go()
 
     def _go(self):
         pass
 
 class TextBased(Output):
-    def __init__(self, sequences):
+    def __init__(self, sequences, gapped):
         self.gap = "\033[41;30m%s\033[0m"
         self.printable = "\033[42;30m%s\033[0m"
         self.space = "\033[43;30m%s\033[0m"
@@ -34,7 +35,7 @@ class TextBased(Output):
         self.bit = "\033[46;30m%s\033[0m"
         self.default = "\033[47;30m%s\033[0m"
 
-        Output.__init__(self, sequences)
+        Output.__init__(self, sequences, gapped)
 
     def _go(self):
         all_cons = []
@@ -78,7 +79,7 @@ class TextBased(Output):
             real = []
 
             for i in range(len(self.consensus)):
-                if self.consensus[i] == 256:
+                if self.consensus[i] == 256 and not self.gapped:
                     continue
                 real.append(self.consensus[i])
 
@@ -99,7 +100,7 @@ class TextBased(Output):
 
 class Ansi(Output):
 
-    def __init__(self, sequences):
+    def __init__(self, sequences, gapped):
 
         # Color defaults for composition
         self.gap = "\033[41;30m%s\033[0m"
@@ -110,7 +111,7 @@ class Ansi(Output):
         self.bit = "\033[46;30m%s\033[0m"
         self.default = "\033[47;30m%s\033[0m"
 
-        Output.__init__(self, sequences)
+        Output.__init__(self, sequences, gapped)
 
     def _go(self):
         # how many bytes to print by default
@@ -247,7 +248,7 @@ class Ansi(Output):
             real = []
 
             for i in range(len(self.consensus)):
-                if self.consensus[i] == 256:
+                if self.consensus[i] == 256 and not self.gapped:
                     continue
                 real.append((self.consensus[i], dtConsensus[i], mtConsensus[i]))
 

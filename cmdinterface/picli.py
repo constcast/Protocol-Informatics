@@ -102,6 +102,13 @@ class PICommandLineInterface(cli.CommandLineInterface):
         if not 'alist' in self.env:
             print "Error: No list of aligned sequences. Please create one first"
             return
+        # check if we should produce gapped or ungapped output
+        gapped = True
+        if string == "gapped":
+            gapped = True
+        elif string == "ungapped":
+            gapped = False
+
         #
         # Display each cluster of aligned sequences
         #
@@ -111,9 +118,9 @@ class PICommandLineInterface(cli.CommandLineInterface):
             print "Output of cluster %d" % i
             if self.config.textBased == True:
                 out = PI.output.TextBased(seqs)
-                all_cons.append(out.cons)
+                all_cons.append(out.cons, gapped)
             else:
-                PI.output.Ansi(seqs)
+                PI.output.Ansi(seqs, gapped)
             i += 1
             print ""
         
@@ -122,6 +129,11 @@ class PICommandLineInterface(cli.CommandLineInterface):
             print cons
 
     def do_go(self, string):
+        """
+        Run all the commands that are necessary to perforam the PI proto inference. 
+        Will output the results eventually. Please note that all previously generated
+        state (such as distance matrix) will be reset by this step.
+        """
         print "Creating distance matrix ..."
         self.do_distance("")
         print "Creating phylogenetic tree ..."
