@@ -2,7 +2,7 @@ from distutils.core import setup
 from distutils.extension import Extension
 
 import sys, os.path
-
+import numpy as np
 # Use Pyrex
 #import distutils.sysconfig
 #if distutils.sysconfig.get_config_var('CC').startswith("gcc"):
@@ -44,6 +44,7 @@ setup(
     author_email = "mbeddoe@baselineresearch.net",
     description = "Protocol analysis toolkit using bioinformatics algorithms",
     packages = ["PI"],
+    include_dirs = [np.get_include()],
     ext_modules=[
         PIExtension("PI.align")],**distutils_extras
 )
