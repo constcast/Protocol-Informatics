@@ -2,9 +2,8 @@ from distutils.core import setup
 from distutils.extension import Extension
 
 import sys, os.path
-# Added by daubsi
-
 import numpy as np
+
 # Use Pyrex
 #import distutils.sysconfig
 #if distutils.sysconfig.get_config_var('CC').startswith("gcc"):
