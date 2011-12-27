@@ -153,7 +153,7 @@ class CommandLineInterface(cmd.Cmd):
             print "Attempting to read file \"%s\" as \"%s\" file" % (filename, formatType)
             # we expect a file and a format string
             if formatType == "pcap":
-                sequences = common.input.Pcap(filename, self.config.maxMessages, self.config.ethOffsetoutout).getConnections()
+                sequences = common.input.Pcap(filename, self.config.maxMessages, self.config.ethOffset).getConnections()
             elif formatType == "bro":
                 sequences = common.input.Bro(filename, self.config.maxMessages).getConnections()
             elif formatType == "ascii":
