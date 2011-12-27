@@ -77,7 +77,7 @@ First steps:
 Start the program:
 
 $ ./main.py 
-No default configuration found. Createing a default config file
+No default configuration found. Creating a default config file
 "config.yml".
 
 Welcome to Protocol-Informatics. What do you want to do today?
@@ -109,3 +109,98 @@ name to the help command itself:
 : read in the specified format (bro, pcap, ascii)
 : inf> 
 
+An important command is the "config" command which can be used to read
+and set configuration variables. If it is run without an argument, it
+will print the configuration:
+
+: inf> config
+: ethOffset            14				
+: maxMessages          50
+: weight               1.0
+: format               pcap
+: graph                False
+: textBased            False
+: configFile           config.yml
+: messageDelimiter     None
+: onlyUniq             False
+: gnuplotFile          None
+: inputFile            None
+: interactive          True
+
+The configuration parameters are important for controlling the program
+and will be documented in the following sections. The configuration
+parameters can be group by their meaning and use in the modules. For
+the main module, denoted by inf> there are the following important
+parameters:
+
+ethOffset:
+	Important when pcap files are read: Defines the length of the
+	ETH header. The default value is 14 (use 18 if you have a
+	trace from a VLAN tagged network.
+maxMessages:
+	Defines how many messages will be read by default from the
+	input traces. If this is set to 0, all messages are read from
+	the input file.
+onlyUniq:
+	Controls whether only unique messages are read from the input
+	file or if duplicate messages are allowed. Please note: this
+	parameter depends on the connection context. If this
+	configuration parameter is set to true, this will only remove
+	duplicate messages from within connections. Duplicate messages
+	that are distributed over multiple connections will still be
+	part of the input data. 
+inputFile:
+	Defines the filename that will be used to read messages from
+format:
+	Defines the format that is used to read the filename specified
+	by inputFile. Possible values:
+	   - pcap
+	     - expects a pcap file as produced by tcpdump -w <filename>
+	   - bro
+	     - expects an adu file as produced by bro with the script
+	       that is shipped with this source code in 
+	       bro-scripts/adu_writer.bro
+	   - ascii
+	     - expects a textfile which contains a number of messages
+	       separate with the newline character
+configFile:
+	filename of the configuration yml file which is used to store
+	the current config with the saveconfig command.
+interactive:
+	Defines if PI should run in interactive or non-interactive
+	mode. Currently, only interactive mode is supported. 
+
+Other configuration parameters are only necessary in
+submodules. Currently, we have the following submodules:
+	  - seqs
+		Offers methods for changing and looking at input
+		data. This module allows, for example, to select a
+		random subsample of the input data, or to only select
+		unique messages
+		
+	  - PI
+		Offers the original functionality of the PI
+		framework. Can create distance matrices, phylogeny
+		trees and can perform multi-sequence aligning. Please
+		find more information on the code in PI/README.
+
+Configuration parameters for the "seqs" module:
+
+messageDelimiter:
+	This configuration parameter can be used to split messages
+	according to a sequence of characters.
+
+fieldDelimiter:	 
+	Currently unused.
+
+Configuration parameters for the PI module:
+
+graph: 
+       Decides whether graphs are written to disk
+
+gnuplotFile:
+	Currently unused
+
+weight:
+	Weight used to determine how many clusters are found when
+	grouping messages according to their similarity.
