@@ -1,0 +1,111 @@
+The Protocol Informatics Framework
+----------------------------------
+
+Written by Marshall Beddoe <mbeddoe@baselineresearch.net>
+Extended and modified by Lothar Braun <braun@net.in.tum.de>
+Copyright (c) 2004 Baseline Research
+Copyright (c) 2011 Lothar Braun
+
+Overview:
+
+The Protocol Informatics project is a software framework that allows for
+advanced sequence and protocol stream analysis by utilizing bioinformatics
+algorithms. The sole purpose of this software is to identify protocol fields in
+unknown or poorly documented network protocol formats. The algorithms that are
+utilized perform comparative analysis on a series of samples to better
+understand the underlying structure of the otherwise random-looking data. The
+PI framework was designed for experimentation through the use of a widget-based
+component set.
+
+The framework aims at including a number of different algorithms that help
+with identifying protocol structures from network trace. It is shipped with a 
+command line interface that interactively allows one to control the process
+of inferring protocol information from network traces. 
+
+Requirements:
+-------------
+
+Python >= 2.4       http://www.python.org
+numpy               http://numpy.scipy.org/
+PyYAML              http://pyyaml.org/
+
+Optional:
+Pcapy               http://oss.coresecurity.com/projects/pcapy.html
+Pydot               http://code.google.com/p/pydot/
+
+
+Controlling PI using the command line interface:
+------------------------------------------------
+
+All commands in the interface should be documented using an online
+help.  Whenever you want to learn more about a command, just use the
+online help:
+
+inf> help quit
+Quit the program.
+
+Program start:
+
+You can start the program with or without an configuration file:
+
+./main -c config.yml
+
+If you do not specify a configuration file, a default file
+'config.yml' in the current working directory will be used. If that
+file does not exist, a default configuration will be loaded and
+stored in 'config.yml'.
+
+Whenever you make any changes to the configuration file in your
+program, e.g. using the "config" command, you can save your
+configuration using the "saveconfig" command. You can then load the
+configuration on program start. If you set the configuration
+parameters "inputFile" and "format" in your config, PI will
+automatically try to read input from this file.
+
+Reading input data:
+
+There are basically two ways to read sequences into your
+environment. You can set the "inputFile" and "format" configuration
+variables, save your config using "saveconfig", and restart the
+program using the "restart" command. 
+Or you can explicitly read input using the "read" command in your
+environment. We will now show how first steps in the command line
+interface can look like. 
+
+First steps:
+
+Start the program:
+
+$ ./main.py 
+No default configuration found. Createing a default config file
+"config.yml".
+
+Welcome to Protocol-Informatics. What do you want to do today?
+
+inf> 
+
+This creates your default configuration file with default parameters
+and drops you into the command line prompt. You can list the available
+commands using the "help" command:
+
+: inf> help
+: 
+: Documented commands (type help <topic>):
+: ========================================
+: EOF  PI  config  env  exit  help  quit  read  restart  saveconfig  seqs  show
+: 
+: inf>
+
+For each command, you can get verbose help by specifying the commands'
+name to the help command itself: 
+
+
+: inf> help read
+: Command syntax: read [<bro|pcap|ascii|config>] <file>
+:
+: Tries to read file <file> in the specified format. If format
+: equals "config", a new configuration file is read from <file>.
+: In all other cases, input data for the protocol inferences are 
+: read in the specified format (bro, pcap, ascii)
+: inf> 
+
