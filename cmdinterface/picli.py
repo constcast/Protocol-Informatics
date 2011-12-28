@@ -21,6 +21,10 @@ class PICommandLineInterface(cli.CommandLineInterface):
         return True
 
     def do_distance(self, string):
+        """
+        Creates a distance matrix from the input sequences. Compares all sequences to each other 
+        and puts the distance matrix into the environment
+        """
         dmx = PI.distance.LocalAlignment(self.env['sequences'])
         self.env['dmx'] = dmx
 
@@ -29,6 +33,10 @@ class PICommandLineInterface(cli.CommandLineInterface):
 
 
     def do_phylogeny(self, string):
+        """
+        Create the phylogeny tree for the input data. Requires a distance matrix in the environment,
+        which needs to be created by a call to do_distance first. 
+        """
         if not 'dmx' in self.env:
             print "Error: No distance matrix created. Do this first ..."
             return
@@ -39,6 +47,9 @@ class PICommandLineInterface(cli.CommandLineInterface):
         print "\nDiscovered %d clusters using a weight of %.02f" % (len(phylo), self.config.weight)
 
     def do_graph(self, string):
+        """
+        Produce graphs on the phylogeny tree. Requires installed pydot library.
+        """
         if not 'phylo' in self.env:
             print "Error: No phylogentic tree to graph."
             return
@@ -54,6 +65,12 @@ class PICommandLineInterface(cli.CommandLineInterface):
             cnum += 1
 
     def do_align(self, string):
+        """
+        Performs multi-sequence aligning on the elemnts in the previouly derived clusters.
+        It is necessary to first run do_phylogeny to create a phylogeny tree that is used
+        to guide the aligning task
+        """
+
         if not 'phylo' in self.env:
             print "Error:No phylogentic tree. Please create one first!"
             return
@@ -71,9 +88,27 @@ class PICommandLineInterface(cli.CommandLineInterface):
         
 
     def do_output(self, string):
+        """
+        Shows the output of the sequencing alinging process. This can only be done
+        after do_align has been called to create the list of alinged sequences.
+        The output is modified by the "textBased" configuration variable. It it is
+        set, the output will plainly print text sequences. If the value is set to false
+        a binary output form will be chosen.
+
+        The parameter specify whether gaps are supposed to be shown in hte consensus
+        sequences, or if the sequences are shown in an ungapped form.
+        """
+        
         if not 'alist' in self.env:
             print "Error: No list of aligned sequences. Please create one first"
             return
+        # check if we should produce gapped or ungapped output
+        gapped = True
+        if string == "gapped":
+            gapped = True
+        elif string == "ungapped":
+            gapped = False
+
         #
         # Display each cluster of aligned sequences
         #
@@ -83,9 +118,9 @@ class PICommandLineInterface(cli.CommandLineInterface):
             print "Output of cluster %d" % i
             if self.config.textBased == True:
                 out = PI.output.TextBased(seqs)
-                all_cons.append(out.cons)
+                all_cons.append(out.cons, gapped)
             else:
-                PI.output.Ansi(seqs)
+                PI.output.Ansi(seqs, gapped)
             i += 1
             print ""
         
@@ -94,6 +129,11 @@ class PICommandLineInterface(cli.CommandLineInterface):
             print cons
 
     def do_go(self, string):
+        """
+        Run all the commands that are necessary to perforam the PI proto inference. 
+        Will output the results eventually. Please note that all previously generated
+        state (such as distance matrix) will be reset by this step.
+        """
         print "Creating distance matrix ..."
         self.do_distance("")
         print "Creating phylogenetic tree ..."
