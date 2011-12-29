@@ -82,6 +82,14 @@ class CommandLineInterface(cmd.Cmd):
         self.config = inst.config
         self.env = inst.env
         
+    def do_disc(self, string):
+        import disccli        
+        inst = disccli.DiscovererCommandLineInterface(self.env, self.config)
+        inst.prompt = self.prompt[:-1]+':Discoverer> '
+        inst.cmdloop()        
+        print "Finishing discoverer mode ..."
+        self.config = inst.config
+        self.env = inst.env 
 
     def do_config(self, string):
         if string == "":

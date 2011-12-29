@@ -4,6 +4,7 @@ import cmd, sys, os
 import PI
 import cli
 
+
 class PICommandLineInterface(cli.CommandLineInterface):
     def __init__(self, env, config):
         cmd.Cmd.__init__(self)
@@ -30,7 +31,7 @@ class PICommandLineInterface(cli.CommandLineInterface):
 
     def do_PI(self, string):
         print "We are already in PI mode!"
-
+        
 
     def do_phylogeny(self, string):
         """

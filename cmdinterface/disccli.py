@@ -11,7 +11,6 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         cmd.Cmd.__init__(self)
         self.env = env
         self.config = config
-        
 
     def do_EOF(self, string):
         return True
@@ -24,5 +23,15 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         
     def do_go(self, string):
         print "The magic happens here ..."
+
+        if not self.env.has_key('sequences'):
+            print "FATAL: No sequences loaded yet!"
+            return False    
+        
+        discoverer.setup.setup(self.env['sequences'], self.config)
+       
+        
+    def do_discoverer(self, string):
+        print "We are already in Discoverer mode!"
         
         
