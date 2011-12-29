@@ -1,0 +1,3 @@
+{analysis: null, configFile: config.yml, ethOffset: 14, fieldDelimiter: null, format: pcap,
+  gnuplotFile: null, graph: false, inputFile: null, interactive: true, maxMessages: 50,
+  messageDelimiter: null, onlyUniq: false, textBased: true, weight: 0.4}
