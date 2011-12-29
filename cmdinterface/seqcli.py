@@ -50,6 +50,10 @@ class SequencesCommandLineInterface(cli.CommandLineInterface):
 
             
     def do_split(self, string):
+        """
+        Splits the current messages at the pieces specified by <string> or in the 
+        messagaeDelimiter configuration variable if string is empty
+        """
         if string == "":
             splitseq = self.config.messageDelimiter
         else:
@@ -63,6 +67,10 @@ class SequencesCommandLineInterface(cli.CommandLineInterface):
 
 
     def do_save(self, string):
+        """
+        Saves the current sequences to a file <string> or a default file 
+        "working.pickle"
+        """
         if string == "":
             filename = "working.pickle"
         else:
@@ -75,6 +83,9 @@ class SequencesCommandLineInterface(cli.CommandLineInterface):
         print "Success!"
 
     def do_load(self, string):
+        """
+        Loads stored sequences from a file created by do_save()
+        """
         if string == "":
             filename = "working.pickle"
         else:
@@ -87,6 +98,9 @@ class SequencesCommandLineInterface(cli.CommandLineInterface):
         print "Success!"
         
     def do_count(self, string):
+        """
+        Counts the number of elements in the sequences.
+        """
         conns = self.env['sequences']
         counter = 0
         for i in conns:
@@ -94,6 +108,11 @@ class SequencesCommandLineInterface(cli.CommandLineInterface):
         print "Got %d messages in our data set" % (counter)
 
     def do_randsample(self, string):
+        """
+        Picks a random subsample from the sequences. The code tries to pick the specified
+        number <string>  from each connections, if the connection has more than <string>
+        elements. It will do nothing otherwise.
+        """
         randompicks = 0
         if string == "":
             print "ERROR: You need to supply a number of strings to pick"
@@ -110,4 +129,36 @@ class SequencesCommandLineInterface(cli.CommandLineInterface):
             conns[i].randomSample(randompicks)
             
         
-            
+    def help_count(self, string):
+        print "Command syntax: count"
+        print ""
+        print "Counts the number of sequences in the current environment"
+    
+    def help_load(self, string):
+        print "Command synatx: load [ <filename> ]"
+        print ""
+        print "Loads a previously saved sequence file which has been created with"
+        print "the save command. If <filename> is specified, the given filename "
+        print "is used to load the sequences. Otherwise the default filename "
+        print "working.pickle is used."
+    
+    def help_save(self, string):
+        print "Command syntax: save [ <filename> ]"
+        print ""
+        print "Saves the current sequences stored in the enviornment to a file."
+        print "If <filename> is non-empty, it is used as a target file. Otherwise"
+        print "the default filename \"working.pickle\" is used."
+
+    def help_split(self, string):
+        print "Command syntax: split [ <delimiter> ]"
+        print ""
+        print "Splits the sequences according to a message delimiter. If delimiter"
+        print "is non-empty, the command argument will be used. Othterwise the "
+        print "configuration variable messageDelimiter will be used."
+
+    def help_randsample(self, string):
+        print "Command syntax: randsample <number>"
+        print ""
+        print "Picks a random subsample of count <number> from each connection context."
+        print "If <number> is bigger than the actual number of sequenes in a connection,"
+        print "nothing will happen."
