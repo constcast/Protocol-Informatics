@@ -1,0 +1,268 @@
+****************************************** aUPs0t7dIw 1 273 220---------- Welcome to Pure-FTPd [privsep] ----------^M^J220-You are user number 1 of 50 allowed.^M^J220-Local time is now 15:59. Server port: 21.^M^J220-IPv6 connections are also welcome on this server.^M^J220 You will be disconnected after 15 minutes of inactivity.^M^J
+****************************************** aUPs0t7dIw 2 21 215 UNIX Type: L8^M^J
+****************************************** aUPs0t7dIw 3 40 331 User clark OK. Password required^M^J
+****************************************** aUPs0t7dIw 4 96 230-User clark has group access to:  clark     ^M^J230 OK. Current restricted directory is /^M^J
+****************************************** aUPs0t7dIw 5 31 200 PORT command successful^M^J
+****************************************** aUPs0t7dIw 6 74 150 Connecting to port 5000^M^J226-Options: -l ^M^J226 2 matches total^M^J
+****************************************** SRcwaoe9oP 1 273 220---------- Welcome to Pure-FTPd [privsep] ----------^M^J220-You are user number 1 of 50 allowed.^M^J220-Local time is now 15:59. Server port: 21.^M^J220-IPv6 connections are also welcome on this server.^M^J220 You will be disconnected after 15 minutes of inactivity.^M^J
+****************************************** SRcwaoe9oP 2 21 215 UNIX Type: L8^M^J
+****************************************** SRcwaoe9oP 3 40 331 User peter OK. Password required^M^J
+****************************************** SRcwaoe9oP 4 96 230-User peter has group access to:  peter     ^M^J230 OK. Current restricted directory is /^M^J
+****************************************** SRcwaoe9oP 5 49 227 Entering Passive Mode (10,10,5,106,41,24)^M^J
+****************************************** SRcwaoe9oP 6 75 150 Accepted data connection^M^J226-Options: -l ^M^J226 2 matches total^M^J
+****************************************** Az61WzyeXib 1 273 220---------- Welcome to Pure-FTPd [privsep] ----------^M^J220-You are user number 1 of 50 allowed.^M^J220-Local time is now 15:59. Server port: 21.^M^J220-IPv6 connections are also welcome on this server.^M^J220 You will be disconnected after 15 minutes of inactivity.^M^J
+****************************************** Az61WzyeXib 2 21 215 UNIX Type: L8^M^J
+****************************************** Az61WzyeXib 3 40 331 User bruce OK. Password required^M^J
+****************************************** Az61WzyeXib 4 96 230-User bruce has group access to:  bruce     ^M^J230 OK. Current restricted directory is /^M^J
+****************************************** Az61WzyeXib 5 37 250 OK. Current directory is /pub^M^J
+****************************************** Az61WzyeXib 6 31 200 PORT command successful^M^J
+****************************************** Az61WzyeXib 7 74 150 Connecting to port 5000^M^J226-Options: -l ^M^J226 2 matches total^M^J
+****************************************** Az61WzyeXib 8 34 250 OK. Current directory is /^M^J
+****************************************** Az61WzyeXib 9 31 200 PORT command successful^M^J
+****************************************** Az61WzyeXib 10 74 150 Connecting to port 5000^M^J226-Options: -l ^M^J226 1 matches total^M^J
+****************************************** 3Zc7iDN0oUb 1 273 220---------- Welcome to Pure-FTPd [privsep] ----------^M^J220-You are user number 1 of 50 allowed.^M^J220-Local time is now 15:59. Server port: 21.^M^J220-IPv6 connections are also welcome on this server.^M^J220 You will be disconnected after 15 minutes of inactivity.^M^J
+****************************************** 3Zc7iDN0oUb 2 21 215 UNIX Type: L8^M^J
+****************************************** 3Zc7iDN0oUb 3 32 230 Anonymous user logged in^M^J
+****************************************** 3Zc7iDN0oUb 4 30 230 Any password will work^M^J
+****************************************** 3Zc7iDN0oUb 5 51 227 Entering Passive Mode (10,10,5,106,244,151)^M^J
+****************************************** 3Zc7iDN0oUb 6 75 150 Accepted data connection^M^J226-Options: -l ^M^J226 7 matches total^M^J
+****************************************** 3Zc7iDN0oUb 7 37 250 OK. Current directory is /pub^M^J
+****************************************** 3Zc7iDN0oUb 8 32 200 TYPE is now 8-bit binary^M^J
+****************************************** 3Zc7iDN0oUb 9 50 227 Entering Passive Mode (10,10,5,106,155,39)^M^J
+****************************************** 3Zc7iDN0oUb 10 69 150 Accepted data connection^M^J226 File successfully transferred^M^J
+****************************************** aUPs0t7dIw 6 71 221-Goodbye. You uploaded 0 and downloaded 0 kbytes.^M^J221 Logout.^M^J
+****************************************** TyMCvsm2Z3 1 273 220---------- Welcome to Pure-FTPd [privsep] ----------^M^J220-You are user number 1 of 50 allowed.^M^J220-Local time is now 15:59. Server port: 21.^M^J220-IPv6 connections are also welcome on this server.^M^J220 You will be disconnected after 15 minutes of inactivity.^M^J
+****************************************** SRcwaoe9oP 6 71 221-Goodbye. You uploaded 0 and downloaded 0 kbytes.^M^J221 Logout.^M^J
+****************************************** TyMCvsm2Z3 2 21 215 UNIX Type: L8^M^J
+****************************************** jlmJb0vL7j1 1 273 220---------- Welcome to Pure-FTPd [privsep] ----------^M^J220-You are user number 1 of 50 allowed.^M^J220-Local time is now 15:59. Server port: 21.^M^J220-IPv6 connections are also welcome on this server.^M^J220 You will be disconnected after 15 minutes of inactivity.^M^J
+****************************************** jlmJb0vL7j1 2 21 215 UNIX Type: L8^M^J
+****************************************** fsLNFVRw4rb 1 273 220---------- Welcome to Pure-FTPd [privsep] ----------^M^J220-You are user number 1 of 50 allowed.^M^J220-Local time is now 15:59. Server port: 21.^M^J220-IPv6 connections are also welcome on this server.^M^J220 You will be disconnected after 15 minutes of inactivity.^M^J
+****************************************** fsLNFVRw4rb 2 21 215 UNIX Type: L8^M^J
+****************************************** fsLNFVRw4rb 3 46 331 User nonexistent OK. Password required^M^J
+****************************************** SLGaoF4d7Ka 1 273 220---------- Welcome to Pure-FTPd [privsep] ----------^M^J220-You are user number 1 of 50 allowed.^M^J220-Local time is now 15:59. Server port: 21.^M^J220-IPv6 connections are also welcome on this server.^M^J220 You will be disconnected after 15 minutes of inactivity.^M^J
+****************************************** SLGaoF4d7Ka 2 21 215 UNIX Type: L8^M^J
+****************************************** SLGaoF4d7Ka 3 40 331 User petre OK. Password required^M^J
+****************************************** fsLNFVRw4rb 3 35 530 Login authentication failed^M^J
+****************************************** O82TjgLEGdl 1 273 220---------- Welcome to Pure-FTPd [privsep] ----------^M^J220-You are user number 1 of 50 allowed.^M^J220-Local time is now 15:59. Server port: 21.^M^J220-IPv6 connections are also welcome on this server.^M^J220 You will be disconnected after 15 minutes of inactivity.^M^J
+****************************************** SLGaoF4d7Ka 3 35 530 Login authentication failed^M^J
+****************************************** O82TjgLEGdl 2 21 215 UNIX Type: L8^M^J
+****************************************** qxEQOnp0Dll 1 273 220---------- Welcome to Pure-FTPd [privsep] ----------^M^J220-You are user number 1 of 50 allowed.^M^J220-Local time is now 15:59. Server port: 21.^M^J220-IPv6 connections are also welcome on this server.^M^J220 You will be disconnected after 15 minutes of inactivity.^M^J
+****************************************** qxEQOnp0Dll 2 21 215 UNIX Type: L8^M^J
+****************************************** qxEQOnp0Dll 3 40 331 User clark OK. Password required^M^J
+****************************************** qxEQOnp0Dll 4 96 230-User clark has group access to:  clark     ^M^J230 OK. Current restricted directory is /^M^J
+****************************************** qxEQOnp0Dll 5 36 257 "/" is your current location^M^J
+****************************************** qxEQOnp0Dll 6 51 227 Entering Passive Mode (10,10,5,106,243,163)^M^J
+****************************************** qxEQOnp0Dll 7 75 150 Accepted data connection^M^J226-Options: -l ^M^J226 2 matches total^M^J
+****************************************** qxEQOnp0Dll 8 37 250 OK. Current directory is /pub^M^J
+****************************************** qxEQOnp0Dll 9 51 227 Entering Passive Mode (10,10,5,106,193,118)^M^J
+****************************************** qxEQOnp0Dll 10 75 150 Accepted data connection^M^J226-Options: -l ^M^J226 2 matches total^M^J
+****************************************** aUKtccKCbQ9 1 273 220---------- Welcome to Pure-FTPd [privsep] ----------^M^J220-You are user number 1 of 50 allowed.^M^J220-Local time is now 15:59. Server port: 21.^M^J220-IPv6 connections are also welcome on this server.^M^J220 You will be disconnected after 15 minutes of inactivity.^M^J
+****************************************** aUKtccKCbQ9 2 21 215 UNIX Type: L8^M^J
+****************************************** aUKtccKCbQ9 3 40 331 User peter OK. Password required^M^J
+****************************************** aUKtccKCbQ9 4 96 230-User peter has group access to:  peter     ^M^J230 OK. Current restricted directory is /^M^J
+****************************************** aUKtccKCbQ9 5 37 250 OK. Current directory is /pub^M^J
+****************************************** aUKtccKCbQ9 6 39 257 "/pub" is your current location^M^J
+****************************************** aUKtccKCbQ9 7 34 250 OK. Current directory is /^M^J
+****************************************** aUKtccKCbQ9 8 50 227 Entering Passive Mode (10,10,5,106,198,74)^M^J
+****************************************** aUKtccKCbQ9 9 75 150 Accepted data connection^M^J226-Options: -l ^M^J226 2 matches total^M^J
+****************************************** aUKtccKCbQ9 10 38 250 OK. Current directory is /priv^M^J
+****************************************** N6ESb6KGzCa 1 273 220---------- Welcome to Pure-FTPd [privsep] ----------^M^J220-You are user number 1 of 50 allowed.^M^J220-Local time is now 15:59. Server port: 21.^M^J220-IPv6 connections are also welcome on this server.^M^J220 You will be disconnected after 15 minutes of inactivity.^M^J
+****************************************** N6ESb6KGzCa 2 21 215 UNIX Type: L8^M^J
+****************************************** N6ESb6KGzCa 3 40 331 User bruce OK. Password required^M^J
+****************************************** N6ESb6KGzCa 4 96 230-User bruce has group access to:  bruce     ^M^J230 OK. Current restricted directory is /^M^J
+****************************************** N6ESb6KGzCa 5 14 200 Zzz...^M^J
+****************************************** N6ESb6KGzCa 6 36 257 "/" is your current location^M^J
+****************************************** N6ESb6KGzCa 7 37 250 OK. Current directory is /pub^M^J
+****************************************** N6ESb6KGzCa 8 51 227 Entering Passive Mode (10,10,5,106,118,143)^M^J
+****************************************** N6ESb6KGzCa 9 75 150 Accepted data connection^M^J226-Options: -l ^M^J226 2 matches total^M^J
+****************************************** N6ESb6KGzCa 10 69 550 Can't change directory to wrongdir: No such file or directory^M^J
+****************************************** DccrZOvawKk 1 273 220---------- Welcome to Pure-FTPd [privsep] ----------^M^J220-You are user number 1 of 50 allowed.^M^J220-Local time is now 15:59. Server port: 21.^M^J220-IPv6 connections are also welcome on this server.^M^J220 You will be disconnected after 15 minutes of inactivity.^M^J
+****************************************** DccrZOvawKk 2 21 215 UNIX Type: L8^M^J
+****************************************** DccrZOvawKk 3 40 331 User clark OK. Password required^M^J
+****************************************** DccrZOvawKk 4 96 230-User clark has group access to:  clark     ^M^J230 OK. Current restricted directory is /^M^J
+****************************************** DccrZOvawKk 5 36 257 "/" is your current location^M^J
+****************************************** DccrZOvawKk 6 50 227 Entering Passive Mode (10,10,5,106,55,255)^M^J
+****************************************** DccrZOvawKk 7 75 150 Accepted data connection^M^J226-Options: -l ^M^J226 2 matches total^M^J
+****************************************** DccrZOvawKk 8 14 200 Zzz...^M^J
+****************************************** DccrZOvawKk 9 37 250 OK. Current directory is /pub^M^J
+****************************************** DccrZOvawKk 10 51 227 Entering Passive Mode (10,10,5,106,192,214)^M^J
+****************************************** NOgOf1Cg6Pl 1 273 220---------- Welcome to Pure-FTPd [privsep] ----------^M^J220-You are user number 1 of 50 allowed.^M^J220-Local time is now 15:59. Server port: 21.^M^J220-IPv6 connections are also welcome on this server.^M^J220 You will be disconnected after 15 minutes of inactivity.^M^J
+****************************************** NOgOf1Cg6Pl 2 21 215 UNIX Type: L8^M^J
+****************************************** NOgOf1Cg6Pl 3 40 331 User peter OK. Password required^M^J
+****************************************** NOgOf1Cg6Pl 4 96 230-User peter has group access to:  peter     ^M^J230 OK. Current restricted directory is /^M^J
+****************************************** NOgOf1Cg6Pl 5 38 250 OK. Current directory is /priv^M^J
+****************************************** NOgOf1Cg6Pl 6 40 257 "/priv" is your current location^M^J
+****************************************** NOgOf1Cg6Pl 7 34 250 OK. Current directory is /^M^J
+****************************************** NOgOf1Cg6Pl 8 31 200 PORT command successful^M^J
+****************************************** NOgOf1Cg6Pl 9 74 150 Connecting to port 5000^M^J226-Options: -l ^M^J226 2 matches total^M^J
+****************************************** NOgOf1Cg6Pl 10 31 200 PORT command successful^M^J
+****************************************** hFs8taJ0HY9 1 273 220---------- Welcome to Pure-FTPd [privsep] ----------^M^J220-You are user number 1 of 50 allowed.^M^J220-Local time is now 16:00. Server port: 21.^M^J220-IPv6 connections are also welcome on this server.^M^J220 You will be disconnected after 15 minutes of inactivity.^M^J
+****************************************** hFs8taJ0HY9 2 21 215 UNIX Type: L8^M^J
+****************************************** hFs8taJ0HY9 3 40 331 User bruce OK. Password required^M^J
+****************************************** hFs8taJ0HY9 4 96 230-User bruce has group access to:  bruce     ^M^J230 OK. Current restricted directory is /^M^J
+****************************************** hFs8taJ0HY9 5 36 257 "/" is your current location^M^J
+****************************************** hFs8taJ0HY9 6 14 200 Zzz...^M^J
+****************************************** hFs8taJ0HY9 7 37 250 OK. Current directory is /pub^M^J
+****************************************** hFs8taJ0HY9 8 50 227 Entering Passive Mode (10,10,5,106,21,163)^M^J
+****************************************** hFs8taJ0HY9 9 75 150 Accepted data connection^M^J226-Options: -l ^M^J226 2 matches total^M^J
+****************************************** hFs8taJ0HY9 10 69 550 Can't change directory to wrongdir: No such file or directory^M^J
+****************************************** WSDANoLpvP9 1 273 220---------- Welcome to Pure-FTPd [privsep] ----------^M^J220-You are user number 1 of 50 allowed.^M^J220-Local time is now 16:00. Server port: 21.^M^J220-IPv6 connections are also welcome on this server.^M^J220 You will be disconnected after 15 minutes of inactivity.^M^J
+****************************************** WSDANoLpvP9 2 21 215 UNIX Type: L8^M^J
+****************************************** WSDANoLpvP9 3 40 331 User clark OK. Password required^M^J
+****************************************** WSDANoLpvP9 4 96 230-User clark has group access to:  clark     ^M^J230 OK. Current restricted directory is /^M^J
+****************************************** WSDANoLpvP9 5 38 250 OK. Current directory is /priv^M^J
+****************************************** WSDANoLpvP9 6 46 250 OK. Current directory is /priv/krypton^M^J
+****************************************** WSDANoLpvP9 7 31 200 PORT command successful^M^J
+****************************************** WSDANoLpvP9 8 68 150 Connecting to port 5000^M^J226 File successfully transferred^M^J
+****************************************** WSDANoLpvP9 9 38 250 OK. Current directory is /priv^M^J
+****************************************** WSDANoLpvP9 10 31 200 PORT command successful^M^J
+****************************************** mJzSNeoNWkl 1 273 220---------- Welcome to Pure-FTPd [privsep] ----------^M^J220-You are user number 1 of 50 allowed.^M^J220-Local time is now 16:00. Server port: 21.^M^J220-IPv6 connections are also welcome on this server.^M^J220 You will be disconnected after 15 minutes of inactivity.^M^J
+****************************************** mJzSNeoNWkl 2 21 215 UNIX Type: L8^M^J
+****************************************** mJzSNeoNWkl 3 40 331 User peter OK. Password required^M^J
+****************************************** mJzSNeoNWkl 4 96 230-User peter has group access to:  peter     ^M^J230 OK. Current restricted directory is /^M^J
+****************************************** mJzSNeoNWkl 5 50 227 Entering Passive Mode (10,10,5,106,49,188)^M^J
+****************************************** mJzSNeoNWkl 6 75 150 Accepted data connection^M^J226-Options: -l ^M^J226 2 matches total^M^J
+****************************************** mJzSNeoNWkl 7 37 250 OK. Current directory is /pub^M^J
+****************************************** mJzSNeoNWkl 8 32 200 TYPE is now 8-bit binary^M^J
+****************************************** mJzSNeoNWkl 9 50 227 Entering Passive Mode (10,10,5,106,70,194)^M^J
+****************************************** mJzSNeoNWkl 10 69 150 Accepted data connection^M^J226 File successfully transferred^M^J
+****************************************** YJ6LHTvq0dl 1 273 220---------- Welcome to Pure-FTPd [privsep] ----------^M^J220-You are user number 1 of 50 allowed.^M^J220-Local time is now 16:00. Server port: 21.^M^J220-IPv6 connections are also welcome on this server.^M^J220 You will be disconnected after 15 minutes of inactivity.^M^J
+****************************************** YJ6LHTvq0dl 2 21 215 UNIX Type: L8^M^J
+****************************************** YJ6LHTvq0dl 3 40 331 User bruce OK. Password required^M^J
+****************************************** YJ6LHTvq0dl 4 96 230-User bruce has group access to:  bruce     ^M^J230 OK. Current restricted directory is /^M^J
+****************************************** YJ6LHTvq0dl 5 25 200 TYPE is now ASCII^M^J
+****************************************** YJ6LHTvq0dl 6 36 257 "/" is your current location^M^J
+****************************************** YJ6LHTvq0dl 7 37 250 OK. Current directory is /pub^M^J
+****************************************** YJ6LHTvq0dl 8 31 200 PORT command successful^M^J
+****************************************** YJ6LHTvq0dl 9 74 150 Connecting to port 5000^M^J226-Options: -l ^M^J226 2 matches total^M^J
+****************************************** YJ6LHTvq0dl 10 43 250 OK. Current directory is /pub/wayne^M^J
+****************************************** eBFJeOMYqJa 1 273 220---------- Welcome to Pure-FTPd [privsep] ----------^M^J220-You are user number 1 of 50 allowed.^M^J220-Local time is now 16:00. Server port: 21.^M^J220-IPv6 connections are also welcome on this server.^M^J220 You will be disconnected after 15 minutes of inactivity.^M^J
+****************************************** eBFJeOMYqJa 2 21 215 UNIX Type: L8^M^J
+****************************************** eBFJeOMYqJa 3 40 331 User clark OK. Password required^M^J
+****************************************** eBFJeOMYqJa 4 96 230-User clark has group access to:  clark     ^M^J230 OK. Current restricted directory is /^M^J
+****************************************** eBFJeOMYqJa 5 32 200 TYPE is now 8-bit binary^M^J
+****************************************** eBFJeOMYqJa 6 37 250 OK. Current directory is /pub^M^J
+****************************************** eBFJeOMYqJa 7 31 200 PORT command successful^M^J
+****************************************** eBFJeOMYqJa 8 68 150 Connecting to port 5000^M^J226 File successfully transferred^M^J
+****************************************** 538s9eCJ2Y9 1 273 220---------- Welcome to Pure-FTPd [privsep] ----------^M^J220-You are user number 1 of 50 allowed.^M^J220-Local time is now 16:00. Server port: 21.^M^J220-IPv6 connections are also welcome on this server.^M^J220 You will be disconnected after 15 minutes of inactivity.^M^J
+****************************************** 538s9eCJ2Y9 2 21 215 UNIX Type: L8^M^J
+****************************************** 538s9eCJ2Y9 3 40 331 User clark OK. Password required^M^J
+****************************************** 538s9eCJ2Y9 4 96 230-User clark has group access to:  clark     ^M^J230 OK. Current restricted directory is /^M^J
+****************************************** 538s9eCJ2Y9 5 32 200 TYPE is now 8-bit binary^M^J
+****************************************** 538s9eCJ2Y9 6 37 250 OK. Current directory is /pub^M^J
+****************************************** 538s9eCJ2Y9 7 31 200 PORT command successful^M^J
+****************************************** 538s9eCJ2Y9 8 68 150 Connecting to port 5000^M^J226 File successfully transferred^M^J
+****************************************** 3reXpAsZrOl 1 273 220---------- Welcome to Pure-FTPd [privsep] ----------^M^J220-You are user number 1 of 50 allowed.^M^J220-Local time is now 16:00. Server port: 21.^M^J220-IPv6 connections are also welcome on this server.^M^J220 You will be disconnected after 15 minutes of inactivity.^M^J
+****************************************** 3reXpAsZrOl 2 21 215 UNIX Type: L8^M^J
+****************************************** 3reXpAsZrOl 3 40 331 User clark OK. Password required^M^J
+****************************************** 3reXpAsZrOl 4 96 230-User clark has group access to:  clark     ^M^J230 OK. Current restricted directory is /^M^J
+****************************************** 3reXpAsZrOl 5 25 200 TYPE is now ASCII^M^J
+****************************************** 3reXpAsZrOl 6 37 250 OK. Current directory is /pub^M^J
+****************************************** 3reXpAsZrOl 7 50 227 Entering Passive Mode (10,10,5,106,114,97)^M^J
+****************************************** 3reXpAsZrOl 8 69 150 Accepted data connection^M^J226 File successfully transferred^M^J
+****************************************** DomrxAaSRJk 1 273 220---------- Welcome to Pure-FTPd [privsep] ----------^M^J220-You are user number 1 of 50 allowed.^M^J220-Local time is now 16:00. Server port: 21.^M^J220-IPv6 connections are also welcome on this server.^M^J220 You will be disconnected after 15 minutes of inactivity.^M^J
+****************************************** DomrxAaSRJk 2 21 215 UNIX Type: L8^M^J
+****************************************** DomrxAaSRJk 3 40 331 User bruce OK. Password required^M^J
+****************************************** DomrxAaSRJk 4 96 230-User bruce has group access to:  bruce     ^M^J230 OK. Current restricted directory is /^M^J
+****************************************** DomrxAaSRJk 5 32 200 TYPE is now 8-bit binary^M^J
+****************************************** DomrxAaSRJk 6 38 250 OK. Current directory is /priv^M^J
+****************************************** DomrxAaSRJk 7 31 200 PORT command successful^M^J
+****************************************** DomrxAaSRJk 8 68 150 Connecting to port 5000^M^J226 File successfully transferred^M^J
+****************************************** DomrxAaSRJk 9 34 250 OK. Current directory is /^M^J
+****************************************** DomrxAaSRJk 10 37 250 OK. Current directory is /pub^M^J
+****************************************** eBFJeOMYqJa 8 71 221-Goodbye. You uploaded 0 and downloaded 0 kbytes.^M^J221 Logout.^M^J
+****************************************** NC2dbwmoVBa 1 273 220---------- Welcome to Pure-FTPd [privsep] ----------^M^J220-You are user number 1 of 50 allowed.^M^J220-Local time is now 16:00. Server port: 21.^M^J220-IPv6 connections are also welcome on this server.^M^J220 You will be disconnected after 15 minutes of inactivity.^M^J
+****************************************** NC2dbwmoVBa 2 21 215 UNIX Type: L8^M^J
+****************************************** NC2dbwmoVBa 3 40 331 User peter OK. Password required^M^J
+****************************************** NC2dbwmoVBa 4 96 230-User peter has group access to:  peter     ^M^J230 OK. Current restricted directory is /^M^J
+****************************************** NC2dbwmoVBa 5 25 200 TYPE is now ASCII^M^J
+****************************************** NC2dbwmoVBa 6 38 250 OK. Current directory is /priv^M^J
+****************************************** NC2dbwmoVBa 7 31 200 PORT command successful^M^J
+****************************************** 538s9eCJ2Y9 8 71 221-Goodbye. You uploaded 0 and downloaded 0 kbytes.^M^J221 Logout.^M^J
+****************************************** NC2dbwmoVBa 8 68 150 Connecting to port 5000^M^J226 File successfully transferred^M^J
+****************************************** NC2dbwmoVBa 9 31 200 PORT command successful^M^J
+****************************************** NC2dbwmoVBa 10 68 150 Connecting to port 5000^M^J226 File successfully transferred^M^J
+****************************************** 3reXpAsZrOl 8 71 221-Goodbye. You uploaded 0 and downloaded 0 kbytes.^M^J221 Logout.^M^J
+****************************************** kRJo6fciiib 1 273 220---------- Welcome to Pure-FTPd [privsep] ----------^M^J220-You are user number 1 of 50 allowed.^M^J220-Local time is now 16:00. Server port: 21.^M^J220-IPv6 connections are also welcome on this server.^M^J220 You will be disconnected after 15 minutes of inactivity.^M^J
+****************************************** kRJo6fciiib 2 21 215 UNIX Type: L8^M^J
+****************************************** kRJo6fciiib 3 40 331 User clark OK. Password required^M^J
+****************************************** kRJo6fciiib 4 96 230-User clark has group access to:  clark     ^M^J230 OK. Current restricted directory is /^M^J
+****************************************** kRJo6fciiib 5 46 250 OK. Current directory is /priv/krypton^M^J
+****************************************** kRJo6fciiib 6 31 200 PORT command successful^M^J
+****************************************** kRJo6fciiib 7 54 550 Can't open miss.txt: No such file or directory^M^J
+****************************************** UGusjyUcJO 1 273 220---------- Welcome to Pure-FTPd [privsep] ----------^M^J220-You are user number 1 of 50 allowed.^M^J220-Local time is now 16:00. Server port: 21.^M^J220-IPv6 connections are also welcome on this server.^M^J220 You will be disconnected after 15 minutes of inactivity.^M^J
+****************************************** UGusjyUcJO 2 21 215 UNIX Type: L8^M^J
+****************************************** UGusjyUcJO 3 40 331 User peter OK. Password required^M^J
+****************************************** UGusjyUcJO 4 96 230-User peter has group access to:  peter     ^M^J230 OK. Current restricted directory is /^M^J
+****************************************** UGusjyUcJO 5 25 200 TYPE is now ASCII^M^J
+****************************************** UGusjyUcJO 6 37 250 OK. Current directory is /pub^M^J
+****************************************** UGusjyUcJO 7 51 227 Entering Passive Mode (10,10,5,106,255,235)^M^J
+****************************************** UGusjyUcJO 8 58 550 Can't open noindex.html: No such file or directory^M^J
+****************************************** UGusjyUcJO 9 34 250 OK. Current directory is /^M^J
+****************************************** WiYyKQ1i3w 1 273 220---------- Welcome to Pure-FTPd [privsep] ----------^M^J220-You are user number 1 of 50 allowed.^M^J220-Local time is now 16:00. Server port: 21.^M^J220-IPv6 connections are also welcome on this server.^M^J220 You will be disconnected after 15 minutes of inactivity.^M^J
+****************************************** WiYyKQ1i3w 2 21 215 UNIX Type: L8^M^J
+****************************************** WiYyKQ1i3w 3 40 331 User bruce OK. Password required^M^J
+****************************************** WiYyKQ1i3w 4 96 230-User bruce has group access to:  bruce     ^M^J230 OK. Current restricted directory is /^M^J
+****************************************** WiYyKQ1i3w 5 32 200 TYPE is now 8-bit binary^M^J
+****************************************** WiYyKQ1i3w 6 38 250 OK. Current directory is /priv^M^J
+****************************************** WiYyKQ1i3w 7 31 200 PORT command successful^M^J
+****************************************** WiYyKQ1i3w 8 56 550 Can't open nofile.cer: No such file or directory^M^J
+****************************************** WiYyKQ1i3w 9 31 200 PORT command successful^M^J
+****************************************** WiYyKQ1i3w 10 68 150 Connecting to port 5000^M^J226 File successfully transferred^M^J
+****************************************** 25bG9Cf2v1c 1 273 220---------- Welcome to Pure-FTPd [privsep] ----------^M^J220-You are user number 1 of 50 allowed.^M^J220-Local time is now 16:00. Server port: 21.^M^J220-IPv6 connections are also welcome on this server.^M^J220 You will be disconnected after 15 minutes of inactivity.^M^J
+****************************************** 25bG9Cf2v1c 2 21 215 UNIX Type: L8^M^J
+****************************************** 25bG9Cf2v1c 3 40 331 User clark OK. Password required^M^J
+****************************************** 25bG9Cf2v1c 4 96 230-User clark has group access to:  clark     ^M^J230 OK. Current restricted directory is /^M^J
+****************************************** 25bG9Cf2v1c 5 46 250 OK. Current directory is /priv/krypton^M^J
+****************************************** 25bG9Cf2v1c 6 22 213 20100714122706^M^J
+****************************************** 25bG9Cf2v1c 7 38 250 OK. Current directory is /priv^M^J
+****************************************** 25bG9Cf2v1c 8 22 213 20100714122706^M^J
+****************************************** 25bG9Cf2v1c 9 34 250 OK. Current directory is /^M^J
+****************************************** kRJo6fciiib 7 71 221-Goodbye. You uploaded 0 and downloaded 0 kbytes.^M^J221 Logout.^M^J
+****************************************** LqejlPyWoqb 1 273 220---------- Welcome to Pure-FTPd [privsep] ----------^M^J220-You are user number 1 of 50 allowed.^M^J220-Local time is now 16:00. Server port: 21.^M^J220-IPv6 connections are also welcome on this server.^M^J220 You will be disconnected after 15 minutes of inactivity.^M^J
+****************************************** LqejlPyWoqb 2 21 215 UNIX Type: L8^M^J
+****************************************** LqejlPyWoqb 3 40 331 User peter OK. Password required^M^J
+****************************************** LqejlPyWoqb 4 96 230-User peter has group access to:  peter     ^M^J230 OK. Current restricted directory is /^M^J
+****************************************** LqejlPyWoqb 5 50 227 Entering Passive Mode (10,10,5,106,156,28)^M^J
+****************************************** LqejlPyWoqb 6 75 150 Accepted data connection^M^J226-Options: -l ^M^J226 2 matches total^M^J
+****************************************** LqejlPyWoqb 7 37 250 OK. Current directory is /pub^M^J
+****************************************** LqejlPyWoqb 8 32 200 TYPE is now 8-bit binary^M^J
+****************************************** LqejlPyWoqb 9 22 213 20100714122706^M^J
+****************************************** UGusjyUcJO 9 71 221-Goodbye. You uploaded 0 and downloaded 0 kbytes.^M^J221 Logout.^M^J
+****************************************** ti2FYeebsi1 1 273 220---------- Welcome to Pure-FTPd [privsep] ----------^M^J220-You are user number 1 of 50 allowed.^M^J220-Local time is now 16:00. Server port: 21.^M^J220-IPv6 connections are also welcome on this server.^M^J220 You will be disconnected after 15 minutes of inactivity.^M^J
+****************************************** ti2FYeebsi1 2 21 215 UNIX Type: L8^M^J
+****************************************** ti2FYeebsi1 3 40 331 User bruce OK. Password required^M^J
+****************************************** ti2FYeebsi1 4 96 230-User bruce has group access to:  bruce     ^M^J230 OK. Current restricted directory is /^M^J
+****************************************** ti2FYeebsi1 5 43 250 OK. Current directory is /pub/wayne^M^J
+****************************************** ti2FYeebsi1 6 22 213 20100714122706^M^J
+****************************************** ti2FYeebsi1 7 14 200 Zzz...^M^J
+****************************************** dTfHUuhtj3 1 273 220---------- Welcome to Pure-FTPd [privsep] ----------^M^J220-You are user number 1 of 50 allowed.^M^J220-Local time is now 16:00. Server port: 21.^M^J220-IPv6 connections are also welcome on this server.^M^J220 You will be disconnected after 15 minutes of inactivity.^M^J
+****************************************** dTfHUuhtj3 2 21 215 UNIX Type: L8^M^J
+****************************************** dTfHUuhtj3 3 40 331 User clark OK. Password required^M^J
+****************************************** dTfHUuhtj3 4 96 230-User clark has group access to:  clark     ^M^J230 OK. Current restricted directory is /^M^J
+****************************************** dTfHUuhtj3 5 25 200 TYPE is now ASCII^M^J
+****************************************** dTfHUuhtj3 6 37 250 OK. Current directory is /pub^M^J
+****************************************** dTfHUuhtj3 7 22 213 20100714122706^M^J
+****************************************** dTfHUuhtj3 8 50 227 Entering Passive Mode (10,10,5,106,190,96)^M^J
+****************************************** dTfHUuhtj3 9 69 150 Accepted data connection^M^J226 File successfully transferred^M^J
+****************************************** dTfHUuhtj3 10 51 227 Entering Passive Mode (10,10,5,106,207,178)^M^J
+****************************************** tSWBEaLrITb 1 273 220---------- Welcome to Pure-FTPd [privsep] ----------^M^J220-You are user number 1 of 50 allowed.^M^J220-Local time is now 16:00. Server port: 21.^M^J220-IPv6 connections are also welcome on this server.^M^J220 You will be disconnected after 15 minutes of inactivity.^M^J
+****************************************** tSWBEaLrITb 2 21 215 UNIX Type: L8^M^J
+****************************************** tSWBEaLrITb 3 40 331 User peter OK. Password required^M^J
+****************************************** tSWBEaLrITb 4 96 230-User peter has group access to:  peter     ^M^J230 OK. Current restricted directory is /^M^J
+****************************************** tSWBEaLrITb 5 37 250 OK. Current directory is /pub^M^J
+****************************************** tSWBEaLrITb 6 31 200 PORT command successful^M^J
+****************************************** tSWBEaLrITb 7 74 150 Connecting to port 5000^M^J226-Options: -l ^M^J226 3 matches total^M^J
+****************************************** tSWBEaLrITb 8 22 213 20100714122706^M^J
+****************************************** 25bG9Cf2v1c 9 71 221-Goodbye. You uploaded 0 and downloaded 0 kbytes.^M^J221 Logout.^M^J
+****************************************** 3cnP8N4GLPi 1 273 220---------- Welcome to Pure-FTPd [privsep] ----------^M^J220-You are user number 1 of 50 allowed.^M^J220-Local time is now 16:00. Server port: 21.^M^J220-IPv6 connections are also welcome on this server.^M^J220 You will be disconnected after 15 minutes of inactivity.^M^J
+****************************************** 3cnP8N4GLPi 2 21 215 UNIX Type: L8^M^J
+****************************************** 3cnP8N4GLPi 3 40 331 User clark OK. Password required^M^J
+****************************************** 3cnP8N4GLPi 4 96 230-User clark has group access to:  clark     ^M^J230 OK. Current restricted directory is /^M^J
+****************************************** 3cnP8N4GLPi 5 46 250 OK. Current directory is /priv/krypton^M^J
+****************************************** 3cnP8N4GLPi 6 38 550 Can't check for file existence^M^J
+****************************************** 3cnP8N4GLPi 7 22 213 20100714122706^M^J
+****************************************** LqejlPyWoqb 9 71 221-Goodbye. You uploaded 0 and downloaded 0 kbytes.^M^J221 Logout.^M^J
+****************************************** ti2FYeebsi1 7 71 221-Goodbye. You uploaded 0 and downloaded 0 kbytes.^M^J221 Logout.^M^J
+****************************************** tSWBEaLrITb 8 71 221-Goodbye. You uploaded 0 and downloaded 0 kbytes.^M^J221 Logout.^M^J
+****************************************** 3cnP8N4GLPi 7 71 221-Goodbye. You uploaded 0 and downloaded 0 kbytes.^M^J221 Logout.^M^J
