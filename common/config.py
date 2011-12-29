@@ -29,6 +29,10 @@ class Configuration:
         self.onlyUniq = False
         self.interactive = True
         self.inputFile = None
+        # New for "Discoverer"
+        self.minWordLength = 3
+        self.ASCIILowerBound = 32
+        self.ASCIIUpperBound = 126
 
         # update from the config dictionary if available
         if d != None:
@@ -42,6 +46,12 @@ class Configuration:
         # do sanity checks
         if self.weight < 0.0 or self.weight > 1.0:
             print "FATAL: Weight must be between 0 and 1"
+            return False
+        if self.ASCIILowerBound>self.ASCIIUpperBound:
+            print "FATAL: ASCII Lower bound must be lower than upper bound"
+            return False
+        if self.minWordLength<1:
+            print "FATAL: MinWordLength must be greater than 0"
             return False
         return True
 

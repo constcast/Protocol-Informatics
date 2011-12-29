@@ -82,6 +82,14 @@ class CommandLineInterface(cmd.Cmd):
         self.config = inst.config
         self.env = inst.env
         
+    def do_disc(self, string):
+        import disccli        
+        inst = disccli.DiscovererCommandLineInterface(self.env, self.config)
+        inst.prompt = self.prompt[:-1]+':Discoverer> '
+        inst.cmdloop()        
+        print "Finishing discoverer mode ..."
+        self.config = inst.config
+        self.env = inst.env 
 
     def do_config(self, string):
         if string == "":
@@ -92,7 +100,7 @@ class CommandLineInterface(cmd.Cmd):
         # try to find a command like "config <variable> <value>
         words = string.split()
         if len(words) != 2:
-            # ok, we didn't find it yet. lets trye for format 
+            # ok, we didn't find it yet. lets try for format 
             # "config <variable>=<value>
             words = string.split('=')
             if len(words) != 2:
@@ -245,3 +253,26 @@ class CommandLineInterface(cmd.Cmd):
                 print i + "\t\t" + str(obj[i])
         else:
             print objIdentifier + ":\t\t" + str(obj)
+
+    def help_PI(self, string):
+        print "Command syntax: PI"
+        print ""
+        print "Starts the Protocol Inference mode."
+
+    def help_restart(self, string):
+        print "Command syntax: restart"
+        print ""
+        print "Restarts the program with the parameters specified"
+        print "on the first start."
+
+    def help_seqs(self, string):
+        print "Command syntax: seqs"
+        print ""
+        print "Starts the sequence modification mode."
+
+    def help_help(self, string):
+        print "Command synatx: help [<keyword>]"
+        print ""
+        print "Shows the help for keyword <keyword>. If <keyword> is "
+        print "omitted, the list of available commadns is shown."
+        

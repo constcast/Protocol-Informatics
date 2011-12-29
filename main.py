@@ -12,6 +12,7 @@
 #
 
 import PI
+import discoverer
 import entropy
 import common
 
