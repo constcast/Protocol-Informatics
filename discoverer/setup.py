@@ -10,4 +10,6 @@ def setup(flowBasedSequences, config):
             for seq in flowInfo.sequences:
                 newMessage = discoverer.core.Message(seq.sequence, config)
                 #print newMessage.get_payload()
+                print "Tokenlist of ", seq.sequence, " = ", newMessage.get_tokenlist()
+                
                 

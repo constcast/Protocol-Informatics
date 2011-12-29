@@ -1,4 +1,4 @@
 {ASCIILowerBound: 32, ASCIIUpperBound: 126, analysis: null, configFile: config.yml,
   ethOffset: 14, fieldDelimiter: null, format: bro, gnuplotFile: null, graph: false,
-  inputFile: ftp_adu_client, interactive: true, maxMessages: 50, messageDelimiter: null,
-  minWordLength: 3, onlyUniq: false, textBased: false, weight: 1.0}
+  inputFile: ftp_adu_client, interactive: true, maxMessages: 50, messageDelimiter: null, minWordLength: 3,
+  onlyUniq: false, textBased: false, weight: 1.0}
