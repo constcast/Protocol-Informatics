@@ -204,3 +204,15 @@ gnuplotFile:
 weight:
 	Weight used to determine how many clusters are found when
 	grouping messages according to their similarity.
+	
+=== Discoverer module specific config options ===
+
+minWordLength:
+	The minimum lenght of printable characters considered as a text token
+
+ASCIILowerBound:
+	The lowest ASCII character considered as printable token (used for text classification)
+
+ASCIIUpperBound:	
+	The highest ASCII character considered as printable token (used for text classification)
+	
