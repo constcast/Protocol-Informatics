@@ -57,5 +57,5 @@ class Message:
                 # We finish a word now
                 tupel = (self.typeText, textSegment, startsAt, textSegmentLength)
                 self.tokenlist.append(tupel)
-                print tupel
+        print self.tokenlist
             
