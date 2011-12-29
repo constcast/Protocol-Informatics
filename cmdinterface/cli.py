@@ -92,7 +92,7 @@ class CommandLineInterface(cmd.Cmd):
         # try to find a command like "config <variable> <value>
         words = string.split()
         if len(words) != 2:
-            # ok, we didn't find it yet. lets trye for format 
+            # ok, we didn't find it yet. lets try for format 
             # "config <variable>=<value>
             words = string.split('=')
             if len(words) != 2:
