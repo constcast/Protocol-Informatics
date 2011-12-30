@@ -1,4 +1,5 @@
 import discoverer
+from collections import *
 
 cluster = {}
 
@@ -15,7 +16,7 @@ def setup(flowBasedSequences, config):
                 #print "Tokenlist of ", seq.sequence, " = ", newMessage.get_tokenrepresentation_string()
                 # Cluster message
                 
-                newrep = newMessage.get_tokenrepresentation_string()
+                newrep = newMessage.get_tokenrepresentation()
                 if not cluster.has_key(newrep):
                     cluster.update({newrep: [newMessage]})
                 else:
