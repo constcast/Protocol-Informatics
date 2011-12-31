@@ -1,62 +1,50 @@
-import discoverer
+from message import *
 from collections import *
+from clustercollection import *
+from cluster import *
 
-cluster = {}
+class Setup:
+    cluster_collection = ClusterCollection()
 
-def setup(flowBasedSequences, config):
-    if flowBasedSequences==None:
-        print "FATAL: No sequences loaded yet"
-        return False
-    
-    for i in flowBasedSequences:
-            flowInfo = flowBasedSequences[i]
-            for seq in flowInfo.sequences:
-                newMessage = discoverer.core.Message(seq.sequence, config)
-                #print newMessage.get_payload()
-                #print "Tokenlist of ", seq.sequence, " = ", newMessage.get_tokenrepresentation_string()
-                # Cluster message
-                
-                newrep = newMessage.get_tokenrepresentation()
-                if not cluster.has_key(newrep):
-                    cluster.update({newrep: [newMessage]})
-                else:
-                    l = cluster.get(newrep)
-                    l.append(newMessage)
-                    cluster.update({newrep: l})
+    def __init__(self,flowBasedSequences, config):
+        if flowBasedSequences==None:
+            print "FATAL: No sequences loaded yet"
+            return False
             
-    # Print cluster
-    keys = cluster.keys()
-    for key in keys:
-        l = cluster.get(key)
-        print "Key:", key, " Elements: ", l  
+        for i in flowBasedSequences:
+                flowInfo = flowBasedSequences[i]
+                for seq in flowInfo.sequences:
+                    newMessage = Message(seq.sequence, config)
+                    self.cluster_collection.add_message_to_cluster(newMessage)
+                    #print newMessage.get_payload()
+                    #print "Tokenlist of ", seq.sequence, " = ", newMessage.get_tokenrepresentation_string()
+                    # Cluster message
+                    
+                    #===============================================================
+                    # newrep = newMessage.get_tokenrepresentation()
+                    # if not cluster.has_key(newrep):
+                    #    cluster.update({newrep: [newMessage]})
+                    # else:
+                    #    l = cluster.get(newrep)
+                    #    l.append(newMessage)
+                    #    cluster.update({newrep: l})
+                    #===============================================================
+         
         
-    # Step 1 finished
+        
+    def __repr__(self):
+        return "%s" % self.cluster_collection
     
-    # Perform format inference
-    # Walk through every cluster and check for variable/constant properties
-    print '+++++++++++++++++++++++++++++++++++'
-    keys = cluster.keys()
-    for key in keys:
-        l = cluster.get(key)
-        print "Key:", key, " Elements: ", l  
-        # get prototypes from first list elemnt
-        prototypeMessage = l[0]
-        tokenList = prototypeMessage.get_tokenlist()
-        tokenIndex = 0
-        result = []
-        for type, value, begin, end in tokenList:
-            # Now we have the value, lets check every other message for the same value
-            constant = True
-            for message in l:
-                tl = message.get_tokenlist()
-                t,v,b,e = tl[tokenIndex]
-                if not value==v:
-                    constant = False
-                    break
-            if constant:
-                result.append("const")
-            else:
-                result.append("variable")
-            tokenIndex +=1
-        print "Result for cluster after property inference: ", result
-                      
+    def get_cluster_collection(self):
+        return self.cluster_collection
+    
+    def debug(self):
+        cluster = self.cluster_collection.get_all_cluster()        
+        # Print cluster
+        for c in cluster:
+            keys = c.keys()
+            for key in keys:
+                l = c.get(key)
+                print "Key:", key, " Elements: ", l  
+            
+        
