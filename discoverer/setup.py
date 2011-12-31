@@ -1,15 +1,15 @@
-from message import *
-from collections import *
-from clustercollection import *
-from cluster import *
+from message import Message
+from clustercollection import ClusterCollection
 
 class Setup:
-    cluster_collection = ClusterCollection()
+    
 
     def __init__(self,flowBasedSequences, config):
         if flowBasedSequences==None:
             print "FATAL: No sequences loaded yet"
             return False
+
+        self.cluster_collection = ClusterCollection()
             
         for i in flowBasedSequences:
                 flowInfo = flowBasedSequences[i]
@@ -36,6 +36,7 @@ class Setup:
         return "%s" % self.cluster_collection
     
     def get_cluster_collection(self):
+        
         return self.cluster_collection
     
     def debug(self):

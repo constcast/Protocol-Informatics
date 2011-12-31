@@ -1,7 +1,3 @@
-from message import *
-from collections import *
-from clustercollection import *
-from cluster import *
 
 def perform_format_inference(cluster_collection, config):        
     # Perform format inference
@@ -30,5 +26,5 @@ def perform_format_inference(cluster_collection, config):
             else:
                result.append("variable")
             tokenIndex +=1
-        print "Result for cluster " , c.get_representation(), " after property inference: ", result
+        print "Result for cluster (" , len(c.get_messages()), " entries)",  c.get_representation(), " after property inference: ", result
                          

@@ -22,5 +22,6 @@ class ClusterCollection():
             self.__cluster.append(c)
         c.get_messages().append(message)
         
-    
+    def num_of_clusters(self):
+        return len(self.__cluster)
     

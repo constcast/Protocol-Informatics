@@ -29,6 +29,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         
         setup = discoverer.setup.Setup(self.env['sequences'], self.config)
         self.env['cluster_collection'] = setup.get_cluster_collection()
+        print "Built ", setup.get_cluster_collection().num_of_clusters(), " clusters"
       
     def do_format_inference(self, string):
         print "Performing format inference on initial clusters"
@@ -39,6 +40,8 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
          
     def do_go(self, string):
         print "Performing discoverer algorithm"
+        if self.env.has_key('cluster_collection'):
+            del(self.env['cluster_collection'])
         self.do_setup("")
         self.do_format_inference("")
         
