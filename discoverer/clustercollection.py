@@ -1,5 +1,5 @@
 from collections import *
-from cluster import *
+from cluster import Cluster
 
 class ClusterCollection():
     def __init__(self):

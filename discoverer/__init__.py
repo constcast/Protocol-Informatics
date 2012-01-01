@@ -3,3 +3,4 @@ import setup
 import cluster
 import clustercollection
 import formatinference
+import semanticinference

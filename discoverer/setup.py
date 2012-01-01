@@ -9,8 +9,7 @@ class Setup:
             print "FATAL: No sequences loaded yet"
             return False
 
-        self.cluster_collection = ClusterCollection()
-            
+        self.cluster_collection = ClusterCollection()    
         for i in flowBasedSequences:
                 flowInfo = flowBasedSequences[i]
                 for seq in flowInfo.sequences:
