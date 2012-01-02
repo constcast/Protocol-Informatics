@@ -5,3 +5,4 @@ import clustercollection
 import formatinference
 import peekable
 import semanticinference
+import recursiveclustering

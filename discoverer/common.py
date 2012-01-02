@@ -10,6 +10,10 @@ def is_ipv4(address):
     if len(parts) != 4:
         return False
     for item in parts:
-        if not 0 <= int(item) <= 255:
+        try:
+            val = int(item)
+        except ValueError:
+            return False
+        if not 0 <= val <= 255:
             return False
     return True

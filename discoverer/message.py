@@ -26,6 +26,9 @@ class Message:
         """Returns the payload of this message object"""
         return self.__payload
     
+    def get_tokenAt(self, idx):
+        return self.__tokenlist[idx]
+    
     def get_tokenlist(self):
         return self.__tokenlist
     
