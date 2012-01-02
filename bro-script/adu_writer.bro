@@ -17,13 +17,13 @@ event bro_done()
 
 event adu_tx(c:connection, astate: adu::adu_state)
 {
-	local mess = fmt("%s", astate$adu);
+	local mess = bytestring_to_hexstr(astate$adu);
 	print clientfd, fmt("****************************************** %s %d %d %s", c$uid, astate$seen_adu_tx, byte_len(mess), mess);
 }
 
 event adu_rx(c: connection, astate: adu::adu_state)
 {
-	local mess = fmt("%s", astate$adu);
+	local mess = bytestring_to_hexstr(astate$adu);
 	print serverfd, fmt("****************************************** %s %d %d %s", c$uid, astate$seen_adu_rx, byte_len(mess), mess);
 }
 
