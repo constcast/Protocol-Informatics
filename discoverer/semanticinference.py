@@ -13,7 +13,12 @@ def perform_semantic_inference(cluster_collection, config):
 				tokenRepresentation.set_semantics([]) # Clear existing semantics from previous run
 				token = tokenRepresentation.get_token()
 				# Check whether it is numeric
-				if common.is_number(token):
+				try:
+					isNumber = common.is_number(token)
+				except TypeError:
+					print "Error checking token ", token, " for number semantics"
+					isNumber = False
+				if isNumber:
 					tokenRepresentation.add_semantic("numeric")
 					#print "Infered semantic inference 'numeric' for token ", token
 					

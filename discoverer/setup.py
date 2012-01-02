@@ -13,7 +13,7 @@ class Setup:
         for i in flowBasedSequences:
                 flowInfo = flowBasedSequences[i]
                 for seq in flowInfo.sequences:
-                    newMessage = Message(seq.sequence, config)
+                    newMessage = Message(seq.message, config) # Used message instead of sequence now
                     self.cluster_collection.add_message_to_cluster(newMessage)
                     #print newMessage.get_payload()
                     #print "Tokenlist of ", seq.sequence, " = ", newMessage.get_tokenrepresentation_string()
