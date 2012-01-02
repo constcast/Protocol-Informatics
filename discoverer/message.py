@@ -121,27 +121,29 @@ class Message:
             tokenList.append(TokenRepresentation(Message.typeBinary, item, startsAt + offset, 1))
         return tokenList
     
-    def tokenizeTextSegment(self, textSegment, startsAt):
-        if len(textSegment)<self.__config.minWordLength:
-            # Word length to short
-            # Create artificially binary token
-            return self.convertTextSegmentToBinaryToken(textSegment,startsAt)   
-        tokens = textSegment.split()
-        tokenList = []
-        lastLength = -1
-        for t in tokens: 
-            tail = t
-            while not tail == "":
-                comp = tail
-                (head, sep, tail) = tail.partition(Message.eolDelimiter) # Make ^M^J two separate tokens
-                tokenList.append(TokenRepresentation(Message.typeText, head, startsAt+lastLength+1, len(head)))
-                lastLength += len(head)
-                if head==comp: # Our eol sequence was not included in the token, so go to the next one
-                    break
-                # Add the eol characters
-                tokenList.append(TokenRepresentation(Message.typeBinary, 0xd, startsAt+lastLength+1, 1))
-                tokenList.append(TokenRepresentation(Message.typeBinary, 0xa, startsAt+lastLength+2, 1))       
-        return tokenList           
+    #===========================================================================
+    # def tokenizeTextSegment(self, textSegment, startsAt):
+    #    if len(textSegment)<self.__config.minWordLength:
+    #        # Word length to short
+    #        # Create artificially binary token
+    #        return self.convertTextSegmentToBinaryToken(textSegment,startsAt)   
+    #    tokens = textSegment.split()
+    #    tokenList = []
+    #    lastLength = -1
+    #    for t in tokens: 
+    #        tail = t
+    #        while not tail == "":
+    #            comp = tail
+    #            (head, sep, tail) = tail.partition(Message.eolDelimiter) # Make ^M^J two separate tokens
+    #            tokenList.append(TokenRepresentation(Message.typeText, head, startsAt+lastLength+1, len(head)))
+    #            lastLength += len(head)
+    #            if head==comp: # Our eol sequence was not included in the token, so go to the next one
+    #                break
+    #            # Add the eol characters
+    #            tokenList.append(TokenRepresentation(Message.typeBinary, 0xd, startsAt+lastLength+1, 1))
+    #            tokenList.append(TokenRepresentation(Message.typeBinary, 0xa, startsAt+lastLength+2, 1))       
+    #    return tokenList           
+    #===========================================================================
     
     def tokenizeTextSegment2(self, textSegment, startsAt):        
         tokens = textSegment.split()
