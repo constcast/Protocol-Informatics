@@ -1,8 +1,7 @@
 import curses
-from collections import *
+import string
 
-TokenRepresentation = namedtuple('TokenRepresentation', ['type', 'token', 'startsAt', 'length'])
-
+from tokenrepresentation import TokenRepresentation
 class Message:
     # "Enums" for the token types
     typeText = "text"
@@ -11,13 +10,16 @@ class Message:
     eolDelimiter = "^M^J"
        
     def __repr__ (self): 
-        return 'Msg: %s' % (self.__tokenlist)
+        return 'Msg: %s %s' % (self.__payload, self.__tokenlist)
      
     def __init__(self, payload, config):
         self.__payload = payload
         self.__config = config
         self.__tokenlist = []
         self.__analyze()
+        
+    def get_length(self):
+        return len(self.__payload)
         
     def get_payload(self):
         """Returns the payload of this message object"""
@@ -28,8 +30,8 @@ class Message:
     
     def get_tokenrepresentation(self):
         l = []
-        for type,raw,start,end in self.__tokenlist:
-            l.append(type)
+        for tokenRepresentation in self.__tokenlist:
+            l.append(tokenRepresentation.get_tokenType())
         t = tuple(l)
         return t
       
