@@ -7,6 +7,8 @@ and with an marker which reflects at which position in the communication dialog 
 message appeared.
 """
 
+from curses.ascii import *
+
 class FlowInfo:
 	def __init__(self, identifier = None):
 		self.identifier = identifier
@@ -71,14 +73,37 @@ class FlowInfo:
 
 	
 class Sequence:
-	def __init__(self, string, mnumber):
-		self.message = string
-		self.mNumber = mnumber
+	def __init__(self, inputData, mnumber):
+		"""
+		Read the inputData and parse it according to the rules.
+		The inputData might be formatted in two different encondings:
+		- bytestring (as read from a pcap file)
+		        If we read a byte string, we store it in self.message.
+		        Afterwards, we convert its characters into ints and
+			store them into self.sequence
+		- list of bytes (as read from a bro output file)
+		        If we read a list of ints, we store them into self.sequences
+			and try to encode a ASCII representation in message. This
+			will only convert printable characters into their characters
+			and will substitue all others with . 
+		"""
+		if isinstance(inputData, basestring):
+			# received a bytestring
+			self.message = inputData
 
-		self.sequence = []
-		# digitize message
-		for c in string: 
-			self.sequence.append(ord(c))
+			self.sequence = []
+			# digitize message
+			for c in inputData: 
+				self.sequence.append(ord(c))
+		else:
+			self.sequence = inputData
+			self.message = ""
+			for i in self.sequence:
+				if isprint(chr(i)):
+					self.message += chr(i)
+				else:
+					self.message += '.'
+		self.mNumber = mnumber
 
 	
 	def getMessage(self):
