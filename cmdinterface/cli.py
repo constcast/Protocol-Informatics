@@ -172,6 +172,8 @@ class CommandLineInterface(cmd.Cmd):
                 return
         except Exception as inst:
             print ("FATAL: Error reading input file '%s':\n %s" % (filename, inst))
+            import traceback
+            traceback.print_exc(file=sys.stdout)
             return
 
         if sequences != None:
