@@ -91,6 +91,9 @@ class CommandLineInterface(cmd.Cmd):
         self.config = inst.config
         self.env = inst.env 
 
+    def help_disc(self):
+        print "Enters 'Discoverer' mode"
+    
     def do_config(self, string):
         if string == "":
             print "Current configuration: "

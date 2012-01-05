@@ -2,6 +2,15 @@ from collections import Counter
 from cluster import Cluster
 
 class ClusterCollection():
+    """
+    This class acts as a collection for clusters
+    It offers functions to add and remove a cluster as well as
+    adding messages to the correct cluster based on it's token representation.
+    add_message_to_cluster() will only work in the initial clustering phase
+    when each cluster has a unique format
+    function mergeClusterWithSameFormat merges two clusters which exhibit the same
+    representation.
+    """
     def __init__(self):
         self.__cluster = []
     

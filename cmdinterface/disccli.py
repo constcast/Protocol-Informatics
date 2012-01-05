@@ -51,7 +51,10 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             print "FATAL: Initial clustering not yet performed. Run 'setup' first pleaset!"
             return False    
         discoverer.recursiveclustering.perform_recursive_clustering(self.env['cluster_collection'], 0, self.config)
-        
+    
+    def help_go(self):
+        print "Automatically executes all steps needed to perfom the 'Discoverer' algorithm on the set of messages"
+            
     def do_go(self, string):
         print "Performing discoverer algorithm"
         if self.env.has_key('cluster_collection'):
@@ -66,7 +69,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
      
         for c in cluster:         
             messages = c.get_messages()
-            print "Cluster information: %s entries, %s format infered" % (len(messages), c.get_format_inference())
+            print "Cluster information: %s entries, %s format inferred" % (len(messages), c.get_format_inference())
             for message in messages:
                 print message
         

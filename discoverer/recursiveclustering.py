@@ -5,6 +5,21 @@ import formatinference
 import semanticinference
 
 def perform_recursive_clustering(cluster_collection, startAt, config):
+    """
+    Performs a recursive clustering on a list of clusters given via cluster_collection.
+    The recursion is performed according to the Discoverer paper by Cui et al.
+    At first new number of distinct values for each token are calculated in each cluster and
+    if this number is lower than a configurable number, the token is considered a FD.
+    Then the number of subclusters that would be generated is calculated. If these subclusters
+    contain at least one cluster containing more than a configurable amount of messages, the clustering
+    is performed and the token is considered a FD. Then the recursion is performed on each of the new clusters
+    with the next token.
+    
+    TODO: Merging phase
+    FIXME: There is one cluster on top with lots of messages that should be subclusterable
+    
+    """
+    
     # Scan for FD token, Phase 1
     clusters = cluster_collection.get_all_cluster()
     # Save startAt information over cluster iteration
@@ -33,7 +48,8 @@ def perform_recursive_clustering(cluster_collection, startAt, config):
                         break
                 if wouldCluster:
                     # Create new cluster
-                    print "Subcluster prerequisites fulfilled. Splitting cluster and perform recursion"
+                    print "Subcluster prerequisites fulfilled. Adding FD semantic, splitting cluster and entering recursion"
+                    message.get_tokenAt(startAt).add_semantic("FD")
                     newCollection = ClusterCollection()
                     for key in sumUp.keys():
                             messagesWithValue = cluster.get_messages_with_value_at(startAt,key)
@@ -45,6 +61,7 @@ def perform_recursive_clustering(cluster_collection, startAt, config):
                     # Perform format inference on new cluster collection
                     formatinference.perform_format_inference(newCollection, config)
                     # Merge clusters with same format
+                    # This steps still needs clarification...
                     #newCollection.mergeClustersWithSameFormat()
                         
                     semanticinference.perform_semantic_inference(newCollection, config)

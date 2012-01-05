@@ -1,5 +1,11 @@
 
 def perform_format_inference(cluster_collection, config):        
+    """
+    This function performs format inferrence on a cluster collection given.
+    The value of the token for each message within a cluster is inspected and
+    the information const/variable is inferred accordingly.
+    
+    """
     # Perform format inference
     # Walk through every cluster and check for variable/constant properties
     cluster = cluster_collection.get_all_cluster()        
