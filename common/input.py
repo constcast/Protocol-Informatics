@@ -173,7 +173,8 @@ class Bro(Input):
          ConnectionID  == alphnumeric unique connection identifier 
          MessageNumber == the message number of the message within the connection
          Content-Length == the length of the message 
-         message == the message itself which has a length of Content-Length
+         message == the message itself which has a length of Content-Length.
+                    It is encoded in hex format
     """
 
     def consumeMessageBlock(self, data, connectionID, messageNumber, contentLength):
@@ -183,28 +184,21 @@ class Bro(Input):
         if len(data) != contentLength:
             raise Exception("Error while parsing input file. Message:\n\n%s\n\nReal length %d does not match ContentLength %s" % (data, len(data), contentLength))
 
-# 	# try to split the reassembled message into parts if a message delimiter is known
-# 	if self.messageDelimiter:
-# 		messageParts = data.split(self.messageDelimiter)
-# 	else:
-# 		messageParts = data
-
-# 	for seq in messageParts:
-# 		if len(seq) == 0:
-# 			continue
-
-# 	        # only insert uniq messages into the list of seuqences. avoid duplicate
-# 	        l = len(self.set)
-# 	        self.set.add(seq)
-# 	        if len(self.set) == l and self.onlyUniq:
-#        		     continue
-
         self.readMessages += 1
 
         if not connectionID in self.connections:
             self.connections[connectionID] = sequences.FlowInfo(connectionID)
-                    
-        self.connections[connectionID].addSequence(sequences.Sequence(data, messageNumber))
+
+        # transform hex-encoding into byte sequences
+        seq = []
+        idx = 0
+        while idx < len(data):
+            num = data[idx] + data[idx + 1]
+            seq.append(int(num, 16))
+            idx += 2
+            
+            
+        self.connections[connectionID].addSequence(sequences.Sequence(seq, messageNumber))
 
     def getConnections(self):
         return self.connections
