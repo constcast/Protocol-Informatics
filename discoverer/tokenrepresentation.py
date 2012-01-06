@@ -24,7 +24,7 @@ class TokenRepresentation():
         if self.__tokenType == message.Message.typeText:
             return '(%s,"%s",%s,%s,%s)' % (self.__tokenType, self.__token, self.__startsAt, self.__length, self.__semantic)
         else:
-            return '(%s,0x%s,%s,%s,%s)' % (self.__tokenType, self.__token, self.__startsAt, self.__length, self.__semantic)
+            return '(%s,%s,%s,%s,%s)' % (self.__tokenType, hex(self.__token), self.__startsAt, self.__length, self.__semantic)
         
     
     def get_tokenType(self):

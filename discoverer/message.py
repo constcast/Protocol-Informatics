@@ -149,17 +149,18 @@ class Message:
         offset = 0
         tokenList = []
         for item in textSegment:
-            tokenList.append(TokenRepresentation(Message.typeBinary, item, startsAt + offset, 1))
+            tokenList.append(TokenRepresentation(Message.typeBinary, ord(item), startsAt + offset, 1))
         return tokenList
     
     def tokenizeTextSegment(self, textSegment, startsAt):
+        # TODO: Should we add explicit whitespace tokens as well?
         if len(textSegment)<self.__config.minWordLength:
             # Word length to short
             # Create artificially binary token
             return self.convertTextSegmentToBinaryToken(textSegment,startsAt)   
         tokens = textSegment.split()
         tokenList = []
-        lastLength = -1
+        lastLength = 0
         for t in tokens: 
             #===================================================================
             # tail = t
@@ -174,7 +175,11 @@ class Message:
             #    tokenList.append(TokenRepresentation(Message.typeBinary, 0xd, startsAt+lastLength+1, 1))
             #    tokenList.append(TokenRepresentation(Message.typeBinary, 0xa, startsAt+lastLength+2, 1))       
             #===================================================================
-            tokenList.append(TokenRepresentation(Message.typeText, t, startsAt+lastLength+1, len(t)))
+            tokenStartPos = startsAt+lastLength
+            if not lastLength == 0: # Add whitespace gap for every token but the first
+                tokenStartPos += 1
+            tokenList.append(TokenRepresentation(Message.typeText, t, tokenStartPos, len(t)))
+            lastLength+=len(t)
         return tokenList           
     
     #===========================================================================
