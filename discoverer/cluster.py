@@ -30,3 +30,9 @@ class Cluster(dict):
                 l.append(message)
         return l
     
+    def get_values_for_token(self, tokenIdx):
+        l = []
+        for message in self.get('messages'):
+            l.append(message.get_token())
+        return set(l)
+            

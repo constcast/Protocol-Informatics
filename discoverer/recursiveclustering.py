@@ -37,13 +37,13 @@ def perform_recursive_clustering(cluster_collection, startAt, config):
             for message in cluster.get_messages():
                 l.append(message.get_tokenAt(startAt).get_token())
             numOfDistinctValuesForToken = len(set(l))
-            if 1 < numOfDistinctValuesForToken <= 10:
+            if 1 < numOfDistinctValuesForToken <= config.maxDistinctFDValues:
                 # FD candidate found
                 # Check number of potential clusters
                 sumUp = Counter(l)
                 wouldCluster = False
                 for key in sumUp.keys():
-                    if sumUp.get(key)>3: # Minimum cluster size of at least one cluster
+                    if sumUp.get(key)>config.minimumClusterSize: # Minimum cluster size of at least one cluster
                         wouldCluster = True
                         break
                 if wouldCluster:

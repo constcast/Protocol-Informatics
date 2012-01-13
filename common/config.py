@@ -30,9 +30,14 @@ class Configuration:
         self.interactive = True
         self.inputFile = None
         # New for "Discoverer"
-        self.minWordLength = 3
-        self.ASCIILowerBound = 32
-        self.ASCIIUpperBound = 126
+        self.minWordLength = 3        
+        self.maxMessagePrefix = 2048
+        self.minimumClusterSize = 5
+        self.maxDistinctFDValues = 5
+        # Used for NW alignment in Discoverer
+        self.matchScore = 1
+        self.mismatchScore = 1
+        self.gapScore = 1
 
         # update from the config dictionary if available
         if d != None:
@@ -47,9 +52,11 @@ class Configuration:
         if self.weight < 0.0 or self.weight > 1.0:
             print "FATAL: Weight must be between 0 and 1"
             return False
-        if self.ASCIILowerBound>self.ASCIIUpperBound:
-            print "FATAL: ASCII Lower bound must be lower than upper bound"
+        
+        if self.maxMessagePrefix<1:
+            print "FATAL: maxMessagePrefix must be greater than 0"
             return False
+        
         if self.minWordLength<1:
             print "FATAL: MinWordLength must be greater than 0"
             return False

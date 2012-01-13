@@ -36,9 +36,9 @@ class ClusterCollection():
         l = []
         for cluster in self.__cluster:
             l.append(tuple(cluster.get_format_inference()))
-        sumUp = Counter(l)
+        sumUp = Counter(l) # Counts identical format inference tuples
         cntMerged = 0
-        for key in sumUp.keys():
+        for key in sumUp.keys(): # Iterate all existing format inference tuples
             if sumUp.get(key)>1: # There are clusters with the same format inferred
                 target = None
                 for cluster in self.__cluster:
@@ -49,9 +49,10 @@ class ClusterCollection():
                             target.add_messages(cluster.get_messages())
                             self.__cluster.remove(cluster)
                             cntMerged += 1    
-                self.__cluster.append(target)
+                # self.__cluster.append(target) Not necessary: target is already in cluster
                 print "Merged ", cntMerged, " clusters with the same format"
                 
+    
         
     def add_message_to_cluster(self, message):
         rep = message.get_tokenrepresentation()
