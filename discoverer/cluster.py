@@ -11,8 +11,27 @@ class Cluster(dict):
     via get_messages_with_value_at()
     """
     def __init__(self, representation):
-        self.update({'messages':[], 'representation':representation, 'format_inference':[]})        
+        self.update({'messages':[], 'representation':representation, 'format_inference':[], 'semantics':{}})        
     
+    def add_semantics(self, idx, semantic):
+        if not self.get('semantics').has_key(idx):
+            self.get('semantics')[idx] = []
+        self.get('semantics')[idx].append(semantic)
+    
+    def get_semantics(self):
+        return self.get('semantics')
+    
+    def get_formats(self):
+        formats = []
+        for i in range(0,len(self.get('format_inference'))):
+            formats.append(self.get_format(i))
+        return formats
+    
+    def get_format(self, idx):
+        if self.get('semantics').has_key(idx):
+            return (self.get('representation')[idx], self.get('format_inference')[idx], set(self.get('semantics')[idx]))
+        else: 
+            return (self.get('representation')[idx], self.get('format_inference')[idx],[])
     def get_messages(self):
         return self.get('messages')
     def add_messages(self, messages):

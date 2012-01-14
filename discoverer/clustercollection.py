@@ -1,5 +1,6 @@
 from collections import Counter
 from cluster import Cluster
+import random
 
 class ClusterCollection():
     """
@@ -51,8 +52,9 @@ class ClusterCollection():
                             cntMerged += 1    
                 # self.__cluster.append(target) Not necessary: target is already in cluster
                 print "Merged ", cntMerged, " clusters with the same format"
-                
     
+    def get_random_cluster(self):             
+        return random.choice(self.__cluster)
         
     def add_message_to_cluster(self, message):
         rep = message.get_tokenrepresentation()

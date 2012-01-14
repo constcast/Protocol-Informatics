@@ -3,6 +3,7 @@ from cluster import Cluster
 from clustercollection import ClusterCollection
 import formatinference
 import semanticinference
+import needlewunsch
 
 def perform_recursive_clustering(cluster_collection, startAt, config):
     """
@@ -60,11 +61,20 @@ def perform_recursive_clustering(cluster_collection, startAt, config):
                     
                     # Perform format inference on new cluster collection
                     formatinference.perform_format_inference(newCollection, config)
+                    semanticinference.perform_semantic_inference(newCollection, config)
                     # Merge clusters with same format
                     # This steps still needs clarification...
                     #newCollection.mergeClustersWithSameFormat()
-                        
-                    semanticinference.perform_semantic_inference(newCollection, config)
+                    
+                    # Perform needle wunsch
+                    #===========================================================
+                    # cluster1 = newCollection.get_random_cluster()
+                    # cluster2 = newCollection.get_random_cluster()
+                    # format1 = cluster1.get_formats()
+                    # format2 = cluster2.get_formats()
+                    # needlewunsch.needlewunsch(format1, format2)
+                    # 
+                    #===========================================================
                     # Perform recursive step
                     perform_recursive_clustering(newCollection, startAt+1, config)
                     # Remove old parent cluster
