@@ -73,6 +73,9 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             for message in messages:
                 print message
         
+        # Needlewunsch
+        discoverer.needlewunsch.needlewunsch("STERNCHEN", "BAERCHEN")
+        
     def do_discoverer(self, string):
         print "We are already in Discoverer mode!"
         
