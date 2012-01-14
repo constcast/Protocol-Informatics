@@ -5,6 +5,7 @@
 import cmd, sys, os
 import discoverer
 import cli
+import discoverer.message
 
 class DiscovererCommandLineInterface(cli.CommandLineInterface):
     def __init__(self, env, config):
@@ -68,8 +69,8 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         cluster = self.env['cluster_collection'].get_all_cluster()        
      
         for c in cluster:         
-            messages = c.get_messages()
-            print "Cluster information: %s entries, %s format inferred" % (len(messages), c.get_format_inference())
+            messages =  c.get_messages()            
+            print "Cluster information: %s entries, %s format inferred, %s token pattern" % (len(messages), c.get_format_inference(), c.get_representation())
             for message in messages:
                 print message
         

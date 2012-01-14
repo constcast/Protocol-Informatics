@@ -30,7 +30,11 @@ class Message:
         return 'Msg: "%s" %s' % (self.__message, self.__tokenlist)
      
     def __init__(self, payload, config):
-        self.__payload = payload
+        if len(payload)>config.maxMessagePrefix:
+            # Strip payload to maxMessagePreif
+            self.__payload = payload[0:config.maxMessagePrefix]
+        else:
+            self.__payload = payload
         self.__message = ""
         self.__config = config
         self.__tokenlist = []
@@ -56,6 +60,12 @@ class Message:
     
     def get_tokenAt(self, idx):
         return self.__tokenlist[idx]
+    
+    def get_tokenAtPos(self, pos):
+        for token in self.__tokenlist:
+            if token.get_startAt()==pos or token.get_StartsAt()+token.get_length()>=pos:
+                return token
+        return None
     
     def get_tokenlist(self):
         return self.__tokenlist
