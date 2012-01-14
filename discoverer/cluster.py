@@ -22,12 +22,21 @@ class Cluster(dict):
         return self.get('semantics')
     
     def get_formats(self):
+        """
+        Returns a list of all the format representations of the token
+        """
         formats = []
         for i in range(0,len(self.get('format_inference'))):
             formats.append(self.get_format(i))
         return formats
     
     def get_format(self, idx):
+        """
+        Returns a tuple of format data for a given token consisting of
+        * text/binary classification
+        * the inferred format (constant vs. variable)
+        * its semantics
+        """
         if self.get('semantics').has_key(idx):
             return (self.get('representation')[idx], self.get('format_inference')[idx], set(self.get('semantics')[idx]))
         else: 

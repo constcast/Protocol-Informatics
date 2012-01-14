@@ -1,3 +1,8 @@
+# This code has been taken from
+# http://www.weigelworld.org/Members/shenz/lectures/ws-2008-2009/vorlesung-mit-ubungen-bioinformatik/ubungsblatter/Needleman-Wunsch.py/view
+# and adapted to work with lists of tuples instead of pure chars
+
+
 #
 # Vorlesung "Vorlesung mit \"Ubungen: Bioinformatik
 #

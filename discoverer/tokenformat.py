@@ -1,4 +1,8 @@
 class TokenFormat:
+    """
+    Represents a token for NW aligment checks
+    """
+    
     def __init__(self, format):
         self.format = format
         
