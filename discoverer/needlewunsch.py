@@ -81,22 +81,32 @@ def needlewunsch(seqA, seqB):
     j = n
     while i > 0 or j > 0:
         if T[i,j] == 0:   # diagonal: keine Gaps
-            #X = A[i-1] + X
-            #Y = B[j-1] + Y
-            X.insert(0,A[i-1])
-            Y.insert(0,B[j-1])
+            
+            
+            #===================================================================
+            # X.insert(0,A[i-1])
+            # Y.insert(0,B[j-1])
+            # 
+            #===================================================================
+            X.insert(0,"*")
+            Y.insert(0,"*")
+            
             (i,j) = (i-1, j-1)
         elif T[i,j] == -1: # nach links (horizontal): Gap in B
-            #X = A[i-1] + X
-            #Y = "-"    + Y
-            X.insert(0,A[i-1])
-            Y.insert(0,"GAP")
+            
+            #X.insert(0,A[i-1])
+            #Y.insert(0,"GAP")
+            
+            X.insert(0,"*")
+            Y.insert(0,"_")
             i = i - 1
         else:              # nach oben (vertical): Gap in A
-            #X = "-"    + X
-            #Y = B[j-1] + Y
-            X.insert(0,"GAP")
-            Y.insert(0,B[j-1])
+            
+            #X.insert(0,"GAP")
+            #Y.insert(0,B[j-1])
+            
+            X.insert(0,"_")
+            Y.insert(0,"*")
             j = j -1
     
     # Gib das Alignment aus.
