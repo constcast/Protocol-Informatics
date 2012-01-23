@@ -61,6 +61,6 @@ class Cluster(dict):
     def get_values_for_token(self, tokenIdx):
         l = []
         for message in self.get('messages'):
-            l.append(message.get_token())
+            l.append(message.get_tokenAt(tokenIdx))
         return set(l)
             
