@@ -4,6 +4,7 @@ from clustercollection import ClusterCollection
 import formatinference
 import semanticinference
 import needlewunsch
+import copy
 
 def perform_recursive_clustering(cluster_collection, startAt, config):
     """
@@ -22,11 +23,14 @@ def perform_recursive_clustering(cluster_collection, startAt, config):
     """
     
     # Scan for FD token, Phase 1
-    clusters = cluster_collection.get_all_cluster()
+    clusters = cluster_collection.get_all_cluster()[:] # <-- "[:]" Very very important... otherwise our iterated list will change because of deletions...
+    
     # Save startAt information over cluster iteration
     __startAt = startAt
+     
     for cluster in clusters:
         print "Starting processing for next cluster (", len(cluster.get_messages()), " messages)"
+        
         startAt = __startAt
         #tokenValue = token.get_token()
         # Check distinct number of values of token
@@ -60,13 +64,14 @@ def perform_recursive_clustering(cluster_collection, startAt, config):
                     print len(sumUp.keys()), " sub clusters generated"
                     
                     # Perform format inference on new cluster collection
-                    formatinference.perform_format_inference(newCollection, config)
+                    formatinference.perform_format_inference_for_cluster_collection(newCollection, config)
                     semanticinference.perform_semantic_inference(newCollection, config)
                     # Merge clusters with same format
                     # This steps still needs clarification...
-                    #newCollection.mergeClustersWithSameFormat()
+                    newCollection.mergeClustersWithSameFormat(config)
                     
                     # Perform needle wunsch
+                    # Edit 20120120 - not here
                     #===========================================================
                     # cluster1 = newCollection.get_random_cluster()
                     # cluster2 = newCollection.get_random_cluster()

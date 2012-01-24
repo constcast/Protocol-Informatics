@@ -89,20 +89,35 @@ def needlewunsch(seqA, seqB):
             X.insert(0,"*")
             Y.insert(0,"*")
             (i,j) = (i-1,j-1)  
-        elif T[i,j] == -1: # nach links (horizontal): Gap in B
+            
+            
+            
             #===================================================================
             # X.insert(0,A[i-1])
-            # Y.insert(0,"GAP")
+            # Y.insert(0,B[j-1])
+            # 
             #===================================================================
+            X.insert(0,"*")
+            Y.insert(0,"*")
+            
+            (i,j) = (i-1, j-1)
+        elif T[i,j] == -1: # nach links (horizontal): Gap in B
+            #X.insert(0,A[i-1])
+            #Y.insert(0,"GAP")
+            
+            X.insert(0,"*")
+            Y.insert(0,"_")
+            
+            #X.insert(0,A[i-1])
+            #Y.insert(0,"GAP")
+            
             X.insert(0,"*")
             Y.insert(0,"_")
             i = i - 1
-        else:              # nach oben (vertical): Gap in A
+        else:              # nach oben (vertical): Gap in A            
+            #X.insert(0,"GAP")
+            #Y.insert(0,B[j-1])
             
-            #===================================================================
-            # X.insert(0,"GAP")
-            # Y.insert(0,B[j-1])
-            #===================================================================
             X.insert(0,"_")
             Y.insert(0,"*")
             j = j -1
