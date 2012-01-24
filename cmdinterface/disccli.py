@@ -6,6 +6,7 @@ import cmd, sys, os
 import discoverer
 import cli
 import discoverer.message
+import time
 
 class DiscovererCommandLineInterface(cli.CommandLineInterface):
     def __init__(self, env, config):
@@ -60,11 +61,22 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         print "Performing discoverer algorithm"
         if self.env.has_key('cluster_collection'):
             del(self.env['cluster_collection'])
+        start = time.time()
         self.do_setup("")
+        elapsed = (time.time() - start)
+        print "Setup took ", elapsed, " seconds "
+        start = time.time()
         self.do_format_inference("")
+        elapsed = (time.time() - start)
+        print "Format inference took ", elapsed, " seconds "
+        start = time.time()
         self.do_semantic_inference("")
+        elapsed = (time.time() - start)
+        print "Semantic inference took ", elapsed, " seconds "
+        start = time.time()
         self.do_recursive_clustering("")        
-        
+        elapsed = (time.time() - start)
+        print "Recursive clustering took ", elapsed, " seconds "
         print "Results:"
         cluster = self.env['cluster_collection'].get_all_cluster()        
      

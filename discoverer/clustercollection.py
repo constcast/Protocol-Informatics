@@ -148,7 +148,7 @@ class ClusterCollection():
                             else:
                                 # Search for cluster2's value in cluster1
                                 cluster2val = cluster2.get_messages()[0].get_tokenAt(format_token_idx).get_token()
-                                hits = cluster1.get_messages_with_value_at(format_token_idx,cluster1val)
+                                hits = cluster1.get_messages_with_value_at(format_token_idx,cluster2val)
                                 found = len(hits)>0
                             if not found:
                                 # No instance of variable in const mismatch --> will not merge
