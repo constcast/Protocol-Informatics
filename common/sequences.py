@@ -73,7 +73,7 @@ class FlowInfo:
 
 	
 class Sequence:
-	def __init__(self, inputData, mnumber):
+	def __init__(self, inputData, connIdent, mnumber):
 		"""
 		Read the inputData and parse it according to the rules.
 		The inputData might be formatted in two different encondings:
@@ -103,6 +103,7 @@ class Sequence:
 					self.message += chr(i)
 				else:
 					self.message += '.'
+		self.connIdent = connIdent
 		self.mNumber = mnumber
 
 	
