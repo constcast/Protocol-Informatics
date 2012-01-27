@@ -28,20 +28,22 @@ def perform_semantic_inference(cluster_collection, config):
                 tokenRepresentation.set_semantics([]) # Clear existing semantics from previous run
                 token = tokenRepresentation.get_token()
                 # Check whether it is numeric
+                
                 try:
-                    isNumber = common.is_number(token)
+                    isNumber = tokenRepresentation.get_tokenType()=='text' and common.is_number(token)
                 except TypeError:
                     print "Error checking token ", token, " for number semantics"
                     isNumber = False
                 if isNumber:
                     tokenRepresentation.add_semantic("numeric")
-                    c.add_semantics(idx,"numeric")
+                    #c.add_semantics(idx,"numeric")
                     #print "Inferred semantic inference 'numeric' for token ", token
+                
                     
                 # Check whether it is an IP address
                 if isinstance(token,str) and common.is_ipv4(token):
                     tokenRepresentation.add_semantic("ipv4 address")
-                    c.add_semantics(idx,"ipv4 address")
+                    # Do not add to cluster unless it is valid for all c.add_semantics(idx,"ipv4 address")
                     #print "Inferred semantic inference 'ipv4 address' for token ", token
         
                 # Check for carriage return identifiers
@@ -55,14 +57,17 @@ def perform_semantic_inference(cluster_collection, config):
                             inferred_formats = c.get_format_inference()
                             if inferred_formats[idx]=='const' and inferred_formats[idx+1]=='const':
                                 tokenRepresentation.add_semantic("CR")
-                                c.add_semantics(idx,"CR")
+                                #c.add_semantics(idx,"CR")
                                 nextOne = iterator.next()
-                                nextOne.set_semantics(["numeric","LF"])
-                                c.add_semantics(idx+1, "LF")
+                                nextOne.set_semantics(["LF"])
+                                #c.add_semantics(idx+1, "LF")
                                 idx += 1
                     
                 idx +=1
         # Perform other tests like "is length field?"
+        # explicitely iterate through all messages like stated in the paper
+        # we could also postpone this to the call of 'pushToClusterSeminatics" but..
+        
         reference_message = messages[0]
         tokenlist = reference_message.get_tokenlist()
         idx = 0
@@ -90,8 +95,49 @@ def perform_semantic_inference(cluster_collection, config):
                 if is_length: # set "lengthfield" semantic for every message in the cluster at the given position
                     for message in messages: # TODO: What if there's only one message in the cluster? Sensible?
                         message.get_tokenlist()[idx].add_semantic("lengthfield")
-                        c.add_semantics(idx,"lengthfield")
-            idx += 1    
+                        c.add_semantic_for_token(idx,"lengthfield")
+            idx += 1
+    
+    # Push to cluster
+    pushUpToCluster(cluster_collection, config)    
+    
+    
+def pushUpToCluster(cluster_collection, config):
+    cluster = cluster_collection.get_all_cluster()        
+    for c in cluster:
+        messages = c.get_messages()
+        # Sum up all semantics - put into cluster semantics if valid for every single message
+        reference_message = messages[0]
+        tokenlist = reference_message.get_tokenlist()
+        idx = 0
+        for tokenRepresentation in tokenlist:          
+
+            referenceSemantics = tokenRepresentation.get_semantics()
+            # Keep FD semantics on cluster level
+            if c.has_semantic_for_token(idx,"FD"):
+                c.clear_semantics_for_token(idx)
+                c.add_semantic_for_token(idx,"FD")
+            else:
+                c.clear_semantics_for_token(idx)
+            for semantic in referenceSemantics:                                    
+                # Search every message instance in message cluster    
+                for message in messages:
+                    cmpsemantics = message.get_tokenlist()[idx].get_semantics()
+                    foundSemantic = False
+                    for cmpsemantic in cmpsemantics:
+                        if cmpsemantic==semantic:
+                            foundSemantic = True
+                            break
+                    if not foundSemantic:
+                        break
+                
+                if foundSemantic == True:
+                    # Add to cluster semantics
+                    c.add_semantic_for_token(idx,semantic)
+                    
+            idx += 1
+                        
+                        
 
         
         

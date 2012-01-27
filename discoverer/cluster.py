@@ -13,13 +13,42 @@ class Cluster(dict):
     def __init__(self, representation):
         self.update({'messages':[], 'representation':representation, 'format_inference':[], 'semantics':{}})        
     
-    def add_semantics(self, idx, semantic):
+    def clear_semantics(self):
+        
+        for k in self.get('semantics'):
+            del self.get('semantics')[k]
+        
+    def clear_semantics_for_token(self,idx):
+        if self.get('semantics').has_key(idx):                
+            del self.get('semantics')[idx]
+            
+    def has_semantic_for_token(self, idx, semantic):
+        if not self.get('semantics').has_key(idx):
+            return False
+        try:
+            return 0<=self.get('semantics')[idx].index(semantic)
+        except:
+            return False
+    def set_semantics(self, semantics):
+        self.clear_semantics()
+        self.get('semantics').update(semantics)
+
+    def add_semantics(self, semantics):
+        self.get('semantics').extend(semantics)        
+        
+    def add_semantic_for_token(self, idx, semantic):
         if not self.get('semantics').has_key(idx):
             self.get('semantics')[idx] = []
         self.get('semantics')[idx].append(semantic)
     
     def get_semantics(self):
         return self.get('semantics')
+    
+    def get_semantics_for_token(self, idx):
+        if self.get('semantics').has_key(idx):
+            return self.get('semantics')[idx]
+        return []
+        
     
     def get_formats(self):
         """
@@ -60,7 +89,15 @@ class Cluster(dict):
     
     def get_values_for_token(self, tokenIdx):
         l = []
+        m = []
         for message in self.get('messages'):
-            l.append(message.get_tokenAt(tokenIdx))
-        return set(l)
+            l.append(message.get_tokenAt(tokenIdx).get_token())        
+        m.extend(set(l))
+        return m
+    def get_all_values_for_token(self, tokenIdx):
+        l = []        
+        for message in self.get('messages'):
+            l.append(message.get_tokenAt(tokenIdx).get_token())        
+        return l
+        
             

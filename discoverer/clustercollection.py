@@ -87,13 +87,14 @@ class ClusterCollection():
             mergeCandidates = []            
             cluster1 = copiedCollection[0]
             idx_inner = 1
-            while (idx_inner < len(copiedCollection)-1):             
+            while (idx_inner < len(copiedCollection)):             
             #for idx_inner in range(1,len(copiedCollection)-1):    
                 
                 cluster2 = copiedCollection[idx_inner]
                 format1 = cluster1.get_formats()
                 format2 = cluster2.get_formats()
                 if not len(format1)==len(format2):
+                    idx_inner += 1
                     continue # The two clusters have different length [should not happen within subclusters]
                 # Perform token check
                 shouldMerge = True
@@ -163,7 +164,8 @@ class ClusterCollection():
                 idx_inner += 1     
             # End of for each clusterloop
             
-            newCluster = Cluster(cluster1.get_representation())             
+            newCluster = Cluster(cluster1.get_representation())
+            newCluster.set_semantics(cluster1.get_semantics())             
             newCluster.add_messages(cluster1.get_messages())
             
             for cluster in mergeCandidates:                    
@@ -182,7 +184,7 @@ class ClusterCollection():
         if ori_len == len(self.__cluster):
             print "No mergable clusters within collection identified"
         else:
-            print "Cluster collection shrunk from %i to %i by merging", ori_len, len(self.__cluster)
+            print ("Cluster collection shrunk from {0} to {1} by merging".format(ori_len, len(self.__cluster)))
     
     def get_random_cluster(self):             
         return random.choice(self.__cluster)
