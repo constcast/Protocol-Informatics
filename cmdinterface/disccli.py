@@ -119,12 +119,12 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
                 print "Token {0}:".format(idx) ,
                 if "FD" in format[2]:
                     rawValues = c.get_all_values_for_token(idx)
-                        sumUp = collections.Counter(rawValues)
-                        values = ""
-                        for key in sumUp.keys():
-                            #if sumUp.get(key)>1:
-                            newstr = "{0} ({1}), ".format(key, sumUp.get(key))
-                            values += newstr
+                    sumUp = collections.Counter(rawValues)
+                    values = ""
+                    for key in sumUp.keys():
+                        #if sumUp.get(key)>1:
+                        newstr = "{0} ({1}), ".format(key, sumUp.get(key))
+                        values += newstr
                     #values = c.get_values_for_token(idx)
                     print "FD, {0} values: {1}".format(len(values), ",".join(values))
                 else:
