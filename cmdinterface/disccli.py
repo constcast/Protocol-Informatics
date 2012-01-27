@@ -7,6 +7,7 @@ import discoverer
 import cli
 import discoverer.message
 import time
+import collections
 
 class DiscovererCommandLineInterface(cli.CommandLineInterface):
     def __init__(self, env, config):
@@ -78,17 +79,13 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         elapsed = (time.time() - start)
         print "Recursive clustering took ", elapsed, " seconds "
         print "Results:"
-        cluster = self.env['cluster_collection'].get_all_cluster()        
-     
-        for c in cluster:         
-            messages =  c.get_messages()            
-            print "Cluster information: %s entries, %s format inferred, %s token pattern" % (len(messages), c.get_format_inference(), c.get_representation())
-            for message in messages:
-                print message
-            formats = []
-            for i in range(0,len(c.get_format_inference())):
-                formats.append(c.get_format(i))
         
+        self.print_clusterCollectionInfo()
+        print "Merging..."
+        self.env['cluster_collection'].mergeClustersWithSameFormat(self.config)
+        print "Merged"
+        self.print_clusterCollectionInfo()
+            
         #=======================================================================
         # # Needlewunsch test
         # print "Now performing Needleman Wunsch alignment of two cluster representations"
@@ -103,7 +100,50 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         # print "Needlewunsch results:"
         # discoverer.needlewunsch.needlewunsch(format1, format2)
         #=======================================================================
+    def print_clusterCollectionInfo(self):
+        cluster = self.env['cluster_collection'].get_all_cluster()             
+        self.print_clusterInfo(cluster)
         
+    def print_clusterInfo(self, cluster):
+        for c in cluster:         
+            messages =  c.get_messages()  
+            formats = c.get_formats()
+            print "****************************************************************************"          
+            print "Cluster information: %s entries" % len(messages)
+            print "Format inferred: %s" % formats
+            # print "Token format: %s" % c.get_representation()            
+            #for message in messages:
+            #    print message
+            idx = 0
+            for format in formats:
+                print "Token {0}:".format(idx) ,
+                if "FD" in format[2]:
+                    rawValues = c.get_all_values_for_token(idx)
+                    sumUp = collections.Counter(rawValues)
+                    values = ""
+                    for key in sumUp.keys():
+                        #if sumUp.get(key)>1:
+                        newstr = "{0} ({1}), ".format(key, sumUp.get(key))
+                        values += newstr
+                    #values = c.get_values_for_token(idx)
+                    print "FD, {0} values: {1}".format(len(values), ",".join(values))
+                else:
+                    if format[1] == "const":
+                        value = messages[0].get_tokenAt(idx).get_token()
+                        print "const {0} token, value {1}".format(format[0],value) 
+                    else: # variable
+                        rawValues = c.get_all_values_for_token(idx)
+                        sumUp = collections.Counter(rawValues)
+                        values = ""
+                        for key in sumUp.keys():
+                            #if sumUp.get(key)>1:
+                            newstr = "{0} ({1}), ".format(key, sumUp.get(key))
+                            values += newstr
+                        print "variable {0} token, values {1}".format(format[0],values)
+                idx += 1
+                
+                    
+            
         
         
     def do_discoverer(self, string):

@@ -54,12 +54,14 @@ def perform_recursive_clustering(cluster_collection, startAt, config):
                 if wouldCluster:
                     # Create new cluster
                     print "Subcluster prerequisites fulfilled. Adding FD semantic, splitting cluster and entering recursion"
-                    message.get_tokenAt(startAt).add_semantic("FD")
+                    # Senseless here: message.get_tokenAt(startAt).add_semantic("FD")
+                    cluster.add_semantic_for_token(startAt,"FD")
                     newCollection = ClusterCollection()
                     for key in sumUp.keys():
                             messagesWithValue = cluster.get_messages_with_value_at(startAt,key)
                             newCluster = Cluster(messagesWithValue[0].get_tokenrepresentation())
-                            newCluster.get_messages().extend(messagesWithValue)        
+                            newCluster.get_messages().extend(messagesWithValue)                                
+                            newCluster.add_semantic_for_token(startAt, "FD")
                             newCollection.add_cluster(newCluster)
                     print len(sumUp.keys()), " sub clusters generated"
                     
@@ -67,8 +69,8 @@ def perform_recursive_clustering(cluster_collection, startAt, config):
                     formatinference.perform_format_inference_for_cluster_collection(newCollection, config)
                     semanticinference.perform_semantic_inference(newCollection, config)
                     # Merge clusters with same format
-                    # This steps still needs clarification...
-                    newCollection.mergeClustersWithSameFormat(config)
+                    
+                    #newCollection.mergeClustersWithSameFormat(config)
                     
                     # Perform needle wunsch
                     # Edit 20120120 - not here
