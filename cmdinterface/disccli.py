@@ -60,7 +60,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         if not self.env.has_key('cluster_collection'):
             print "FATAL: Initial clustering not yet performed. Run 'setup' first pleaset!"
             return False    
-        self.env['cluster_collection'].fix_tokenization_errors(self.env['cluster_collection'], self.config)
+        self.env['cluster_collection'].fix_tokenization_errors(self.config)
     
     def help_go(self):
         print "Automatically executes all steps needed to perfom the 'Discoverer' algorithm on the set of messages"
@@ -99,7 +99,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         
         print "Merged"
         
-        self.print_clusterCollectionInfo()
+        self.env['cluster_collection'].print_clusterCollectionInfo()
             
         #=======================================================================
         # # Needlewunsch test
@@ -115,80 +115,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         # print "Needlewunsch results:"
         # discoverer.needlewunsch.needlewunsch(format1, format2)
         #=======================================================================
-    def print_clusterCollectionInfo(self):
-        cluster = self.env['cluster_collection'].get_all_cluster()             
-        self.print_clusterInfo(cluster)
-        
-    def print_clusterInfo(self, cluster):
-        for c in cluster:         
-            messages =  c.get_messages()  
-            formats = c.get_formats()
-            print "****************************************************************************"          
-            print "Cluster information: {0} entries".format(len(messages))
-            print "Format inferred: {0}".format(formats)
-            # print "Token format: {0}".format(c.get_representation())s            
-            #for message in messages:
-            #    print message
-            idx = 0
-            for format in formats:
-                print "Token {0}:".format(idx) ,
-                if "FD" in format[2]:
-                    rawValues = c.get_all_values_for_token(idx)
-                    sumUp = collections.Counter(rawValues)
-                    values = ""
-                    for key in sumUp.keys():
-                        #if sumUp.get(key)>1:
-                        newstr = "'{0}' ({1}), ".format(key, sumUp.get(key))
-                        values += newstr
-                    print "FD, {0} values: {1}".format(len(sumUp), values[:-2])
-                elif "lengthfield" in format[2]:
-                    rawValues = c.get_all_values_for_token(idx)
-                    sumUp = collections.Counter(rawValues)
-                    values = ""
-                    for key in sumUp.keys():
-                        #if sumUp.get(key)>1:
-                        newstr = "'{0}' ({1}), ".format(key, sumUp.get(key))
-                        values += newstr
-                    print "Length field, {0} values: {1}".format(len(sumUp), values[:-2])
-                else:
-                    if format[1] == "const":
-                        value = messages[0].get_tokenAt(idx).get_token()
-                        if format[0]=='binary':
-                            print "const binary token, value 0x{:02x}".format(value),
-                            if not format[2]==[]:
-                                print "({})".format(",".join(format[2]))
-                            else:
-                                print ""
-                        else:
-                            print "const {} token, value '{}'".format(format[0],value)  
-                    else: # variable
-                        rawValues = c.get_all_values_for_token(idx)
-                        sumUp = collections.Counter(rawValues)
-                        values = ""
-                        keys = sumUp.keys()
-                        for i in range(0,min(5,len(keys))):
-                            key = keys[i]
-                            if format[0]=='binary':
-                                newstr = "0x{:02x} ({}), ".format(key, sumUp.get(key))
-                            else:
-                                newstr = "'{0}' ({1}), ".format(key, sumUp.get(key))
-                                
-                            values += newstr
-                        if len(values)>0:
-                            values += "..."
-                        if format[0]=='binary':
-                            print "variable binary token, values {}".format(values),
-                            if not format[2]==[]:
-                                print "({})".format(",".join(format[2]))
-                            else:
-                                print ""
-                        else:
-                            print "variable text token, values: {0}".format(values)
-                        
-                idx += 1
                 
-                    
-            
         
         
     def do_discoverer(self, string):
