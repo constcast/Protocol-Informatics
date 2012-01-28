@@ -237,30 +237,46 @@ class ClusterCollection():
             # Fake
             #indices = [0,2,4,5,8,9,10,13,14,16]
             #print indices
-            lowIdx = len(indices)-1
-            highIdx = 0
-            
+            indices = [0,2,4,5,8,9,10,13,14,16]
             for idx in range(len(indices)-1,-1,-1):
+            
+                groupStart = indices[idx];
+                groupEnd = groupStart;
+                while idx > 0 and indices[idx] - indices[idx - 1] == 1:
+                    groupEnd = indices[idx-1];
+                    idx -=1
                 
-                if not indices[idx]==indices[lowIdx]+1 or idx==0:
-                    # End of sequence found
-                    if abs(idx-lowIdx)>0:
-                        print "Subsequence found: [{}-{}]".format(lowIdx,idx+1)
-                        # Join tokens
-                        while lowIdx>idx:
-                            cluster.mergeToken(indices[lowIdx],indices[lowIdx-1])
-                            lowIdx -= 1
-                        # Create new cluster (new representation) 
-                    lowIdx = idx
-                    continue
-                else:
-                    if idx-lowIdx==config.minWordLength:
-                        # Token is too long
-                        print "Token found with minWordLength - should not happen [{}-{}]".format(lowIdx,idx)
-                        lowIdx = idx
-                        continue
-    
-             
-                
+                # End of sequence
+                print "Subsequence found: [{}-{}]".format(groupEnd,groupStart)
+    #                    
+            
+    #===========================================================================
+    #        
+    #        lowIdx = len(indices)-1
+    #        highIdx = 0
+    #        
+    #        for idx in range(len(indices)-1,-1,-1):
+    #            
+    #            if not indices[idx]==indices[lowIdx]+1 or idx==0:
+    #                # End of sequence found
+    #                if abs(idx-lowIdx)>0:
+    #                    print "Subsequence found: [{}-{}]".format(lowIdx,idx+1)
+    #                    # Join tokens
+    #                    while lowIdx>idx:
+    #                        cluster.mergeToken(indices[lowIdx],indices[lowIdx-1])
+    #                        lowIdx -= 1
+    #                    # Create new cluster (new representation) 
+    #                lowIdx = idx
+    #                continue
+    #            else:
+    #                if idx-lowIdx==config.minWordLength:
+    #                    # Token is too long
+    #                    print "Token found with minWordLength - should not happen [{}-{}]".format(lowIdx,idx)
+    #                    lowIdx = idx
+    #                    continue
+    # 
+    #         
+    #            
+    #===========================================================================
                     
         
