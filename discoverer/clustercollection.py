@@ -239,12 +239,10 @@ class ClusterCollection():
             # Fake
             #indices = [0,2,4,5,8,9,10,13,14,16]
 
-            #print indices
-            indices = [0,2,4,5,8,9,10,13,14,16]
-            print indices
-            lowIdx = len(indices)-1           
+            #print indices       
             
-            for idx in range(len(indices)-1,-1,-1):
+            idx = len(indices)-1
+            while idx>0:
                 groupStart = indices[idx];
                 groupEnd = groupStart;
                 while idx > 0 and indices[idx] - indices[idx - 1] == 1:
@@ -252,37 +250,14 @@ class ClusterCollection():
                     idx -=1
                 
                 # End of sequence
-                print "Subsequence found: [{}-{}]".format(groupEnd,groupStart)
-    #                    
-            
-    #===========================================================================
-    #        
-    #        lowIdx = len(indices)-1
-    #        highIdx = 0
-    #        
-    #        for idx in range(len(indices)-1,-1,-1):
-    #            
-    #            if not indices[idx]==indices[lowIdx]+1 or idx==0:
-    #                # End of sequence found
-    #                if abs(idx-lowIdx)>0:
-    #                    print "Subsequence found: [{}-{}]".format(lowIdx,idx+1)
-    #                    # Join tokens
-    #                    while lowIdx>idx:
-    #                        cluster.mergeToken(indices[lowIdx],indices[lowIdx-1])
-    #                        lowIdx -= 1
-    #                    # Create new cluster (new representation) 
-    #                lowIdx = idx
-    #                continue
-    #            else:
-    #                if idx-lowIdx==config.minWordLength:
-    #                    # Token is too long
-    #                    print "Token found with minWordLength - should not happen [{}-{}]".format(lowIdx,idx)
-    #                    lowIdx = idx
-    #                    continue
-    # 
-    #         
-    #            
-    #===========================================================================
+                if not groupEnd == groupStart:
+                    #print "Subsequence found: [{}-{}]".format(groupEnd,groupStart)
+                    # merge it
+                    while groupStart>groupEnd:
+                            cluster.mergeToken(groupStart-1,groupStart)
+                            groupStart -= 1
+                idx-=1
+            #print "Finished"
     
     def print_clusterCollectionInfo(self):
         cluster = self.__cluster[:]             
@@ -292,7 +267,7 @@ class ClusterCollection():
         for c in cluster:         
             messages =  c.get_messages()  
             formats = c.get_formats()
-            print "****************************************************************************"          
+            print "*"*50
             print "Cluster information: {0} entries".format(len(messages))
             print "Format inferred: {0}".format(formats)
             # print "Token fmt: {0}".fmt(c.get_representation())s            
@@ -359,6 +334,3 @@ class ClusterCollection():
                     
      
                 
->>>>>>> branch 'master' of https://github.com/daubsi/Protocol-Informatics.git
-                    
-        

@@ -56,12 +56,16 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         discoverer.recursiveclustering.perform_recursive_clustering(self.env['cluster_collection'], 0, self.config)
     
     def do_fix_tokenization_errors(self, string):
-        print "Trying to fix tokenization errors"
+        print "Fixing tokenization errors"
         if not self.env.has_key('cluster_collection'):
             print "FATAL: Initial clustering not yet performed. Run 'setup' first pleaset!"
             return False    
         self.env['cluster_collection'].fix_tokenization_errors(self.config)
-    
+        # Next two calls are needed in order to reflect the new structure
+        self.do_format_inference("")
+        self.do_semantic_inference("")
+        print "Finished fixing tokenization errors"
+        
     def help_go(self):
         print "Automatically executes all steps needed to perfom the 'Discoverer' algorithm on the set of messages"
             
@@ -85,19 +89,24 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         self.do_recursive_clustering("")        
         elapsed = (time.time() - start)
         print "Recursive clustering took {:.3f} seconds".format(elapsed)
+        start = time.time()
+        
         self.do_fix_tokenization_errors("")
-        # Next 2 must be called to fix entries
-        self.do_format_inference("")
-        self.do_semantic_inference("")
+        elapsed = (time.time() - start)
+        print "Fixing tokenization errors took {:.3f} seconds".format(elapsed)
+        
+        
         
         #self.print_clusterCollectionInfo()
+        start = time.time()
         print "Merging..."
         self.env['cluster_collection'].mergeClustersWithSameFormat(self.config)
         #self.env['cluster_collection'].mergeClustersWithSameFormat(self.config)
         #self.env['cluster_collection'].mergeClustersWithSameFormat(self.config)
         #self.env['cluster_collection'].mergeClustersWithSameFormat(self.config)
-        
-        print "Merged"
+        elapsed = (time.time() - start)
+        print "Merging took {:.3f} seconds".format(elapsed)
+        print "Finished"
         
         self.env['cluster_collection'].print_clusterCollectionInfo()
             

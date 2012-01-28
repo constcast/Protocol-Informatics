@@ -102,7 +102,16 @@ class Cluster(dict):
         
             
             if idx1<idx2:
-                newval = chr(token1.get_token()) + chr(token2.get_token())
+                if token1.get_tokenType()=='binary':
+                    t1val = chr(token1.get_token())
+                else:
+                    t1val = token1.get_token()
+                if token2.get_tokenType()=='binary':
+                    t2val = chr(token2.get_token())
+                else:
+                    t2val = token2.get_token()
+                    
+                newval = t1val + t2val
                 message.remove_tokenAt(idx2)
                 message.remove_tokenAt(idx1)
                 newToken = tokenrepresentation.TokenRepresentation("text", newval, token1.get_startsAt(), token1.get_length()+token2.get_length())
