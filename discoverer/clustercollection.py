@@ -202,8 +202,8 @@ class ClusterCollection():
         return len(self.__cluster)
     
     def isTextCandidate(self, cluster, idx):
-        format = cluster.get_formats()[idx]
-        if format[0] == 'text':
+        fmt = cluster.get_formats()[idx]
+        if fmt[0] == 'text':
             return False
         isCandidate = True
         for message in cluster.get_messages():
@@ -220,11 +220,12 @@ class ClusterCollection():
         if not isCandidate:
             return False
         return True
-        #print "Binary token {} is text candidate".format(idx)
+        #print "Binary token {} is text candidate".fmt(idx)
         
         
-    def fix_tokenization_errors(self, clustercollection, config):
-        clusters = clustercollection.get_all_cluster()
+    def fix_tokenization_errors(self, config):
+        clusters = self.__cluster[:] 
+        #clusters = clustercollection.get_all_cluster()
         for cluster in clusters:
             indices = []
             for idx in range(len(cluster.get_formats())-1,-1,-1):
@@ -232,14 +233,18 @@ class ClusterCollection():
                     indices.append(idx)
             if len(indices)==0:
                 continue # No candidates found
-            print indices
+            indices.reverse() # New
+            #print indices
             # Try to find sequences of adjacent numbers that are shorter than minWordLength
             # Fake
             #indices = [0,2,4,5,8,9,10,13,14,16]
+
             #print indices
             indices = [0,2,4,5,8,9,10,13,14,16]
-            for idx in range(len(indices)-1,-1,-1):
+            print indices
+            lowIdx = len(indices)-1           
             
+            for idx in range(len(indices)-1,-1,-1):
                 groupStart = indices[idx];
                 groupEnd = groupStart;
                 while idx > 0 and indices[idx] - indices[idx - 1] == 1:
@@ -278,5 +283,82 @@ class ClusterCollection():
     #         
     #            
     #===========================================================================
+    
+    def print_clusterCollectionInfo(self):
+        cluster = self.__cluster[:]             
+        self.print_clusterInfo(cluster)
+        
+    def print_clusterInfo(self, cluster):
+        for c in cluster:         
+            messages =  c.get_messages()  
+            formats = c.get_formats()
+            print "****************************************************************************"          
+            print "Cluster information: {0} entries".format(len(messages))
+            print "Format inferred: {0}".format(formats)
+            # print "Token fmt: {0}".fmt(c.get_representation())s            
+            #for message in messages:
+            #    print message
+            idx = 0
+            for fmt in formats:
+                print "Token {0}:".format(idx) ,
+                if "FD" in fmt[2]:
+                    rawValues = c.get_all_values_for_token(idx)
+                    sumUp = Counter(rawValues)
+                    values = ""
+                    for key in sumUp.keys():
+                        #if sumUp.get(key)>1:
+                        newstr = "'{0}' ({1}), ".format(key, sumUp.get(key))
+                        values += newstr
+                    print "FD, {0} values: {1}".format(len(sumUp), values[:-2])
+                elif "lengthfield" in fmt[2]:
+                    rawValues = c.get_all_values_for_token(idx)
+                    sumUp = Counter(rawValues)
+                    values = ""
+                    for key in sumUp.keys():
+                        #if sumUp.get(key)>1:
+                        newstr = "'{0}' ({1}), ".format(key, sumUp.get(key))
+                        values += newstr
+                    print "Length field, {0} values: {1}".format(len(sumUp), values[:-2])
+                else:
+                    if fmt[1] == "const":
+                        value = messages[0].get_tokenAt(idx).get_token()
+                        if fmt[0]=='binary':
+                            print "const binary token, value 0x{:02x}".format(value),
+                            if not fmt[2]==[]:
+                                print "({})".format(",".join(fmt[2]))
+                            else:
+                                print ""
+                        else:
+                            print "const {} token, value '{}'".format(fmt[0],value)  
+                    else: # variable
+                        rawValues = c.get_all_values_for_token(idx)
+                        sumUp = Counter(rawValues)
+                        values = ""
+                        keys = sumUp.keys()
+                        for i in range(0,min(5,len(keys))):
+                            key = keys[i]
+                            if fmt[0]=='binary':
+                                newstr = "0x{:02x} ({}), ".format(key, sumUp.get(key))
+                            else:
+                                newstr = "'{0}' ({1}), ".format(key, sumUp.get(key))
+                                
+                            values += newstr
+                        if len(values)>0:
+                            values += "..."
+                        if fmt[0]=='binary':
+                            print "variable binary token, values {}".format(values),
+                            if not fmt[2]==[]:
+                                print "({})".format(",".join(fmt[2]))
+                            else:
+                                print ""
+                        else:
+                            print "variable text token, values: {0}".format(values)
+                        
+                idx += 1
+                
+                    
+     
+                
+>>>>>>> branch 'master' of https://github.com/daubsi/Protocol-Informatics.git
                     
         
