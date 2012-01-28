@@ -22,9 +22,9 @@ class TokenRepresentation():
     
     def __repr__(self):
         if self.__tokenType == message.Message.typeText:
-            return '(%s,"%s",%s,%s,%s)' % (self.__tokenType, self.__token, self.__startsAt, self.__length, self.__semantic)
+            return '({0},"{1}",{2},{3},{4})'.format(self.__tokenType, self.__token, self.__startsAt, self.__length, self.__semantic)
         else:
-            return '(%s,%s,%s,%s,%s)' % (self.__tokenType, hex(self.__token), self.__startsAt, self.__length, self.__semantic)
+            return '({0},{1},{2},{3},{4})'.format(self.__tokenType, hex(self.__token), self.__startsAt, self.__length, self.__semantic)
         
     
     def get_tokenType(self):

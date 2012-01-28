@@ -61,9 +61,15 @@ class Message:
     def get_tokenAt(self, idx):
         return self.__tokenlist[idx]
     
+    def insert_tokenAt(self,idx,token):
+        self.__tokenlist.insert(idx, token)
+        
+    def remove_tokenAt(self,idx):
+        self.__tokenlist.pop(idx)
+        
     def get_tokenAtPos(self, pos):
         for token in self.__tokenlist:
-            if token.get_startAt()==pos or token.get_StartsAt()+token.get_length()>=pos:
+            if token.get_startsAt()==pos or token.get_startsAt()+token.get_length()>=pos:
                 return token
         return None
     

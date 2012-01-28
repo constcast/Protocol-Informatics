@@ -1,4 +1,5 @@
-import yaml, sys
+import yaml
+import sys
 
 def loadConfig(filename):
     cf = file(filename, 'r')
@@ -34,6 +35,7 @@ class Configuration:
         self.maxMessagePrefix = 2048
         self.minimumClusterSize = 5
         self.maxDistinctFDValues = 5
+        self.requireTotalLengthChangeForLengthField = False
         # Used for NW alignment in Discoverer
         self.matchScore = 1
         self.mismatchScore = 1
@@ -64,7 +66,7 @@ class Configuration:
 
     def print_config(self):
         elems = vars(self)
-        maxLen = 20
+        maxLen = 40
         for i in elems:
             value = getattr(self,i)
             print i,

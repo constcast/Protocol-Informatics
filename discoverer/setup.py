@@ -49,6 +49,6 @@ class Setup:
             keys = c.keys()
             for key in keys:
                 l = c.get(key)
-                print "Key:", key, " Elements: ", l  
+                print "Key: {0} Elements: {1}".format(key,l)  
             
         

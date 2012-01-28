@@ -1,3 +1,4 @@
+import tokenrepresentation
 
 class Cluster(dict):
     """
@@ -76,10 +77,15 @@ class Cluster(dict):
         self.get_messages().extend(messages)
     def get_representation(self):
         return self.get('representation')
+    def set_representation(self, rep):
+        self['representation']=rep
     
     def get_format_inference(self):
         return self.get('format_inference')
     
+    def set_format_inference(self, formats):
+        self['format_inference'] = formats
+        
     def get_messages_with_value_at(self, tokenIdx, value):
         l = []
         for message in self.get('messages'):
@@ -87,6 +93,44 @@ class Cluster(dict):
                 l.append(message)
         return l
     
+    def mergeToken(self, idx1, idx2):
+        placeAt = min(idx1,idx2)
+        for message in self.get_messages():
+            
+            token1 = message.get_tokenAt(idx1)
+            token2 = message.get_tokenAt(idx2)
+        
+            
+            if idx1<idx2:
+                newval = chr(token1.get_token()) + chr(token2.get_token())
+                message.remove_tokenAt(idx2)
+                message.remove_tokenAt(idx1)
+                newToken = tokenrepresentation.TokenRepresentation("text", newval, token1.get_startsAt(), token1.get_length()+token2.get_length())
+                message.insert_tokenAt(idx1,newToken)
+                
+            else:
+                newval = chr(token2.get_token()) + chr(token1.get_token())
+                message.remove_tokenAt(idx1)
+                message.remove_tokenAt(idx2)
+                newToken = tokenrepresentation.TokenRepresentation("text", newval, token2.get_startsAt(), token2.get_length()+token1.get_length())
+                message.insert_tokenAt(idx2,newToken)   
+                
+        if idx1<idx2:
+            # Update token representation
+            rep = list(self.get_representation())
+            rep.pop(idx2)
+            rep.pop(idx1)
+            rep.insert(idx1,"text")     
+        else:
+            # Update token representation
+            rep = list(self.get_representation())
+            rep.pop(idx1)
+            rep.pop(idx2)
+            rep.insert(idx2,"text")
+        self.set_representation(tuple(rep))
+        
+    
+            
     def get_values_for_token(self, tokenIdx):
         l = []
         m = []

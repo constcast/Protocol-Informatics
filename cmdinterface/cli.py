@@ -190,7 +190,7 @@ class CommandLineInterface(cmd.Cmd):
         if sequences != None:
             self.env['sequences'] = sequences
 
-        print "Successfully read input file ..."
+        print "Successfully read input file ({0} sequences)...".format(len(sequences))
 
     def help_read(self):
         print "Command syntax: read [<bro|pcap|ascii|config>] <file>"

@@ -32,7 +32,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         
         setup = discoverer.setup.Setup(self.env['sequences'], self.config)
         self.env['cluster_collection'] = setup.get_cluster_collection()
-        print "Built ", setup.get_cluster_collection().num_of_clusters(), " clusters"
+        print "Built {0} clusters".format(setup.get_cluster_collection().num_of_clusters())
       
     def do_format_inference(self, string):
         print "Performing format inference on initial clusters"
@@ -55,6 +55,13 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             return False    
         discoverer.recursiveclustering.perform_recursive_clustering(self.env['cluster_collection'], 0, self.config)
     
+    def do_fix_tokenization_errors(self, string):
+        print "Trying to fix tokenization errors"
+        if not self.env.has_key('cluster_collection'):
+            print "FATAL: Initial clustering not yet performed. Run 'setup' first pleaset!"
+            return False    
+        self.env['cluster_collection'].fix_tokenization_errors(self.env['cluster_collection'], self.config)
+    
     def help_go(self):
         print "Automatically executes all steps needed to perfom the 'Discoverer' algorithm on the set of messages"
             
@@ -65,25 +72,33 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         start = time.time()
         self.do_setup("")
         elapsed = (time.time() - start)
-        print "Setup took ", elapsed, " seconds "
+        print "Setup took {:.3f} seconds".format(elapsed)
         start = time.time()
         self.do_format_inference("")
         elapsed = (time.time() - start)
-        print "Format inference took ", elapsed, " seconds "
+        print "Format inference took {:.3f} seconds".format(elapsed)
         start = time.time()
         self.do_semantic_inference("")
         elapsed = (time.time() - start)
-        print "Semantic inference took ", elapsed, " seconds "
+        print "Semantic inference took {:.3f} seconds".format(elapsed)
         start = time.time()
         self.do_recursive_clustering("")        
         elapsed = (time.time() - start)
-        print "Recursive clustering took ", elapsed, " seconds "
-        print "Results:"
+        print "Recursive clustering took {:.3f} seconds".format(elapsed)
+        self.do_fix_tokenization_errors("")
+        # Next 2 must be called to fix entries
+        self.do_format_inference("")
+        self.do_semantic_inference("")
         
-        self.print_clusterCollectionInfo()
+        #self.print_clusterCollectionInfo()
         print "Merging..."
         self.env['cluster_collection'].mergeClustersWithSameFormat(self.config)
+        #self.env['cluster_collection'].mergeClustersWithSameFormat(self.config)
+        #self.env['cluster_collection'].mergeClustersWithSameFormat(self.config)
+        #self.env['cluster_collection'].mergeClustersWithSameFormat(self.config)
+        
         print "Merged"
+        
         self.print_clusterCollectionInfo()
             
         #=======================================================================
@@ -109,9 +124,9 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             messages =  c.get_messages()  
             formats = c.get_formats()
             print "****************************************************************************"          
-            print "Cluster information: %s entries" % len(messages)
-            print "Format inferred: %s" % formats
-            # print "Token format: %s" % c.get_representation()            
+            print "Cluster information: {0} entries".format(len(messages))
+            print "Format inferred: {0}".format(formats)
+            # print "Token format: {0}".format(c.get_representation())s            
             #for message in messages:
             #    print message
             idx = 0
@@ -123,23 +138,53 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
                     values = ""
                     for key in sumUp.keys():
                         #if sumUp.get(key)>1:
-                        newstr = "{0} ({1}), ".format(key, sumUp.get(key))
+                        newstr = "'{0}' ({1}), ".format(key, sumUp.get(key))
                         values += newstr
-                    #values = c.get_values_for_token(idx)
-                    print "FD, {0} values: {1}".format(len(values), ",".join(values))
+                    print "FD, {0} values: {1}".format(len(sumUp), values[:-2])
+                elif "lengthfield" in format[2]:
+                    rawValues = c.get_all_values_for_token(idx)
+                    sumUp = collections.Counter(rawValues)
+                    values = ""
+                    for key in sumUp.keys():
+                        #if sumUp.get(key)>1:
+                        newstr = "'{0}' ({1}), ".format(key, sumUp.get(key))
+                        values += newstr
+                    print "Length field, {0} values: {1}".format(len(sumUp), values[:-2])
                 else:
                     if format[1] == "const":
                         value = messages[0].get_tokenAt(idx).get_token()
-                        print "const {0} token, value {1}".format(format[0],value) 
+                        if format[0]=='binary':
+                            print "const binary token, value 0x{:02x}".format(value),
+                            if not format[2]==[]:
+                                print "({})".format(",".join(format[2]))
+                            else:
+                                print ""
+                        else:
+                            print "const {} token, value '{}'".format(format[0],value)  
                     else: # variable
                         rawValues = c.get_all_values_for_token(idx)
                         sumUp = collections.Counter(rawValues)
                         values = ""
-                        for key in sumUp.keys():
-                            #if sumUp.get(key)>1:
-                            newstr = "{0} ({1}), ".format(key, sumUp.get(key))
+                        keys = sumUp.keys()
+                        for i in range(0,min(5,len(keys))):
+                            key = keys[i]
+                            if format[0]=='binary':
+                                newstr = "0x{:02x} ({}), ".format(key, sumUp.get(key))
+                            else:
+                                newstr = "'{0}' ({1}), ".format(key, sumUp.get(key))
+                                
                             values += newstr
-                        print "variable {0} token, values {1}".format(format[0],values)
+                        if len(values)>0:
+                            values += "..."
+                        if format[0]=='binary':
+                            print "variable binary token, values {}".format(values),
+                            if not format[2]==[]:
+                                print "({})".format(",".join(format[2]))
+                            else:
+                                print ""
+                        else:
+                            print "variable text token, values: {0}".format(values)
+                        
                 idx += 1
                 
                     

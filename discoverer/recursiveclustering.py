@@ -17,8 +17,6 @@ def perform_recursive_clustering(cluster_collection, startAt, config):
     is performed and the token is considered a FD. Then the recursion is performed on each of the new clusters
     with the next token.
     
-    TODO: Merging phase
-    FIXME: There is one cluster on top with lots of messages that should be subclusterable
     
     """
     
@@ -29,7 +27,7 @@ def perform_recursive_clustering(cluster_collection, startAt, config):
     __startAt = startAt
      
     for cluster in clusters:
-        print "Starting processing for next cluster (", len(cluster.get_messages()), " messages)"
+        print "Starting processing for next cluster ({0} messages)".format(len(cluster.get_messages()))
         
         startAt = __startAt
         #tokenValue = token.get_token()
@@ -39,6 +37,11 @@ def perform_recursive_clustering(cluster_collection, startAt, config):
         while not foundFD and startAt<maxTokenIdx:
             l = []
             #print "Analyzing token %s" % startAt
+            # Check whether this might be a length token
+            if "lengthfield" in set(cluster.get_semantics_for_token(startAt)):
+                # Current token is a length token. Do not treat as FD
+                startAt += 1
+                continue
             for message in cluster.get_messages():
                 l.append(message.get_tokenAt(startAt).get_token())
             numOfDistinctValuesForToken = len(set(l))
@@ -63,7 +66,7 @@ def perform_recursive_clustering(cluster_collection, startAt, config):
                             newCluster.get_messages().extend(messagesWithValue)                                
                             newCluster.add_semantic_for_token(startAt, "FD")
                             newCollection.add_cluster(newCluster)
-                    print len(sumUp.keys()), " sub clusters generated"
+                    print "{0} sub clusters generated".format(len(sumUp.keys()))
                     
                     # Perform format inference on new cluster collection
                     formatinference.perform_format_inference_for_cluster_collection(newCollection, config)

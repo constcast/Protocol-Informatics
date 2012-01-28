@@ -32,7 +32,7 @@ def perform_semantic_inference(cluster_collection, config):
                 try:
                     isNumber = tokenRepresentation.get_tokenType()=='text' and common.is_number(token)
                 except TypeError:
-                    print "Error checking token ", token, " for number semantics"
+                    print "Error checking token {0} for number semantics".format(token)
                     isNumber = False
                 if isNumber:
                     tokenRepresentation.add_semantic("numeric")
@@ -74,8 +74,12 @@ def perform_semantic_inference(cluster_collection, config):
         for tokenRepresentation in tokenlist:
             if tokenRepresentation.get_tokenType()=='binary' and idx+1<len(tokenlist):
                 ref_value = tokenRepresentation.get_token()
+                if not tokenlist[idx+1].get_tokenType()=='text': # We require that the next token is the text token in question
+                    idx += 1
+                    continue
                 ref_next_length = tokenlist[idx+1].get_length()
                 if not ref_value == ref_next_length: # This is no length field
+                    idx += 1
                     continue
                 ref_message_length = reference_message.get_length()
                 is_length = True
@@ -84,14 +88,23 @@ def perform_semantic_inference(cluster_collection, config):
                     cmp_next_length = message.get_tokenlist()[idx+1].get_length()
                     cmp_message_length = message.get_length()
                     try:
-                        diff_val = cmp_value - ref_value
+                        diff_val = abs(cmp_value - ref_value)
                     except TypeError: # Could happen if a short text token is mistaken as a binary value
                         break
-                    diff_next_length = cmp_next_length - ref_next_length
-                    diff_msg_length = cmp_message_length - ref_message_length
-                    if not (diff_val == diff_next_length == diff_msg_length):
-                        is_length = False
+                    diff_next_length = abs(cmp_next_length - ref_next_length)
+                    # The next line also takes total msg length differences into account. This might not be true for
+                    # all protocols
+                    diff_msg_length = abs(cmp_message_length - ref_message_length)
+                    
+                    if config.requireTotalLengthChangeForLengthField:
+                        if not (diff_val == diff_next_length == diff_msg_length):
+                            is_length = False
                         break
+                    else:
+                        if not (diff_val == diff_next_length): 
+                            is_length = False
+                            break
+                    
                 if is_length: # set "lengthfield" semantic for every message in the cluster at the given position
                     for message in messages: # TODO: What if there's only one message in the cluster? Sensible?
                         message.get_tokenlist()[idx].add_semantic("lengthfield")

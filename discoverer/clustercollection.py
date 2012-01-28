@@ -2,6 +2,7 @@ from collections import Counter
 from cluster import Cluster
 import random
 import discoverer
+import curses
 
 class ClusterCollection():
     """
@@ -132,7 +133,7 @@ class ClusterCollection():
                                 # Check for overlap in values. If there is no overlap -> Mismatch
                                 allvalues1 = cluster1.get_values_for_token(format_token_idx)
                                 allvalues2 = cluster2.get_values_for_token(format_token_idx)
-                                if len(allvalues1.intersection(allvalues2))==0:
+                                if len(set(allvalues1).intersection(set(allvalues2)))==0:
                                     # No overlap -> Mismatch
                                     shouldMerge = False
                                     break
@@ -200,3 +201,66 @@ class ClusterCollection():
     def num_of_clusters(self):
         return len(self.__cluster)
     
+    def isTextCandidate(self, cluster, idx):
+        format = cluster.get_formats()[idx]
+        if format[0] == 'text':
+            return False
+        isCandidate = True
+        for message in cluster.get_messages():
+            if not isCandidate:
+                break
+            token = message.get_tokenAt(idx)
+            if not len(token.get_semantics())==0: # Has semantics, probably no text
+                isCandidate = False
+                break
+            value = token.get_token()
+            if not curses.ascii.isprint(value): # Binary value is no printable character
+                isCandidate = False
+                break
+        if not isCandidate:
+            return False
+        return True
+        #print "Binary token {} is text candidate".format(idx)
+        
+        
+    def fix_tokenization_errors(self, clustercollection, config):
+        clusters = clustercollection.get_all_cluster()
+        for cluster in clusters:
+            indices = []
+            for idx in range(len(cluster.get_formats())-1,-1,-1):
+                if self.isTextCandidate(cluster, idx):
+                    indices.append(idx)
+            if len(indices)==0:
+                continue # No candidates found
+            print indices
+            # Try to find sequences of adjacent numbers that are shorter than minWordLength
+            # Fake
+            #indices = [0,2,4,5,8,9,10,13,14,16]
+            #print indices
+            lowIdx = len(indices)-1
+            highIdx = 0
+            
+            for idx in range(len(indices)-1,-1,-1):
+                
+                if not indices[idx]==indices[lowIdx]+1 or idx==0:
+                    # End of sequence found
+                    if abs(idx-lowIdx)>0:
+                        print "Subsequence found: [{}-{}]".format(lowIdx,idx+1)
+                        # Join tokens
+                        while lowIdx>idx:
+                            cluster.mergeToken(indices[lowIdx],indices[lowIdx-1])
+                            lowIdx -= 1
+                        # Create new cluster (new representation) 
+                    lowIdx = idx
+                    continue
+                else:
+                    if idx-lowIdx==config.minWordLength:
+                        # Token is too long
+                        print "Token found with minWordLength - should not happen [{}-{}]".format(lowIdx,idx)
+                        lowIdx = idx
+                        continue
+    
+             
+                
+                    
+        
