@@ -202,6 +202,13 @@ class ClusterCollection():
         return len(self.__cluster)
     
     def isTextCandidate(self, cluster, idx):
+        """
+        Determines whether a certain token is a candidate for binary->text migration
+        Token needs to fulfill the following criteria:
+        * is binary
+        * has no semantics (also no FD) // TODO: Check for FD in cluster
+        * is ascii-printable
+        """
         fmt = cluster.get_formats()[idx]
         if fmt[0] == 'text':
             return False
@@ -224,6 +231,24 @@ class ClusterCollection():
         
         
     def fix_tokenization_errors(self, config):
+        """ 
+        Fixes tokenization errors. Tries to build text tokens (1<size<minWordLength)
+        out of binary tokens that fulfill the following criteria:
+        * binary
+        * not FD
+        * no semantics
+        * printable ascii value
+        Rationale:
+        At first the candidate tokens that fulfill the above citeria are chosen and
+        put into a list. For example: indices = [0,2,4,5,8,9,10,13,14,16]
+        Then this list is traversed from last to first and sequences of adjacent numbers
+        are sought. (here 4-5, 8-10, 13-14) These are the candidates that can be merged
+        Candidates are merged one by one from last to first.
+        Note:
+        It is necessary to rebuild format inference and semantic inference afterwards, as
+        these are not refreshed automatically
+        
+        """
         clusters = self.__cluster[:] 
         #clusters = clustercollection.get_all_cluster()
         for cluster in clusters:
@@ -260,10 +285,17 @@ class ClusterCollection():
             #print "Finished"
     
     def print_clusterCollectionInfo(self):
+        """
+        Prints the inferred formats for all clusters in the collection in a human
+        readable way
+        """
         cluster = self.__cluster[:]             
         self.print_clusterInfo(cluster)
         
     def print_clusterInfo(self, cluster):
+        """
+        Prints the inferred formats for a cluster in a human readable way
+        """
         for c in cluster:         
             messages =  c.get_messages()  
             formats = c.get_formats()

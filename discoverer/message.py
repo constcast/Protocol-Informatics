@@ -59,15 +59,27 @@ class Message:
         return self.__payload
     
     def get_tokenAt(self, idx):
+        """
+        Returns the token at position idx
+        """
         return self.__tokenlist[idx]
     
     def insert_tokenAt(self,idx,token):
+        """
+        Inserts token at position idx, shifting all the remaining tokens to the right
+        """
         self.__tokenlist.insert(idx, token)
         
     def remove_tokenAt(self,idx):
+        """
+        Removes the token at position idx from tokenlist
+        """
         self.__tokenlist.pop(idx)
         
     def get_tokenAtPos(self, pos):
+        """
+        Returns the token associated with a certain position pos in the payload
+        """
         for token in self.__tokenlist:
             if token.get_startsAt()==pos or token.get_startsAt()+token.get_length()>=pos:
                 return token
@@ -77,6 +89,9 @@ class Message:
         return self.__tokenlist
     
     def get_tokenrepresentation(self):
+        """
+        Returns the token representation as a tuple
+        """
         l = []
         for tokenRepresentation in self.__tokenlist:
             l.append(tokenRepresentation.get_tokenType())
@@ -162,6 +177,9 @@ class Message:
     #===========================================================================
         
     def convertTextSegmentToBinaryToken(self, textSegment, startsAt):
+        """
+        Creates binary tokens out of each char in textSegment
+        """
         offset = 0
         tokenList = []
         for item in textSegment:
@@ -169,6 +187,10 @@ class Message:
         return tokenList
     
     def tokenizeTextSegment(self, textSegment, startsAt):
+        """
+        Tokenizes textSegment, creating new text resp. binary tokens from it
+        Tokens are separated by whitespaces
+        """
         # TODO: Should we add explicit whitespace tokens as well?
         if len(textSegment)<self.__config.minWordLength:
             # Word length to short
