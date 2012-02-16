@@ -115,7 +115,7 @@ class Pcap(Input):
         self.readMessages += 1
 
 
-        self.connection.addSequence(sequences.Sequence(seq, self.readMessages))
+        self.connection.addSequence(sequences.Sequence(seq, "", self.readMessages))
 
     def getConnections(self):
         ret = dict()
@@ -157,7 +157,7 @@ class ASCII(Input):
             
             self.readMessages += 1
 
-            self.connection.addSequence(sequences.Sequence(line, self.readMessages))
+            self.connection.addSequence(sequences.Sequence(line, "", self.readMessages))
 
     def getConnections(self):
         return [ self.connection ]
@@ -198,7 +198,7 @@ class Bro(Input):
             idx += 2
             
             
-        self.connections[connectionID].addSequence(sequences.Sequence(seq, messageNumber))
+        self.connections[connectionID].addSequence(sequences.Sequence(seq, connectionID, messageNumber))
 
     def getConnections(self):
         return self.connections
