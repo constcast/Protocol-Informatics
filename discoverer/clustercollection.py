@@ -310,6 +310,10 @@ class ClusterCollection():
             print "Current config:"
             self.__config.print_config()
         print "{0} cluster(s) have been generated".format(len(cluster))
+        
+        print "Statistics: {0}".format(discoverer.statistics.stats)        
+        print "Protocol is classified as: {0}".format(discoverer.statistics.get_classification())
+        
             
         for c in cluster:         
             messages =  c.get_messages()  

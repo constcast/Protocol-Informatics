@@ -1,4 +1,5 @@
 import curses
+import statistics
 #from peekable import peekable
 from curses.ascii import isprint
 from tokenrepresentation import TokenRepresentation
@@ -104,15 +105,22 @@ class Message:
         textSegment = ""
         curPos = 0
         startsAt = 0
+        num_printable = 0
+        num_binary = 0
+        startsWithText = False
+        
         for char in self.__payload:
-            
             if curses.ascii.isprint(char):
+                if num_printable==0 and num_binary == 0:
+                    startsWithText = True
+                num_printable += 1
                 if lastIsBinary:
                     lastIsBinary = False;                   
                     textSegment = ""
                     startsAt = curPos
                 textSegment+=chr(char)               
             else:
+                num_binary += 1
                 if not lastIsBinary: 
                     # We finished a text segment now, now tokenize again
                     self.__tokenlist.extend(self.tokenizeTextSegment(textSegment, startsAt))                        
@@ -123,7 +131,7 @@ class Message:
         if not lastIsBinary:
             # We finish a word now
             self.__tokenlist.extend(self.tokenizeTextSegment(textSegment, startsAt))
-               
+        statistics.update_statistics(num_printable, num_binary, startsWithText)       
     
     #===========================================================================
     # def __analyze2(self):

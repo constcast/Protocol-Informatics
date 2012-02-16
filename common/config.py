@@ -7,7 +7,7 @@ def loadConfig(filename):
     return Configuration(config)
 
 def loadConfigFromDict(d):
-    return Configuration(config)
+    return Configuration(d)
 
 def saveConfig(configuration, filename):
     cf = file(filename, 'w')
@@ -37,6 +37,8 @@ class Configuration:
         self.maxDistinctFDValues = 5
         self.requireTotalLengthChangeForLengthField = False
         self.dumpFile = "discoverer_dump.txt"
+        self.breakSequences = False
+        self.breakSequenceAt = "0d0a"
         # Used for NW alignment in Discoverer
         self.matchScore = 1
         self.mismatchScore = 1

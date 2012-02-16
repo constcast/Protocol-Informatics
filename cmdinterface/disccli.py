@@ -70,6 +70,8 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         print "Automatically executes all steps needed to perfom the 'Discoverer' algorithm on the set of messages"
             
     def do_go(self, string):
+        import discoverer.statistics
+        discoverer.statistics.reset_statistics()
         print "Performing discoverer algorithm"
         if self.env.has_key('cluster_collection'):
             del(self.env['cluster_collection'])
@@ -77,6 +79,15 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         self.do_setup("")
         elapsed = (time.time() - start)
         print "Setup took {:.3f} seconds".format(elapsed)
+        #=======================================================================
+        # if discoverer.statistics.get_classification() == "text" and self.config.breakSequences == True:
+        #    print "Protocol is considered as 'text' and breakSequences is configured to 'true'. Reloading input..."
+        #    import cmdinterface
+        #    cmdinterface.cli.CommandLineInterface.do_read(breakSequences=True)
+        #    del(self.env['cluster_collection'])
+        #    
+        #    self.do_setup(breakSequences=True)
+        #=======================================================================
         start = time.time()
         self.do_format_inference("")
         elapsed = (time.time() - start)
@@ -107,7 +118,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         elapsed = (time.time() - start)
         print "Merging took {:.3f} seconds".format(elapsed)
         print "Finished"
-        
+                
         self.env['cluster_collection'].print_clusterCollectionInfo()
             
         #=======================================================================
