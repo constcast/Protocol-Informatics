@@ -36,6 +36,7 @@ class Configuration:
         self.minimumClusterSize = 5
         self.maxDistinctFDValues = 5
         self.requireTotalLengthChangeForLengthField = False
+        self.dumpFile = "discoverer_dump.txt"
         # Used for NW alignment in Discoverer
         self.matchScore = 1
         self.mismatchScore = 1

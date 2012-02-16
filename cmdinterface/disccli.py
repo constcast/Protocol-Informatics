@@ -53,7 +53,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         if not self.env.has_key('cluster_collection'):
             print "FATAL: Initial clustering not yet performed. Run 'setup' first pleaset!"
             return False    
-        discoverer.recursiveclustering.perform_recursive_clustering(self.env['cluster_collection'], 0, self.config)
+        discoverer.recursiveclustering.perform_recursive_clustering(self.env['cluster_collection'], 0)
     
     def do_fix_tokenization_errors(self, string):
         print "Fixing tokenization errors"
@@ -100,7 +100,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         #self.print_clusterCollectionInfo()
         start = time.time()
         print "Merging..."
-        self.env['cluster_collection'].mergeClustersWithSameFormat(self.config)
+        self.env['cluster_collection'].mergeClustersWithSameFormat()
         #self.env['cluster_collection'].mergeClustersWithSameFormat(self.config)
         #self.env['cluster_collection'].mergeClustersWithSameFormat(self.config)
         #self.env['cluster_collection'].mergeClustersWithSameFormat(self.config)
@@ -125,7 +125,14 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         # discoverer.needlewunsch.needlewunsch(format1, format2)
         #=======================================================================
                 
+    def do_dumpresult(self, string):
         
+        path = os.path.normpath(self.config.dumpFile)
+        file = os.path.basename(self.config.inputFile)
+        (filename,ext) = os.path.splitext(file)
+        storePath = "{0}{1}{2}_dump.txt".format(path,os.sep,filename)
+        print "Dumping result to file {0}".format(storePath)
+        self.env['cluster_collection'].print_clusterCollectionInfo(storePath)
         
     def do_discoverer(self, string):
         print "We are already in Discoverer mode!"

@@ -163,6 +163,11 @@ format:
 	   - ascii
 	     - expects a textfile which contains a number of messages
 	       separate with the newline character
+	
+	PCAP Files can easily be converted into BRO files via the following command:
+	
+	CD to bro-script directory
+	<path_to_bro>/bin/bro -C -r <path_to_pcap> adu_writer.bro
 configFile:
 	filename of the configuration yml file which is used to store
 	the current config with the saveconfig command.
@@ -215,4 +220,9 @@ ASCIILowerBound:
 
 ASCIIUpperBound:	
 	The highest ASCII character considered as printable token (used for text classification)
+	
+dumpFile:
+	Path where to write the discoverer results to when the 'dumpresult' command is executed.
+	The filename is taken from the inputFile configuration
+	
 	

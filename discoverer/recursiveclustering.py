@@ -6,7 +6,7 @@ import semanticinference
 import needlewunsch
 import copy
 
-def perform_recursive_clustering(cluster_collection, startAt, config):
+def perform_recursive_clustering(cluster_collection, startAt):
     """
     Performs a recursive clustering on a list of clusters given via cluster_collection.
     The recursion is performed according to the Discoverer paper by Cui et al.
@@ -20,6 +20,7 @@ def perform_recursive_clustering(cluster_collection, startAt, config):
     
     """
     
+    config = cluster_collection.get_config()
     # Scan for FD token, Phase 1
     clusters = cluster_collection.get_all_cluster()[:] # <-- "[:]" Very very important... otherwise our iterated list will change because of deletions...
     
@@ -59,7 +60,7 @@ def perform_recursive_clustering(cluster_collection, startAt, config):
                     print "Subcluster prerequisites fulfilled. Adding FD semantic, splitting cluster and entering recursion"
                     # Senseless here: message.get_tokenAt(startAt).add_semantic("FD")
                     cluster.add_semantic_for_token(startAt,"FD")
-                    newCollection = ClusterCollection()
+                    newCollection = ClusterCollection(config)
                     for key in sumUp.keys():
                             messagesWithValue = cluster.get_messages_with_value_at(startAt,key)
                             newCluster = Cluster(messagesWithValue[0].get_tokenrepresentation())
@@ -86,7 +87,7 @@ def perform_recursive_clustering(cluster_collection, startAt, config):
                     # 
                     #===========================================================
                     # Perform recursive step
-                    perform_recursive_clustering(newCollection, startAt+1, config)
+                    perform_recursive_clustering(newCollection, startAt+1)
                     # Remove old parent cluster
                     cluster_collection.remove_cluster(cluster)
                     cluster_collection.add_clusters(newCollection.get_all_cluster())

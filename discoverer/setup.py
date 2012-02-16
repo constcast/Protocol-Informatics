@@ -1,5 +1,6 @@
 from message import Message
 from clustercollection import ClusterCollection
+import string
 
 class Setup:
     """
@@ -13,10 +14,14 @@ class Setup:
             print "FATAL: No sequences loaded yet"
             return False
 
-        self.cluster_collection = ClusterCollection()    
+        self.cluster_collection = ClusterCollection(config)    
         for i in flowBasedSequences:
                 flowInfo = flowBasedSequences[i]
                 for seq in flowInfo.sequences:
+                    myseq = seq.sequence
+                    if myseq[0] == 0xd:
+                        if myseq[1] == 0xa:
+                            print "Found 0D0A in seq ", myseq, " in flowInfo ", flowInfo
                     newMessage = Message(seq.sequence, config)
                     self.cluster_collection.add_message_to_cluster(newMessage)
                     #print newMessage.get_payload()

@@ -14,9 +14,12 @@ class ClusterCollection():
     function mergeClusterWithSameFormat merges two clusters which exhibit the same
     representation.
     """
-    def __init__(self):
+    def __init__(self,config):
         self.__cluster = []
+        self.__config = config
     
+    def get_config(self):
+        return self.__config
     def get_all_cluster(self):
         return self.__cluster
     
@@ -38,7 +41,7 @@ class ClusterCollection():
             self.add_cluster(cluster)
         #self.__cluster.extend(clusters)
         
-    def mergeClustersWithSameFormat(self, config):
+    def mergeClustersWithSameFormat(self):
         # This code performs cluster comparision not as described in the paper, as
         # it uses the explicit format for finding identical clusters. It does however not
         # * check whether "constant" in cluster A is the same as in cluster B (in this case they should obviously not be merged!)
@@ -79,10 +82,11 @@ class ClusterCollection():
         if len(self.__cluster)==1:
             return # We cannot merge a single cluster
         
+        config = self.__config
         
         copiedCollection = self.__cluster[:]  # <-- [:] is very important to work on a copy of the list
         ori_len = len(copiedCollection)
-        tempCollection = ClusterCollection()
+        tempCollection = ClusterCollection(config)
 
         while len(copiedCollection)>0:            
             mergeCandidates = []            
@@ -284,18 +288,29 @@ class ClusterCollection():
                 idx-=1
             #print "Finished"
     
-    def print_clusterCollectionInfo(self):
+    def print_clusterCollectionInfo(self, file=""):
         """
         Prints the inferred formats for all clusters in the collection in a human
         readable way
         """
         cluster = self.__cluster[:]             
-        self.print_clusterInfo(cluster)
+        self.print_clusterInfo(cluster, file)
         
-    def print_clusterInfo(self, cluster):
+    def print_clusterInfo(self, cluster, file=""):
         """
         Prints the inferred formats for a cluster in a human readable way
+        If file is set, output will be written to a file instead of stdout
         """
+        if not file == "":            
+            import sys
+            old_stdout = sys.stdout
+            handle = open(file,"w")
+            sys.stdout = handle
+            print "Dump of 'Discoverer' analysis"
+            print "Current config:"
+            self.__config.print_config()
+        print "{0} cluster(s) have been generated".format(len(cluster))
+            
         for c in cluster:         
             messages =  c.get_messages()  
             formats = c.get_formats()
@@ -362,7 +377,8 @@ class ClusterCollection():
                             print "variable text token, values: {0}".format(values)
                         
                 idx += 1
-                
-                    
-     
-                
+        if not file=="":
+            handle.close()         
+            sys.stdout = old_stdout
+            import os            
+            print "Finished. File size %0.1f KB" % (os.path.getsize(file)/1024.0)               

@@ -148,13 +148,20 @@ class CommandLineInterface(cmd.Cmd):
         print "to value <vlaue>. This change is temporary and will be erased"
         print "on the next restart of Protocol Informatics. Use"
 
+    
 
     def do_read(self, string):
         import common
         words = string.split()
         if len(words) != 2:
-            self.help_read()
-            return
+            # Check whether a file and format is configured in the config environment and load it
+            if not self.config.inputFile == "" or self.config.format == "":
+                print "Using configured input file information for reading file"                   
+                self.do_read("{0} {1}".format(self.config.format, self.config.inputFile))
+                return
+            else: 
+                self.help_read()
+                return
 
         formatType = words[0]
         filename = words[1]
@@ -199,6 +206,7 @@ class CommandLineInterface(cmd.Cmd):
         print "equals \"config\", a new configuration file is read from <file>."
         print "In all other cases, input data for the protocol inferences are "
         print "read in the specified format (bro, pcap, ascii)"
+        print "If no arguments are given, the configured inputFile in the configured format will be read"
             
     def emptyline(self):
         pass
