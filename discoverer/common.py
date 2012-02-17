@@ -28,3 +28,11 @@ def is_ipv4(address):
         if not 0 <= val <= 255:
             return False
     return True
+
+
+def hash(data):
+    import hashlib
+    # if list....
+    d = ''.join(["%s" % el for el in data])    
+    return hashlib.md5(d).hexdigest()
+    

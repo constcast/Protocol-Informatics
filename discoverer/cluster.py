@@ -1,4 +1,5 @@
 import tokenrepresentation
+import common
 
 class Cluster(dict):
     """
@@ -13,7 +14,7 @@ class Cluster(dict):
     """
     def __init__(self, representation):
         self.update({'messages':[], 'representation':representation, 'format_inference':[], 'semantics':{}})        
-    
+     
     def clear_semantics(self):
         """
         Removes all the semantic information from the whole cluster
@@ -97,17 +98,18 @@ class Cluster(dict):
     def get_messages(self):
         return self.get('messages')
     def add_messages(self, messages):
-        self.get_messages().extend(messages)
+        self.get_messages().extend(messages)        
+        
     def get_representation(self):
         return self.get('representation')
     def set_representation(self, rep):
         self['representation']=rep
-    
+            
     def get_format_inference(self):
         return self.get('format_inference')
     
     def set_format_inference(self, formats):
-        self['format_inference'] = formats
+        self['format_inference'] = formats        
         
     def get_messages_with_value_at(self, tokenIdx, value):
         """

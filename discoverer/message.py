@@ -1,5 +1,6 @@
 import curses
 import statistics
+import common
 #from peekable import peekable
 from curses.ascii import isprint
 from tokenrepresentation import TokenRepresentation
@@ -30,17 +31,20 @@ class Message:
     def __repr__ (self): 
         return 'Msg: "%s" %s' % (self.__message, self.__tokenlist)
      
-    def __init__(self, payload, config):
+    def __init__(self, payload, connident, mnumber, config):
         if len(payload)>config.maxMessagePrefix:
             # Strip payload to maxMessagePreif
             self.__payload = payload[0:config.maxMessagePrefix]
         else:
             self.__payload = payload
+        self.__connident = connident
+        self.__msgnumber = mnumber
         self.__message = ""
         self.__config = config
         self.__tokenlist = []
         self.__analyze()
         self.__convertPayload()
+        self.__payloadhash = common.hash(self.__payload)        
         
     def __convertPayload(self):
         for i in self.__payload:
