@@ -24,13 +24,13 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
     def do_quit(self, string):
         return True
         
-    def do_setup(self, string):        
+    def setup(self, sequences):        
         print "Performing initial message analysis and clustering"
-        if not self.env.has_key('sequences'):
+        if sequences == None:        
             print "FATAL: No sequences loaded yet!"
             return False    
         
-        setup = discoverer.setup.Setup(self.env['sequences'], self.config)
+        setup = discoverer.setup.Setup(sequences, self.config)
         self.env['cluster_collection'] = setup.get_cluster_collection()
         print "Built {0} clusters".format(setup.get_cluster_collection().num_of_clusters())
       
@@ -69,14 +69,44 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
     def help_go(self):
         print "Automatically executes all steps needed to perfom the 'Discoverer' algorithm on the set of messages"
             
+            
     def do_go(self, string):
-        import discoverer.statistics
-        discoverer.statistics.reset_statistics()
-        print "Performing discoverer algorithm"
         if self.env.has_key('cluster_collection'):
             del(self.env['cluster_collection'])
+             
+        if self.config.loadClientAndServerParts == True:
+            # Delete old generated structures
+            
+            if self.env.has_key('cluster_collection_client'):
+                del(self.env['cluster_collection_client'])
+            if self.env.has_key('cluster_collection_server'):
+                del(self.env['cluster_collection_server'])
+            
+            # Perform discoverer for both parts
+            print "-----------------Client2Server-----------------------"
+            self.go(self.env['sequences_client2server'])
+            self.env['cluster_collection_client'] = self.env['cluster_collection']
+            if self.env.has_key('cluster_collection'):
+                del(self.env['cluster_collection'])
+            
+            print "-----------------Server2client-----------------------"
+            self.go(self.env['sequences_server2client'])
+            self.env['cluster_collection_server'] = self.env['cluster_collection']            
+        else:
+            # Perform discoverer only for client pat
+            self.go(self.env['sequences'])
+        
+        
+    def go(self, sequences):
+        
+        import discoverer.statistics
+        
+        
+        discoverer.statistics.reset_statistics()
+        print "Performing discoverer algorithm"
+        
         start = time.time()
-        self.do_setup("")
+        self.setup(sequences)
         elapsed = (time.time() - start)
         print "Setup took {:.3f} seconds".format(elapsed)
         #=======================================================================
@@ -137,13 +167,26 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         #=======================================================================
                 
     def do_dumpresult(self, string):
-        
-        path = os.path.normpath(self.config.dumpFile)
-        file = os.path.basename(self.config.inputFile)
-        (filename,ext) = os.path.splitext(file)
-        storePath = "{0}{1}{2}_dump.txt".format(path,os.sep,filename)
+        if self.config.loadClientAndServerParts == True:
+            # Dump 2 collections to two files
+            path = os.path.normpath(self.config.dumpFile)
+            file = os.path.basename(self.config.inputFile)
+            (filename,ext) = os.path.splitext(file)
+            storePath = "{0}{1}{2}_client_dump.txt".format(path,os.sep,filename)
+            self.dump2File(self.env['cluster_collection_client'],storePath)
+            storePath = "{0}{1}{2}_server_dump.txt".format(path,os.sep,filename)
+            self.dump2File(self.env['cluster_collection_server'],storePath)
+        else:
+            # Dump only one file (client traffic)
+            path = os.path.normpath(self.config.dumpFile)
+            file = os.path.basename(self.config.inputFile)
+            (filename,ext) = os.path.splitext(file)
+            storePath = "{0}{1}{2}_dump.txt".format(path,os.sep,filename)
+            self.dump2File(self.env['cluster_collection'],storePath)
+            
+    def dump2File(self, cluster_collection, storePath):
         print "Dumping result to file {0}".format(storePath)
-        self.env['cluster_collection'].print_clusterCollectionInfo(storePath)
+        cluster_collection.print_clusterCollectionInfo(storePath)
         
     def do_discoverer(self, string):
         print "We are already in Discoverer mode!"

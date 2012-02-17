@@ -151,7 +151,7 @@ class CommandLineInterface(cmd.Cmd):
     
 
     def do_read(self, string):
-        import common
+       
         words = string.split()
         if len(words) != 2:
             # Check whether a file and format is configured in the config environment and load it
@@ -165,11 +165,40 @@ class CommandLineInterface(cmd.Cmd):
 
         formatType = words[0]
         filename = words[1]
-
         sequences = None
+        # Client/Server handling
+        sequences_client2server = None
+        sequences_server2client = None
+        
+        if not self.config.loadClientAndServerParts or formatType == "config": # Load only one direction resp. config file
+                sequences = self.load_sequences(formatType, filename)
+                            
+        else: # Load server and client parts            
+                dir = os.path.dirname(self.config.inputFile)
+                file = os.path.basename(self.config.inputFile)
+                (filename,ext) = os.path.splitext(file)
+                
+                client2server_file = "{0}{1}{2}_client".format(dir,os.sep,filename)
+                server2client_file = "{0}{1}{2}_server".format(dir,os.sep,filename)
+                if ext != "":
+                    client2server_file += ".{0}".format(ext)
+                    server2client_file += ".{0}".format(ext)
+                sequences_client2server = self.load_sequences(formatType, client2server_file)
+                sequences_server2client = self.load_sequences(formatType, server2client_file)
+                sequences = sequences_client2server # Keep it compatible with existing code TODO        
+        if sequences != None and self.config.loadClientAndServerParts == False:
+            self.env['sequences'] = sequences
+            print "Successfully read input file ({0} sequences)...".format(len(sequences))
+        if not (sequences_client2server == None or sequences_server2client == None):
+            self.env['sequences_client2server'] = sequences_client2server
+            self.env['sequences_server2client'] = sequences_server2client
+            print "Successfully read client and server input files ({0} resp. {1} sequences)...".format(len(sequences_client2server), len(sequences_server2client))
+            
+    def load_sequences(self, formatType, filename):
         try:
             print "Attempting to read file \"%s\" as \"%s\" file" % (filename, formatType)
             # we expect a file and a format string
+            import common
             if formatType == "pcap":
                 sequences = common.input.Pcap(filename, self.config.maxMessages, self.config.ethOffset).getConnections()
             elif formatType == "bro":
@@ -193,12 +222,8 @@ class CommandLineInterface(cmd.Cmd):
             import traceback
             traceback.print_exc(file=sys.stdout)
             return
-
-        if sequences != None:
-            self.env['sequences'] = sequences
-
-        print "Successfully read input file ({0} sequences)...".format(len(sequences))
-
+        return sequences
+        
     def help_read(self):
         print "Command syntax: read [<bro|pcap|ascii|config>] <file>"
         print ""

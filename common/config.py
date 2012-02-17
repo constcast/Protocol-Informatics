@@ -39,6 +39,7 @@ class Configuration:
         self.dumpFile = "discoverer_dump.txt"
         self.breakSequences = False
         self.breakSequenceAt = "0d0a"
+        self.loadClientAndServerParts = False
         # Used for NW alignment in Discoverer
         self.matchScore = 1
         self.mismatchScore = 1
