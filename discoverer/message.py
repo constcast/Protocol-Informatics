@@ -31,7 +31,7 @@ class Message:
     def __repr__ (self): 
         return 'Msg: "%s" %s' % (self.__message, self.__tokenlist)
      
-    def __init__(self, payload, connident, mnumber, config):
+    def __init__(self, payload, connident, mnumber, flowmnumber, config):
         if len(payload)>config.maxMessagePrefix:
             # Strip payload to maxMessagePreif
             self.__payload = payload[0:config.maxMessagePrefix]
@@ -39,13 +39,30 @@ class Message:
             self.__payload = payload
         self.__connident = connident
         self.__msgnumber = mnumber
+        self.__flowmsgnumber = flowmnumber
         self.__message = ""
         self.__config = config
         self.__tokenlist = []
         self.__analyze()
         self.__convertPayload()
-        self.__payloadhash = common.hash(self.__payload)        
+        self.__payloadhash = common.hash(self.__payload)
+        self.__cluster = None
+    
+    def getHash(self):
+        return self.__payloadhash
         
+    def setCluster(self, cluster):
+        self.__cluster = cluster
+        
+    def getCluster(self):
+        return self.__cluster
+            
+    def getConnectionIdentifier(self):
+        return self.__connident
+    
+    def getFlowSequenceNumber(self):
+        return self.__flowmsgnumber
+    
     def __convertPayload(self):
         for i in self.__payload:
             if isprint(chr(i)):

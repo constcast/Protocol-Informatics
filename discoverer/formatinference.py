@@ -26,9 +26,11 @@ def perform_format_inference_for_cluster(c, config):
                 constant = False
                 break
         if constant:
-            result.append("const")
+            result.append(Constant(tokenRepresentation.get_token()))
+            #result.append("const")
         else:
-            result.append("variable")
+            result.append(Variable())
+            #result.append("variable")
         tokenIndex +=1
     # print "Result for cluster (" , len(c.get_messages()), " entries)",  c.get_representation(), " after property inference: ", result
     
@@ -45,3 +47,46 @@ def perform_format_inference_for_cluster_collection(cluster_collection, config):
     cluster = cluster_collection.get_all_cluster()        
     for c in cluster:
         perform_format_inference_for_cluster(c,config)
+        
+class FormatSpecification(object):
+    
+    def __init__(self, str):
+        self.__stringRep = str
+    
+    def getStringRepresentation(self):
+        return self.__stringRep
+    
+    def __str__(self):
+        return self.__stringRep
+    
+    def __repr__(self):
+        return self.__stringRep
+    
+    def getType(self):
+        return "n/a"
+        
+class Constant(FormatSpecification):
+    def __init__(self, value):
+        super(Constant, self).__init__("const ('{0}')".format(value))
+        
+    #def __str__(self):
+    #    return self.__stringRep
+    
+    #def __repr__(self):
+    #    return self.__stringRep
+    
+    def getType(self):
+        return "const"
+        
+class Variable(FormatSpecification):
+    def __init__(self):
+        super(Variable, self).__init__("variable")
+    
+    #def __str__(self):
+    #    return self.__stringRep
+    
+    #def __repr__(self):
+    #    return self.__stringRep
+    
+    def getType(self):
+        return "variable"

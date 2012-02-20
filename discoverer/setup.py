@@ -22,8 +22,9 @@ class Setup:
                     if myseq[0] == 0xd:
                         if myseq[1] == 0xa:
                             print "Found 0D0A in seq ", myseq, " in flowInfo ", flowInfo
-                    newMessage = Message(seq.sequence, seq.connIdent, seq.mNumber, config)
+                    newMessage = Message(seq.sequence, seq.connIdent, seq.mNumber, seq.flowNumber, config)
                     self.cluster_collection.add_message_to_cluster(newMessage)
+                    
                     #print newMessage.get_payload()
                     #print "Tokenlist of ", seq.sequence, " = ", newMessage.get_tokenrepresentation_string()
                     # Cluster message

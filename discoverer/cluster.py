@@ -74,6 +74,12 @@ class Cluster(dict):
             return self.get('semantics')[idx]
         return []
         
+    def getFormatHash(self):
+        """
+        Returns the hash of the format inference incl. const values
+        """
+        import hashlib
+        return hashlib.sha1(str(self.get_formats())).hexdigest()
     
     def get_formats(self):
         """
@@ -98,7 +104,9 @@ class Cluster(dict):
     def get_messages(self):
         return self.get('messages')
     def add_messages(self, messages):
-        self.get_messages().extend(messages)        
+        self.get_messages().extend(messages)
+        for message in messages:
+            message.setCluster(self)        
         
     def get_representation(self):
         return self.get('representation')

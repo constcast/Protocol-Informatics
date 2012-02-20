@@ -8,6 +8,7 @@ import cli
 import discoverer.message
 import time
 import collections
+import discoverer.statemachine
 
 class DiscovererCommandLineInterface(cli.CommandLineInterface):
     def __init__(self, env, config):
@@ -86,17 +87,37 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             print "-----------------Client2Server-----------------------"
             self.go(self.env['sequences_client2server'])
             self.env['cluster_collection_client'] = self.env['cluster_collection']
+            self.env['message_flows'] = {}
+            self.combineflows(self.env['cluster_collection_client'])
             if self.env.has_key('cluster_collection'):
                 del(self.env['cluster_collection'])
             
             print "-----------------Server2client-----------------------"
             self.go(self.env['sequences_server2client'])
-            self.env['cluster_collection_server'] = self.env['cluster_collection']            
+            self.env['cluster_collection_server'] = self.env['cluster_collection']
+            self.combineflows(self.env['cluster_collection_server'])
+            self.printflows() 
+            
+            # Build statemachine
+            sm = discoverer.statemachine.Statemachine(self.env['messageFlows'])  
+            sm.build()         
         else:
             # Perform discoverer only for client pat
             self.go(self.env['sequences'])
         
-        
+    def combineflows(self, cluster_collection):
+        if not self.env.has_key('messageFlows'):
+            self.env['messageFlows'] = {}
+        for c in cluster_collection.get_all_cluster():
+            for message in c.get_messages():
+                if not self.env['messageFlows'].has_key(message.getConnectionIdentifier()):
+                    self.env['messageFlows'][message.getConnectionIdentifier()] = {}
+                subflow = self.env['messageFlows'][message.getConnectionIdentifier()]
+                subflow[message.getFlowSequenceNumber()] = message
+    def printflows(self):
+        #print self.env['messageFlows']
+        pass
+    
     def go(self, sequences):
         
         import discoverer.statistics
@@ -165,7 +186,31 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         # print "Needlewunsch results:"
         # discoverer.needlewunsch.needlewunsch(format1, format2)
         #=======================================================================
-                
+               
+    def do_dumpflow(self,file):
+        if not self.config.loadClientAndServerParts:
+            print "Flow dumping is only available when analyzing client and server flows"
+            return
+        if file!="":
+            import os.path
+            path = os.path.normpath(self.config.dumpFile)
+            file = os.path.basename(self.config.inputFile)         
+            (filename,ext) = os.path.splitext(file)
+            storePath = "{0}{1}{2}_flow_dump.txt".format(path,os.sep,filename)
+            import sys
+            old_stdout = sys.stdout
+            handle = open(storePath,"w")
+            sys.stdout = handle
+        print "Dump of 'Discoverer' flows"
+        for f in self.env['messageFlows']:
+            print "Flow: %s" % f
+            for entry in self.env['messageFlows'][f]:
+                print "\t{0}:\t{1} - {2}".format(entry,self.env['messageFlows'][f][entry].get_message(), self.env['messageFlows'][f][entry].getCluster().getFormatHash())
+        if file!="":
+            handle.close()         
+            sys.stdout = old_stdout           
+            print "Finished. File size %0.1f KB" % (os.path.getsize(storePath)/1024.0)
+                  
     def do_dumpresult(self, string):
         if self.config.loadClientAndServerParts == True:
             # Dump 2 collections to two files
