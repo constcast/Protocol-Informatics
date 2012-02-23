@@ -88,24 +88,31 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             self.go(self.env['sequences_client2server'])
             self.env['cluster_collection_client'] = self.env['cluster_collection']
             self.env['message_flows'] = {}
-            self.combineflows(self.env['cluster_collection_client'])
+            self.combineflows(self.env['cluster_collection_client'],'client')
             if self.env.has_key('cluster_collection'):
                 del(self.env['cluster_collection'])
             
             print "-----------------Server2client-----------------------"
             self.go(self.env['sequences_server2client'])
             self.env['cluster_collection_server'] = self.env['cluster_collection']
-            self.combineflows(self.env['cluster_collection_server'])
+            self.combineflows(self.env['cluster_collection_server'],'server')
             self.printflows() 
             
             # Build statemachine
             sm = discoverer.statemachine.Statemachine(self.env['messageFlows'])  
-            sm.build()         
+            sm.build()
+            path = os.path.normpath(self.config.dumpFile)
+            file = os.path.basename(self.config.inputFile)
+            (filename,ext) = os.path.splitext(file)
+            storePath = "{0}{1}{2}.dot".format(path,os.sep,filename) 
+            sm.dfa()
+            sm.dump(storePath)
+                  
         else:
             # Perform discoverer only for client pat
             self.go(self.env['sequences'])
         
-    def combineflows(self, cluster_collection):
+    def combineflows(self, cluster_collection, flowDirection):
         if not self.env.has_key('messageFlows'):
             self.env['messageFlows'] = {}
         for c in cluster_collection.get_all_cluster():
@@ -113,7 +120,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
                 if not self.env['messageFlows'].has_key(message.getConnectionIdentifier()):
                     self.env['messageFlows'][message.getConnectionIdentifier()] = {}
                 subflow = self.env['messageFlows'][message.getConnectionIdentifier()]
-                subflow[message.getFlowSequenceNumber()] = message
+                subflow[message.getFlowSequenceNumber()] = (message, flowDirection)
     def printflows(self):
         #print self.env['messageFlows']
         pass
