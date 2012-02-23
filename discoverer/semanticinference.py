@@ -32,7 +32,8 @@ def perform_semantic_inference(cluster_collection, config):
                 try:
                     isNumber = tokenRepresentation.get_tokenType()=='text' and common.is_number(token)
                 except TypeError:
-                    print "Error checking token {0} for number semantics".format(token)
+                    if config.debug:
+                        print "Error checking token {0} for number semantics".format(token)
                     isNumber = False
                 if isNumber:
                     tokenRepresentation.add_semantic("numeric")

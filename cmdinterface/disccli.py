@@ -96,10 +96,11 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             self.go(self.env['sequences_server2client'])
             self.env['cluster_collection_server'] = self.env['cluster_collection']
             self.combineflows(self.env['cluster_collection_server'],'server')
-            self.printflows() 
+            if self.config.debug:
+                self.printflows() 
             
             # Build statemachine
-            sm = discoverer.statemachine.Statemachine(self.env['messageFlows'])  
+            sm = discoverer.statemachine.Statemachine(self.env['messageFlows'], self.config)  
             sm.build()
             path = os.path.normpath(self.config.dumpFile)
             file = os.path.basename(self.config.inputFile)
@@ -122,8 +123,9 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
                 subflow = self.env['messageFlows'][message.getConnectionIdentifier()]
                 subflow[message.getFlowSequenceNumber()] = (message, flowDirection)
     def printflows(self):
-        #print self.env['messageFlows']
         pass
+    
+        
     
     def go(self, sequences):
         
@@ -176,8 +178,9 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         elapsed = (time.time() - start)
         print "Merging took {:.3f} seconds".format(elapsed)
         print "Finished"
-                
-        self.env['cluster_collection'].print_clusterCollectionInfo()
+
+        if self.config.debug:                
+            self.env['cluster_collection'].print_clusterCollectionInfo()
             
         #=======================================================================
         # # Needlewunsch test

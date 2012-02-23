@@ -18,10 +18,12 @@ class Setup:
         for i in flowBasedSequences:
                 flowInfo = flowBasedSequences[i]
                 for seq in flowInfo.sequences:
-                    myseq = seq.sequence
-                    if myseq[0] == 0xd:
-                        if myseq[1] == 0xa:
-                            print "Found 0D0A in seq ", myseq, " in flowInfo ", flowInfo
+                    #===========================================================
+                    # myseq = seq.sequence
+                    # if myseq[0] == 0xd:
+                    #    if myseq[1] == 0xa:
+                    #        print "Found 0D0A in seq ", myseq, " in flowInfo ", flowInfo
+                    #===========================================================
                     newMessage = Message(seq.sequence, seq.connIdent, seq.mNumber, seq.flowNumber, config)
                     self.cluster_collection.add_message_to_cluster(newMessage)
                     

@@ -40,6 +40,9 @@ class Configuration:
         self.breakSequences = False
         self.breakSequenceAt = "0d0a"
         self.loadClientAndServerParts = False
+        self.minimizeDFA = False
+        self.debug = False
+        self.weightEdges = True
         # Used for NW alignment in Discoverer
         self.matchScore = 1
         self.mismatchScore = 1
