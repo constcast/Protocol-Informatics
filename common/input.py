@@ -177,7 +177,7 @@ class Bro(Input):
                     It is encoded in hex format
     """
 
-    def consumeMessageBlock(self, data, connectionID, messageNumber, contentLength):
+    def consumeMessageBlock(self, data, connectionID, messageNumber, flowMessageNumber, contentLength):
     	if len (data ) == 0:
 		return 
 
@@ -198,7 +198,7 @@ class Bro(Input):
             idx += 2
             
             
-        self.connections[connectionID].addSequence(sequences.Sequence(seq, connectionID, messageNumber))
+        self.connections[connectionID].addSequence(sequences.Sequence(seq, connectionID, messageNumber, flowMessageNumber))
 
     def getConnections(self):
         return self.connections
@@ -215,6 +215,7 @@ class Bro(Input):
         sequence = ""
         connectionID = ""
         messageNumber = 0
+        flowMessageNumber = 0
         contentLength = 0
         content = ""
 
@@ -226,16 +227,17 @@ class Bro(Input):
 
             if line.startswith(self.blockseparator):
                 # found a new block. push the old one
-                self.consumeMessageBlock(content, connectionID, messageNumber, contentLength)
+                self.consumeMessageBlock(content, connectionID, messageNumber, flowMessageNumber, contentLength)
 
                 # parse next block header
-                regexstring = '\*+ (\w+) ([0-9]+) ([0-9]+) (.*)'
+                regexstring = '\*+ (\w+) ([0-9]+) ([0-9]+) ([0-9]+) (.*)'
                 m = re.match(regexstring, line)
                 if m: 
                     connectionID = m.group(1)
                     messageNumber = int(m.group(2))
-                    contentLength = int(m.group(3))
-                    content = m.group(4)
+                    flowMessageNumber = int(m.group(3))
+                    contentLength = int(m.group(4))
+                    content = m.group(5)
                 else:
                     errorstring =  "Format missmatch in file. Expected a new message, got: " + line
                     raise Exception(errorstring)
@@ -243,5 +245,5 @@ class Bro(Input):
                 content.append(line)
 
         # try to assign last message block to last message
-        self.consumeMessageBlock(content, connectionID, messageNumber, contentLength)
+        self.consumeMessageBlock(content, connectionID, messageNumber, flowMessageNumber, contentLength)
 

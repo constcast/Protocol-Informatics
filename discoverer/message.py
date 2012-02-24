@@ -1,4 +1,6 @@
 import curses
+import statistics
+import common
 #from peekable import peekable
 from curses.ascii import isprint
 from tokenrepresentation import TokenRepresentation
@@ -29,18 +31,38 @@ class Message:
     def __repr__ (self): 
         return 'Msg: "%s" %s' % (self.__message, self.__tokenlist)
      
-    def __init__(self, payload, config):
+    def __init__(self, payload, connident, mnumber, flowmnumber, config):
         if len(payload)>config.maxMessagePrefix:
             # Strip payload to maxMessagePreif
             self.__payload = payload[0:config.maxMessagePrefix]
         else:
             self.__payload = payload
+        self.__connident = connident
+        self.__msgnumber = mnumber
+        self.__flowmsgnumber = flowmnumber
         self.__message = ""
         self.__config = config
         self.__tokenlist = []
         self.__analyze()
         self.__convertPayload()
+        self.__payloadhash = common.hash(self.__payload)
+        self.__cluster = None
+    
+    def getHash(self):
+        return self.__payloadhash
         
+    def setCluster(self, cluster):
+        self.__cluster = cluster
+        
+    def getCluster(self):
+        return self.__cluster
+            
+    def getConnectionIdentifier(self):
+        return self.__connident
+    
+    def getFlowSequenceNumber(self):
+        return self.__flowmsgnumber
+    
     def __convertPayload(self):
         for i in self.__payload:
             if isprint(chr(i)):
@@ -104,15 +126,22 @@ class Message:
         textSegment = ""
         curPos = 0
         startsAt = 0
+        num_printable = 0
+        num_binary = 0
+        startsWithText = False
+        
         for char in self.__payload:
-            
             if curses.ascii.isprint(char):
+                if num_printable==0 and num_binary == 0:
+                    startsWithText = True
+                num_printable += 1
                 if lastIsBinary:
                     lastIsBinary = False;                   
                     textSegment = ""
                     startsAt = curPos
                 textSegment+=chr(char)               
             else:
+                num_binary += 1
                 if not lastIsBinary: 
                     # We finished a text segment now, now tokenize again
                     self.__tokenlist.extend(self.tokenizeTextSegment(textSegment, startsAt))                        
@@ -123,7 +152,7 @@ class Message:
         if not lastIsBinary:
             # We finish a word now
             self.__tokenlist.extend(self.tokenizeTextSegment(textSegment, startsAt))
-               
+        statistics.update_statistics(num_printable, num_binary, startsWithText)       
     
     #===========================================================================
     # def __analyze2(self):

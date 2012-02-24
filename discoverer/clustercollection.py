@@ -3,6 +3,7 @@ from cluster import Cluster
 import random
 import discoverer
 import curses
+import formatinference
 
 class ClusterCollection():
     """
@@ -107,7 +108,7 @@ class ClusterCollection():
                     token1 = cluster1.get_format(format_token_idx)
                     token2 = cluster2.get_format(format_token_idx)
                     representation = token1[0]
-                    fmt_infer= token1[1]
+                    fmt_infer = token1[1]
                     semantics = token1[2]
                     if not representation == token2[0]: # Token mismatch --> will not merge
                         shouldMerge = False
@@ -123,9 +124,9 @@ class ClusterCollection():
                     
                     
                     if checkValues:
-                        if fmt_infer == token2[1]:
+                        if fmt_infer.getType() == token2[1].getType():
                             # Check constant/variable cover
-                            if fmt_infer=='const': 
+                            if fmt_infer.getType()=='const': 
                                 # Check instance of const value
                                 # FIX: Each cluster must have at least 1 message!
                                 if not cluster1.get_messages()[0].get_tokenAt(format_token_idx).get_token() == cluster2.get_messages()[0].get_tokenAt(format_token_idx).get_token():
@@ -146,7 +147,7 @@ class ClusterCollection():
                             # Variable/Constant format inference
                             # Check whether variable token takes value of constant one at least once
                             found = True
-                            if fmt_infer == 'const':
+                            if fmt_infer.getType() == 'const':
                                 # Search for cluster1's value in cluster2
                                 cluster1val = cluster1.get_messages()[0].get_tokenAt(format_token_idx).get_token()
                                 hits = cluster2.get_messages_with_value_at(format_token_idx,cluster1val)
@@ -200,7 +201,8 @@ class ClusterCollection():
         if c==None:
             c = Cluster(rep)
             self.__cluster.append(c)
-        c.get_messages().append(message)
+        c.add_messages([message])
+        #c.get_messages().append(message)
         
     def num_of_clusters(self):
         return len(self.__cluster)
@@ -310,13 +312,17 @@ class ClusterCollection():
             print "Current config:"
             self.__config.print_config()
         print "{0} cluster(s) have been generated".format(len(cluster))
+        
+        print "Statistics: {0}".format(discoverer.statistics.stats)        
+        print "Protocol is classified as: {0}".format(discoverer.statistics.get_classification())
+        
             
         for c in cluster:         
             messages =  c.get_messages()  
             formats = c.get_formats()
             print "*"*50
             print "Cluster information: {0} entries".format(len(messages))
-            print "Format inferred: {0}".format(formats)
+            print "Format inferred ({0} token): {1}".format(len(formats),formats)
             # print "Token fmt: {0}".fmt(c.get_representation())s            
             #for message in messages:
             #    print message
@@ -342,7 +348,7 @@ class ClusterCollection():
                         values += newstr
                     print "Length field, {0} values: {1}".format(len(sumUp), values[:-2])
                 else:
-                    if fmt[1] == "const":
+                    if fmt[1].getType() == "const":
                         value = messages[0].get_tokenAt(idx).get_token()
                         if fmt[0]=='binary':
                             print "const binary token, value 0x{:02x}".format(value),

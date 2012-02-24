@@ -32,7 +32,8 @@ def perform_semantic_inference(cluster_collection, config):
                 try:
                     isNumber = tokenRepresentation.get_tokenType()=='text' and common.is_number(token)
                 except TypeError:
-                    print "Error checking token {0} for number semantics".format(token)
+                    if config.debug:
+                        print "Error checking token {0} for number semantics".format(token)
                     isNumber = False
                 if isNumber:
                     tokenRepresentation.add_semantic("numeric")
@@ -55,7 +56,7 @@ def perform_semantic_inference(cluster_collection, config):
                     if isinstance(nextOne, TokenRepresentation):
                         if nextOne.get_token() == 0xa:
                             inferred_formats = c.get_format_inference()
-                            if inferred_formats[idx]=='const' and inferred_formats[idx+1]=='const':
+                            if inferred_formats[idx].getType()=='const' and inferred_formats[idx+1].getType()=='const':
                                 tokenRepresentation.add_semantic("CR")
                                 #c.add_semantics(idx,"CR")
                                 nextOne = iterator.next()

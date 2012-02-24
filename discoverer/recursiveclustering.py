@@ -28,7 +28,8 @@ def perform_recursive_clustering(cluster_collection, startAt):
     __startAt = startAt
      
     for cluster in clusters:
-        print "Starting processing for next cluster ({0} messages)".format(len(cluster.get_messages()))
+        if config.debug:
+            print "Starting processing for next cluster ({0} messages)".format(len(cluster.get_messages()))
         
         startAt = __startAt
         #tokenValue = token.get_token()
@@ -57,7 +58,8 @@ def perform_recursive_clustering(cluster_collection, startAt):
                         break
                 if wouldCluster:
                     # Create new cluster
-                    print "Subcluster prerequisites fulfilled. Adding FD semantic, splitting cluster and entering recursion"
+                    if config.debug:
+                        print "Subcluster prerequisites fulfilled. Adding FD semantic, splitting cluster and entering recursion"
                     # Senseless here: message.get_tokenAt(startAt).add_semantic("FD")
                     cluster.add_semantic_for_token(startAt,"FD")
                     newCollection = ClusterCollection(config)
@@ -67,7 +69,8 @@ def perform_recursive_clustering(cluster_collection, startAt):
                             newCluster.get_messages().extend(messagesWithValue)                                
                             newCluster.add_semantic_for_token(startAt, "FD")
                             newCollection.add_cluster(newCluster)
-                    print "{0} sub clusters generated".format(len(sumUp.keys()))
+                    if config.debug:
+                        print "{0} sub clusters generated".format(len(sumUp.keys()))
                     
                     # Perform format inference on new cluster collection
                     formatinference.perform_format_inference_for_cluster_collection(newCollection, config)
@@ -96,6 +99,7 @@ def perform_recursive_clustering(cluster_collection, startAt):
                     pass
                     #print "Subclustering prerequisites not fulfilled. Will not sub-cluster"
             startAt+=1
-        print "Recursive clustering analysis for cluster finished"
+        if config.debug:
+            print "Recursive clustering analysis for cluster finished"
     
     
