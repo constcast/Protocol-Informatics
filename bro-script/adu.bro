@@ -251,12 +251,18 @@ event connection_state_remove(c: connection)
 		if ( astate$is_orig )
 			{
 			if ( astate$depth_tx <= adu_max_depth )
-				event adu_tx(c, copy(astate));
+			        {
+					++astate$seen_adu_tx;
+					event adu_tx(c, copy(astate));
+				}
 			}
 		else
 			{
 			if ( astate$depth_rx <= adu_max_depth )
-				event adu_rx(c, copy(astate));
+			        {
+					++astate$seen_adu_rx;
+				 	event adu_rx(c, copy(astate));
+				}
 			}
 	}
 
