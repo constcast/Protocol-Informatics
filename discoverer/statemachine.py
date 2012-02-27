@@ -119,7 +119,11 @@ class Statemachine(object):
         #=======================================================================
         
         self.compute_finals()
+        if self.__config.debug:
+            print "Performing ReverX merge. Number of states, transitions: {0},{1}".format(len(self.__states), len(self.__transitions))
         self.reverx_merge()
+        if self.__config.debug:
+            print "Performed ReverX merge. {0} states left: {0}, transitions: {1}".format(len(self.__states),len(self.__transitions))
         self.compute_finals()
         
         if self.__config.debug:
