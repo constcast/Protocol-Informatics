@@ -15,10 +15,12 @@ class Statemachine(object):
         Constructor
         '''
         self.__sequences = sequences
+        self.__start = "s0"
         self.__states = ["s0"]
         self.__transitions = []
         self.__nextstate = 1
         self.__config = config
+        self.__alphabet = set()
         
     def has_gaps(self,numbers, gap_size):
         # Based on http://stackoverflow.com/questions/4375310/finding-data-gaps-with-bit-masking
@@ -27,7 +29,17 @@ class Statemachine(object):
             if elem>1:
                 return True
         return False
-        
+       
+    def findTransition(self,curState, hash):
+        # First try to find exact matches
+        for t in self.__transitions:
+            if t[0] == curState and t[1]==hash: # Exactly this transition was already in list
+                return t      
+        # Now a match of the hash is enough    
+        for t in self.__transitions:
+            if t[1] == hash: # This transition is already in list
+                return t
+        return None
         
     def build(self):
         self.__states.append("e") # Error state
@@ -49,16 +61,32 @@ class Statemachine(object):
                         print "Message {0} ({1}): {2}, hash {3} with format {4}".format(msg_id,message[1],message[0].get_message(), message[0].getCluster().getFormatHash(),message[0].getCluster().get_formats())
                     # Walk transitions for curstate and message's hash
                     hash = message[0].getCluster().getFormatHash()
-                    direction = message
-                    found = False
-                    for transition in self.__transitions:
-                        # Check for equiality of current state, transitional hash and client2server or server2client
-                        if transition[0]==curstate and transition[1]==hash and transition[3]==message[1]:
-                            found = True
-                            curstate = transition[2]
-                            transition[4]+=1 # Inc link usage
-                            break
-                    if not found:
+                    self.__alphabet.add(hash)
+                    #direction = message
+                    
+                    # ReverX state merging
+                    # Search transitions for an element with the same hash (transition).
+                    # If found add "cur, hash, existingState" for this message and continue
+                    # with the next one
+                    # In the ReverX paper, this step is executed after the trivial DFA is built.
+                    # However it should be possible as well to do this during the build phase
+                    
+                    existingTransition = self.findTransition(curstate, hash)
+                    if existingTransition:
+                        if existingTransition[0]==curstate:
+                            # Exactly this transition exists
+                            curstate = existingTransition[2]
+                            existingTransition[4]+=1 # Inc link usage
+                            if self.__config.debug:
+                                print "Exactly this transition already exists"
+                            continue
+                        else: # A transition with this hash does exist, but from a different src state
+                            self.__transitions.append([curstate,hash,existingTransition[2], message[1], 1, message[0].get_message()])
+                            curstate = existingTransition[2]
+                            if self.__config.debug:
+                                print "A transition with this hash already exists, bending link to ({0},{1},{2})".format(curstate, hash, existingTransition[2])
+                            continue
+                    else: # This transition does not yet exist, add new transition with new state    
                         newstate = "s{0}".format(self.__nextstate)
                         self.__states.append(newstate)
                         self.__transitions.append([curstate,hash,newstate, message[1],1, message[0].get_message()])
@@ -66,9 +94,32 @@ class Statemachine(object):
                         if self.__config.debug:
                             print "Created new state in transition ({0},{1},{2},{3},1,{4})".format(curstate,hash,newstate, message[1], message[0].get_message())
                         curstate = newstate
-                    else:
-                        if self.__config.debug:
-                            print "Already in transition table! Forwarding to state {0}".format(curstate)
+                    
+        #=======================================================================
+        #                
+        #                found = False
+        #            for transition in self.__transitions:
+        #                # Check for equiality of current state, transitional hash and client2server or server2client
+        #                if transition[0]==curstate and transition[1]==hash and transition[3]==message[1]:
+        #                    found = True
+        #                    curstate = transition[2]
+        #                    transition[4]+=1 # Inc link usage
+        #                    break
+        #            if not found:
+        #                newstate = "s{0}".format(self.__nextstate)
+        #                self.__states.append(newstate)
+        #                self.__transitions.append([curstate,hash,newstate, message[1],1, message[0].get_message()])
+        #                self.__nextstate += 1
+        #                if self.__config.debug:
+        #                    print "Created new state in transition ({0},{1},{2},{3},1,{4})".format(curstate,hash,newstate, message[1], message[0].get_message())
+        #                curstate = newstate
+        #            else:
+        #                if self.__config.debug:
+        #                    print "Already in transition table! Forwarding to state {0}".format(curstate)
+        #=======================================================================
+        
+        self.compute_finals()
+        self.reverx_merge()
         self.compute_finals()
         
         if self.__config.debug:
@@ -79,7 +130,90 @@ class Statemachine(object):
             for t in self.__transitions:
                 print t
             print "Finals: ", "\n".join(self.__finals)
-           
+    
+    def reverx_merge(self):
+        reduce = True
+        while reduce:
+            reduce = False
+            for q in self.__states[:]:
+                for p in self.__states[:]:
+                    if p=="e" or q=="e" or q==p:
+                        continue
+                    # if there is not a causal relation
+                    if (not self.referenceBetween(p,q)) or self.isMutualReachable(p,q):
+                        if self.canReachSameState(p,q):
+                            self.mergeStates(p,q)
+                            reduce = True
+            #self.minimize_dfa()
+        return
+                        
+    def canReachSameState(self,p,q):
+        for s in self.__alphabet:
+            r1 = self.getState(p,s)
+            r2 = self.getState(q,s)
+            if not (r1 == None or r2==None):
+                if r1==r2:
+                    return True
+        return False
+    
+    def getState(self,p,s):
+        for t in self.__transitions:
+            return t[2] if t[0]==p and t[1]==s else None
+    
+    def mergeStates(self,p,q):
+        """Merges p into q. All transitions to p are moved to q.
+        If p was the start or current state, those are also moved to q.
+        """
+        self.__states.remove(p)
+        if p in self.__finals:
+            self.__finals.remove(p)
+        
+        #if self.current_state == q1:
+        #    self.current_state = q2
+        if self.__start == p:
+            self.__start = q
+            
+        for t in self.__transitions[:]:
+            # Redirect target states
+            if t[0]==p:
+                self.__transitions.remove(t)
+                continue
+            if t[2]==p:
+                t[2]=q
+            
+    def referenceBetween(self, p, q):
+        # Checks for causal relation between two states
+        # Returns True if q can be reached from p via an s
+        # or p can be reached via q via an s as well
+        # else False
+        referenceBetween = False
+        for s in self.__alphabet:
+            if self.has_transition(q,s,p) or self.has_transition(p,s,q):
+                referenceBetween = True
+                break
+        return referenceBetween
+    
+    def isMutualReachable(self, p, q):
+        # Checks for causal relation between two states
+        # Returns True if q can be reached from p via an s
+        # and p can be reached via q via an t as well
+        # else False
+        
+        for s in self.__alphabet:
+            if self.has_transition(q,s,p):
+                for t in self.__alphabet:
+                    if s==t:
+                        continue
+                    if self.has_transition(p,t,q):
+                        return True
+        return False
+    
+    def has_transition(self, p,s,q):
+        for t in self.__transitions:
+            if t[0]==p and t[1]==s and t[2]==q:
+                return True
+        return False
+     
     def compute_finals(self):
         # Compute finals - ugly but quick n dirty
         self.__finals = []
