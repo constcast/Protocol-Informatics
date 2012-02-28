@@ -100,13 +100,15 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
                 self.printflows() 
             
             # Build statemachine
+            
             sm = discoverer.statemachine.Statemachine(self.env['messageFlows'], self.config)  
             sm.build()
             path = os.path.normpath(self.config.dumpFile)
             file = os.path.basename(self.config.inputFile)
             (filename,ext) = os.path.splitext(file)
             storePath = "{0}{1}{2}.dot".format(path,os.sep,filename) 
-            sm.dfa()
+            #sm.dfa()
+            #sm.fake()
             sm.dump(storePath)
                   
         else:

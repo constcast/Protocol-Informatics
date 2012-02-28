@@ -77,7 +77,7 @@ def perform_recursive_clustering(cluster_collection, startAt):
                     semanticinference.perform_semantic_inference(newCollection, config)
                     # Merge clusters with same format
                     
-                    #newCollection.mergeClustersWithSameFormat(config)
+                    newCollection.mergeClustersWithSameFormat()
                     
                     # Perform needle wunsch
                     # Edit 20120120 - not here
