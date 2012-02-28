@@ -126,6 +126,7 @@ class Statemachine(object):
     
     def build(self):
         self.__states.append("e") # Error state
+        error = 0
         for flow in self.__sequences:
             messages = self.__sequences[flow]
             if len(messages)==1:
@@ -135,9 +136,10 @@ class Statemachine(object):
             message_indices = messages.keys()
             if self.has_gaps(message_indices,1):
                 print "ERROR: Flow {0} has gaps in sequences numberings. Skipping flow".format(flow)
+                error += 1
             elif not self.is_alternating(flow):
                 print "ERROR: Flow {0} is not strictly alternating between client and server. Skippng flow".format(flow)
-                pass
+                error += 1                
             else:
                 if self.__config.debug:
                     print "Running flow {0}, {1} messages".format(flow,len(messages))                
@@ -180,6 +182,8 @@ class Statemachine(object):
                         if self.__config.debug:
                             print "Created new state in transition ({0},{1},{2},{3},1,{4})".format(curstate,hash,newstate, message[1], message[0].get_message())
                         curstate = newstate
+        if error>0:
+            print "{0} errors observed during statemachine bulding".format(error)
                     
         #=======================================================================
         #                
@@ -233,6 +237,12 @@ class Statemachine(object):
         return l
     
     def reverx_merge(self):
+        # Buf hunting
+        print "Bug hunting"
+        for t in self.__transitions:
+            if t.getDestination()=="s0" or t.getDestination()=="s2":
+                print t
+        print "End of bug hunting"
         import time
         start = time.time()
         print "Performing ReverX merge stage 1"
