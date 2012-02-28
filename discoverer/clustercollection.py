@@ -85,6 +85,9 @@ class ClusterCollection():
         
         config = self.__config
         
+        if not config.mergeSimilarClusters:
+            return
+        
         copiedCollection = self.__cluster[:]  # <-- [:] is very important to work on a copy of the list
         ori_len = len(copiedCollection)
         tempCollection = ClusterCollection(config)

@@ -43,6 +43,7 @@ class Configuration:
         self.minimizeDFA = False
         self.debug = False
         self.weightEdges = True
+        self.mergeSimilarClusters = False
         # Used for NW alignment in Discoverer
         self.matchScore = 1
         self.mismatchScore = 1
