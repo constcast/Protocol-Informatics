@@ -233,6 +233,11 @@ class Statemachine(object):
         return l
     
     def reverx_merge(self):
+        print "Begin"
+        for t in self.__transitions:
+            if t.getDestination()=="s2":
+                print t
+        print "End"
         import time
         start = time.time()
         print "Performing ReverX merge stage 1"

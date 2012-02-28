@@ -103,6 +103,7 @@ class Cluster(dict):
             return (self.get('representation')[idx], self.get('format_inference')[idx],[])
     def get_messages(self):
         return self.get('messages')
+    
     def add_messages(self, messages):
         self.get_messages().extend(messages)
         for message in messages:
