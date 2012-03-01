@@ -109,6 +109,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             storePath = "{0}{1}{2}.dot".format(path,os.sep,filename) 
             #sm.dfa()
             #sm.fake()
+            print "Dumping state machine"
             sm.dump(storePath)
             self.do_dumpresult("")
                   
