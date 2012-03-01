@@ -44,6 +44,8 @@ class Configuration:
         self.debug = False
         self.weightEdges = True
         self.mergeSimilarClusters = False
+        self.considerOneMessageAsConstant = False
+        self.nativeReverXStage1 = False
         # Used for NW alignment in Discoverer
         self.matchScore = 1
         self.mismatchScore = 1
@@ -73,7 +75,7 @@ class Configuration:
         return True
 
     def print_config(self):
-        elems = vars(self)
+        elems = sorted(vars(self))
         maxLen = 40
         for i in elems:
             value = getattr(self,i)

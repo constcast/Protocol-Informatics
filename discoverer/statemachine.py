@@ -238,50 +238,54 @@ class Statemachine(object):
     
     def reverx_merge(self):
         # Buf hunting
-        print "Bug hunting"
-        for t in self.__transitions:
-            if t.getDestination()=="s0" or t.getDestination()=="s2":
-                print t
-        print "End of bug hunting"
+        #=======================================================================
+        # print "Bug hunting"
+        # for t in self.__transitions:
+        #    if t.getDestination()=="s0" or t.getDestination()=="s2":
+        #        print t
+        # print "End of bug hunting"
+        #=======================================================================
         import time
-        start = time.time()
-        print "Performing ReverX merge stage 1"
-        # merge states reached from similar message types
-    
-        for q in self.__states[:]:
-            for p in self.__states[:]:
-                #if p=="e" or q=="e" or q==p or (p not in self.__states) or (q not in self.__states):
-                #    continue
-                
-                s = self.canTransition(p,q)
-                
-                if not s==None:
-                    # Check if getState returned multiple destinations (== NFA!!)
-                    # for the same transition and collapse them
-                    if p==q:
-                        for elem in s:
-                            dests = self.getState(p,elem)
-                            
-                            while dests!=None and len(dests)>1:
-                                self.mergeStates(dests[0],dests[1])
-                                dests = self.getState(p,elem)
-                            
-                    s = self.canTransition(p,q)
-                    if not s==None:   
-                        for elem in s:
-                            m1 = self.getState(p,elem)
-                            m2 = self.getState(q,elem)
-                            if not (m1==None or m2==None):
-                                self.mergeStates(m1[0],m2[0])
-                        
-                    
-        elapsed = (time.time() - start)
-                
-        print "Transitions:"
-        for t in self.__transitions:
-            print t
-        print "Performed ReverX merge stage 1. {} states left, transitions {} (Took: {:.3f} seconds)".format(len(self.__states),len(self.__transitions), elapsed)
+        if self.__config.nativeReverXStage1:
+            start = time.time()
+            print "Performing ReverX merge stage 1"
+            # merge states reached from similar message types
         
+            for q in self.__states[:]:
+                for p in self.__states[:]:
+                    #if p=="e" or q=="e" or q==p or (p not in self.__states) or (q not in self.__states):
+                    #    continue
+                    
+                    s = self.canTransition(p,q)
+                    
+                    if not s==None:
+                        # Check if getState returned multiple destinations (== NFA!!)
+                        # for the same transition and collapse them
+                        if p==q:
+                            for elem in s:
+                                dests = self.getState(p,elem)
+                                
+                                while dests!=None and len(dests)>1:
+                                    self.mergeStates(dests[0],dests[1])
+                                    dests = self.getState(p,elem)
+                                
+                        s = self.canTransition(p,q)
+                        if not s==None:   
+                            for elem in s:
+                                m1 = self.getState(p,elem)
+                                m2 = self.getState(q,elem)
+                                if not (m1==None or m2==None):
+                                    self.mergeStates(m1[0],m2[0])
+                            
+                        
+            elapsed = (time.time() - start)
+                    
+            print "Transitions:"
+            for t in self.__transitions:
+                print t
+            print "Performed ReverX merge stage 1. {} states left, transitions {} (Took: {:.3f} seconds)".format(len(self.__states),len(self.__transitions), elapsed)
+        else:
+            print "Skipping ReverX merge stage 1 by configuration"    
         print "Performing ReverX merge stage 2"
         # merge states without a causal relation that share at least one message type
         start = time.time()
@@ -427,6 +431,7 @@ class Statemachine(object):
         alphabet.add("epsilon")   
         delta = self.delta   
         start = "s0"
+        self.compute_finals()
         finals = self.__finals[:]
         
         #=======================================================================
@@ -460,7 +465,8 @@ class Statemachine(object):
                         print "{0} is an obsolete state. Removing...".format(s)
                     self.__states.remove(s)
                     # delete/change transitions from missing state to mapped state
-                    for t in self.__transitions[:]:
+                    import copy
+                    for t in copy.copy(self.__transitions):
                         if t.getSource()==s: # delete outgoing edges
                             self.__transitions.remove(t)
                             if self.__config.debug:

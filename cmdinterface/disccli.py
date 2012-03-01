@@ -110,6 +110,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             #sm.dfa()
             #sm.fake()
             sm.dump(storePath)
+            self.do_dumpresult("")
                   
         else:
             # Perform discoverer only for client pat

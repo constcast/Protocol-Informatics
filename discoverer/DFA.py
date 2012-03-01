@@ -156,9 +156,10 @@ class DFA:
             q = to_process.pop()
             for c in self.alphabet:
                 next = self.delta(q, c)
-                if reached[next] == False:
-                    reached[next] = True
-                    to_process.append(next)
+                if reached.has_key(next): # My fix remove line to revert to original
+                    if reached[next] == False:
+                        reached[next] = True
+                        to_process.append(next)
         return filter(lambda q: reached[q], self.states)
 
     def reachable(self):
@@ -243,7 +244,8 @@ class DFA:
         for state in new_states:
             transitions[state] = {}
             for alpha in self.alphabet:
-                transitions[state][alpha] = state_map[self.delta(state, alpha)]
+                if transitions[state].has_key(alpha) and state_map.has_key(self.delta(state, alpha)):
+                    transitions[state][alpha] = state_map[self.delta(state, alpha)]
         new_delta = (lambda s, a: transitions[s][a])
         self.states = new_states
         self.start = new_start
