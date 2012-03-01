@@ -86,11 +86,11 @@ def main():
     if conf.analysis == "entropy":
         entropy.entropy.entropy_core(sequences, conf.gnuplotFile)
     elif conf.analysis == "PI":
-        PI.core.pi_core(sequences, conf.weight, conf.graph, textBased)
+        PI.core.pi_core(sequences, conf.weight, conf.graph, conf.textBased)
     elif conf.analysis == "reverx":
         pass
     else:
-        print "FATAL: Unknown analysis module %s configured" % (analysis)
+        print "FATAL: Unknown analysis module %s configured" % (conf.analysis)
         sys.exit(-1)
 
 def usage():

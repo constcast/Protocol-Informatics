@@ -29,6 +29,7 @@ def perform_format_inference_for_cluster(c, config):
                 if not tokenRepresentation.get_token()==currentRepresentation.get_token():
                     constant = False
                     break
+        
         if constant:
             result.append(Constant(tokenRepresentation.get_token()))
             #result.append("const")

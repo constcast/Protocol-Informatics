@@ -25,13 +25,13 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
     def do_quit(self, string):
         return True
         
-    def setup(self, sequences):        
+    def setup(self, sequences, direction):        
         print "Performing initial message analysis and clustering"
         if sequences == None:        
             print "FATAL: No sequences loaded yet!"
             return False    
         
-        setup = discoverer.setup.Setup(sequences, self.config)
+        setup = discoverer.setup.Setup(sequences, direction, self.config)
         self.env['cluster_collection'] = setup.get_cluster_collection()
         print "Built {0} clusters".format(setup.get_cluster_collection().num_of_clusters())
       
@@ -85,7 +85,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             
             # Perform discoverer for both parts
             print "-----------------Client2Server-----------------------"
-            self.go(self.env['sequences_client2server'])
+            self.go(self.env['sequences_client2server'],"client2server")
             self.env['cluster_collection_client'] = self.env['cluster_collection']
             self.env['message_flows'] = {}
             self.combineflows(self.env['cluster_collection_client'],'client')
@@ -93,7 +93,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
                 del(self.env['cluster_collection'])
             
             print "-----------------Server2client-----------------------"
-            self.go(self.env['sequences_server2client'])
+            self.go(self.env['sequences_server2client'],"server2client")
             self.env['cluster_collection_server'] = self.env['cluster_collection']
             self.combineflows(self.env['cluster_collection_server'],'server')
             if self.config.debug:
@@ -115,7 +115,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
                   
         else:
             # Perform discoverer only for client pat
-            self.go(self.env['sequences'])
+            self.go(self.env['sequences'],"unknownDirection")
         
     def combineflows(self, cluster_collection, flowDirection):
         if not self.env.has_key('messageFlows'):
@@ -131,7 +131,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
     
         
     
-    def go(self, sequences):
+    def go(self, sequences, sequenceDirection):
         
         import discoverer.statistics
         
@@ -140,7 +140,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         print "Performing discoverer algorithm"
         
         start = time.time()
-        self.setup(sequences)
+        self.setup(sequences, sequenceDirection)
         elapsed = (time.time() - start)
         print "Setup took {:.3f} seconds".format(elapsed)
         #=======================================================================

@@ -196,7 +196,7 @@ class CommandLineInterface(cmd.Cmd):
             
     def load_sequences(self, formatType, filename):
         try:
-            print "Attempting to read file \"%s\" as \"%s\" file" % (filename, formatType)
+            print "Attempting to read %i messages from file \"%s\" as \"%s\" file" % (self.config.maxMessages, filename, formatType)
             # we expect a file and a format string
             import common
             if formatType == "pcap":

@@ -21,7 +21,7 @@ class TokenRepresentation():
         self.__semantic = []
     
     def __repr__(self):
-        if self.__tokenType == message.Message.typeText:
+        if self.__tokenType != message.Message.typeBinary:
             return '({0},"{1}",{2},{3},{4})'.format(self.__tokenType, self.__token, self.__startsAt, self.__length, self.__semantic)
         else:
             return '({0},{1},{2},{3},{4})'.format(self.__tokenType, hex(self.__token), self.__startsAt, self.__length, self.__semantic)

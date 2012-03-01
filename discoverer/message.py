@@ -25,13 +25,14 @@ class Message:
     # "Enums" for the token types
     typeText = "text"
     typeBinary = "binary"
+    typeDirection = "direction"
     
     eolDelimiter = "^M^J"
        
     def __repr__ (self): 
         return 'Msg: "%s" %s' % (self.__message, self.__tokenlist)
      
-    def __init__(self, payload, connident, mnumber, flowmnumber, config):
+    def __init__(self, payload, connident, mnumber, flowmnumber, msgDirection, config):
         if len(payload)>config.maxMessagePrefix:
             # Strip payload to maxMessagePreif
             self.__payload = payload[0:config.maxMessagePrefix]
@@ -41,6 +42,7 @@ class Message:
         self.__msgnumber = mnumber
         self.__flowmsgnumber = flowmnumber
         self.__message = ""
+        self.__messageDirection = msgDirection
         self.__config = config
         self.__tokenlist = []
         self.__analyze()
@@ -84,18 +86,28 @@ class Message:
         """
         Returns the token at position idx
         """
+        
+        # Workaround for message direction handling
+        # We arbitrary add the direction token to the list at pos 0
+        # when calling get_tokenlist(). However the underlying list is
+        # not altered. Therefore we have to shift the requested idx by 1
+        # Assumes, that get_tokenAt is only called after obtaining the enlarged
+        # list before!!
+        #return self.__tokenlist[idx-1]
         return self.__tokenlist[idx]
     
     def insert_tokenAt(self,idx,token):
         """
         Inserts token at position idx, shifting all the remaining tokens to the right
         """
+        #self.__tokenlist.insert(idx-1, token)
         self.__tokenlist.insert(idx, token)
         
     def remove_tokenAt(self,idx):
         """
         Removes the token at position idx from tokenlist
         """
+        #self.__tokenlist.pop(idx-1)
         self.__tokenlist.pop(idx)
         
     def get_tokenAtPos(self, pos):
@@ -108,13 +120,18 @@ class Message:
         return None
     
     def get_tokenlist(self):
-        return self.__tokenlist
+        l = []
+        #tok = TokenRepresentation(self.typeDirection, self.__messageDirection,0,0)
+        #l.extend(tok)
+        l.extend(self.__tokenlist)
+        return l
     
     def get_tokenrepresentation(self):
         """
         Returns the token representation as a tuple
         """
         l = []
+        #l.append(self.__messageDirection)
         for tokenRepresentation in self.__tokenlist:
             l.append(tokenRepresentation.get_tokenType())
         t = tuple(l)
