@@ -237,14 +237,6 @@ class Statemachine(object):
         return l
     
     def reverx_merge(self):
-        # Buf hunting
-        #=======================================================================
-        # print "Bug hunting"
-        # for t in self.__transitions:
-        #    if t.getDestination()=="s0" or t.getDestination()=="s2":
-        #        print t
-        # print "End of bug hunting"
-        #=======================================================================
         import time
         if self.__config.nativeReverXStage1:
             start = time.time()

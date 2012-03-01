@@ -326,6 +326,7 @@ class ClusterCollection():
             print "*"*50
             print "Cluster information: {0} entries".format(len(messages))
             print "Format inferred ({0} token): {1}".format(len(formats),formats)
+            print "Messageformat hash: {0}".format(c.getFormatHash())
             # print "Token fmt: {0}".fmt(c.get_representation())s            
             #for message in messages:
             #    print message
