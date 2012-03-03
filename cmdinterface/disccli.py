@@ -5,7 +5,7 @@
 import cmd, sys, os
 import discoverer
 import cli
-import discoverer.message
+from discoverer.message import Message
 import time
 import collections
 import discoverer.statemachine
@@ -25,13 +25,15 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
     def do_quit(self, string):
         return True
         
-    def setup(self, sequences, direction):        
+    def setup(self, sequences): #, direction):        
         print "Performing initial message analysis and clustering"
         if sequences == None:        
             print "FATAL: No sequences loaded yet!"
             return False    
         
-        setup = discoverer.setup.Setup(sequences, direction, self.config)
+        #setup = discoverer.setup.Setup(sequences, direction, self.config)
+        setup = discoverer.setup.Setup(sequences, self.config)
+        
         self.env['cluster_collection'] = setup.get_cluster_collection()
         print "Built {0} clusters".format(setup.get_cluster_collection().num_of_clusters())
       
@@ -78,24 +80,35 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         if self.config.loadClientAndServerParts == True:
             # Delete old generated structures
             
-            if self.env.has_key('cluster_collection_client'):
-                del(self.env['cluster_collection_client'])
-            if self.env.has_key('cluster_collection_server'):
-                del(self.env['cluster_collection_server'])
             
+            
+            #===================================================================
+            # if self.env.has_key('cluster_collection_client'):
+            #    del(self.env['cluster_collection_client'])
+            # if self.env.has_key('cluster_collection_server'):
+            #    del(self.env['cluster_collection_server'])
+            # 
+            # 
+            #===================================================================
             # Perform discoverer for both parts
             print "-----------------Client2Server-----------------------"
-            self.go(self.env['sequences_client2server'],"client2server")
-            self.env['cluster_collection_client'] = self.env['cluster_collection']
-            self.env['message_flows'] = {}
-            self.combineflows(self.env['cluster_collection_client'],'client')
-            if self.env.has_key('cluster_collection'):
-                del(self.env['cluster_collection'])
+            self.go(self.env['sequences'])
             
-            print "-----------------Server2client-----------------------"
-            self.go(self.env['sequences_server2client'],"server2client")
-            self.env['cluster_collection_server'] = self.env['cluster_collection']
-            self.combineflows(self.env['cluster_collection_server'],'server')
+            #self.go(self.env['sequences_client2server'], Message.directionClient2Server)
+            #self.env['cluster_collection_client'] = self.env['cluster_collection']
+            self.env['message_flows'] = {}
+            self.combineflows(self.env['cluster_collection'])
+            
+            #self.combineflows(self.env['cluster_collection_client'],Message.directionClient2Server)
+            #===================================================================
+            # if self.env.has_key('cluster_collection'):
+            #    del(self.env['cluster_collection'])
+            # 
+            #===================================================================
+            #print "-----------------Server2client-----------------------"
+            #self.go(self.env['sequences_server2client'],Message.directionServer2Client)
+            #self.env['cluster_collection_server'] = self.env['cluster_collection']
+            #self.combineflows(self.env['cluster_collection_server'],Message.directionServer2Client)
             if self.config.debug:
                 self.printflows() 
             
@@ -117,7 +130,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             # Perform discoverer only for client pat
             self.go(self.env['sequences'],"unknownDirection")
         
-    def combineflows(self, cluster_collection, flowDirection):
+    def combineflows(self, cluster_collection):
         if not self.env.has_key('messageFlows'):
             self.env['messageFlows'] = {}
         for c in cluster_collection.get_all_cluster():
@@ -125,13 +138,15 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
                 if not self.env['messageFlows'].has_key(message.getConnectionIdentifier()):
                     self.env['messageFlows'][message.getConnectionIdentifier()] = {}
                 subflow = self.env['messageFlows'][message.getConnectionIdentifier()]
-                subflow[message.getFlowSequenceNumber()] = (message, flowDirection)
+                subflow[message.getFlowSequenceNumber()] = (message, message.getDirection())
+                # subflow[message.getFlowSequenceNumber()] = (message, flowDirection)
+   
     def printflows(self):
         pass
     
         
     
-    def go(self, sequences, sequenceDirection):
+    def go(self, sequences):
         
         import discoverer.statistics
         
@@ -140,7 +155,9 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         print "Performing discoverer algorithm"
         
         start = time.time()
-        self.setup(sequences, sequenceDirection)
+        
+        self.setup(sequences)
+            
         elapsed = (time.time() - start)
         print "Setup took {:.3f} seconds".format(elapsed)
         #=======================================================================
@@ -231,10 +248,10 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             path = os.path.normpath(self.config.dumpFile)
             file = os.path.basename(self.config.inputFile)
             (filename,ext) = os.path.splitext(file)
-            storePath = "{0}{1}{2}_client_dump.txt".format(path,os.sep,filename)
-            self.dump2File(self.env['cluster_collection_client'],storePath)
-            storePath = "{0}{1}{2}_server_dump.txt".format(path,os.sep,filename)
-            self.dump2File(self.env['cluster_collection_server'],storePath)
+            storePath = "{0}{1}{2}_formats_dump.txt".format(path,os.sep,filename)
+            self.dump2File(self.env['cluster_collection'],storePath)
+            #storePath = "{0}{1}{2}_server_dump.txt".format(path,os.sep,filename)
+            #self.dump2File(self.env['cluster_collection_server'],storePath)
         else:
             # Dump only one file (client traffic)
             path = os.path.normpath(self.config.dumpFile)

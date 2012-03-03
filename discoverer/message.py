@@ -27,6 +27,10 @@ class Message:
     typeBinary = "binary"
     typeDirection = "direction"
     
+    directionClient2Server = "client2Server"
+    directionServer2Client = "server2client"
+    directionUnknown = "unknown"
+    
     eolDelimiter = "^M^J"
        
     def __repr__ (self): 
@@ -49,6 +53,9 @@ class Message:
         self.__convertPayload()
         self.__payloadhash = common.hash(self.__payload)
         self.__cluster = None
+    
+    def getDirection(self):
+        return self.__messageDirection
     
     def getHash(self):
         return self.__payloadhash
@@ -146,6 +153,9 @@ class Message:
         num_printable = 0
         num_binary = 0
         startsWithText = False
+        
+        # Add the direction as the first token
+        self.__tokenlist.append(TokenRepresentation(Message.typeDirection, self.__messageDirection, 0,0))
         
         for char in self.__payload:
             if curses.ascii.isprint(char):

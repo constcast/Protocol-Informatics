@@ -219,7 +219,7 @@ class ClusterCollection():
         * is ascii-printable
         """
         fmt = cluster.get_formats()[idx]
-        if fmt[0] == 'text':
+        if fmt[0] in ('text','direction'):
             return False
         isCandidate = True
         for message in cluster.get_messages():

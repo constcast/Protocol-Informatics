@@ -1,3 +1,4 @@
+from message import Message
 
 def perform_format_inference_for_cluster(c, config):        
     """
@@ -20,16 +21,17 @@ def perform_format_inference_for_cluster(c, config):
         # Now we have the value, lets check every other message for the same value
         constant = True
         
-        if not config.considerOneMessageAsConstant and len(messages)==1:
-            constant = False
-        else:
-            for message in messages:
-                tl = message.get_tokenlist()
-                currentRepresentation = tl[tokenIndex]
-                if not tokenRepresentation.get_token()==currentRepresentation.get_token():
-                    constant = False
-                    break
-        
+        if not tokenRepresentation.get_tokenType()==Message.typeDirection:
+            if not config.considerOneMessageAsConstant and len(messages)==1:
+                constant = False
+            else:
+                for message in messages:
+                    tl = message.get_tokenlist()
+                    currentRepresentation = tl[tokenIndex]
+                    if not tokenRepresentation.get_token()==currentRepresentation.get_token():
+                        constant = False
+                        break
+            
         if constant:
             result.append(Constant(tokenRepresentation.get_token()))
             #result.append("const")

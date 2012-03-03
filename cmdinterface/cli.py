@@ -169,10 +169,11 @@ class CommandLineInterface(cmd.Cmd):
         # Client/Server handling
         sequences_client2server = None
         sequences_server2client = None
-        
+        from discoverer.message import Message
+                
         if not self.config.loadClientAndServerParts or formatType == "config": # Load only one direction resp. config file
-                sequences = self.load_sequences(formatType, filename)
-                            
+                seqs = self.load_sequences(formatType, filename)
+                sequences = [(seqs, Message.directionUnknown)]            
         else: # Load server and client parts            
                 dir = os.path.dirname(self.config.inputFile)
                 file = os.path.basename(self.config.inputFile)
@@ -185,14 +186,14 @@ class CommandLineInterface(cmd.Cmd):
                     server2client_file += ".{0}".format(ext)
                 sequences_client2server = self.load_sequences(formatType, client2server_file)
                 sequences_server2client = self.load_sequences(formatType, server2client_file)
-                sequences = sequences_client2server # Keep it compatible with existing code TODO        
-        if sequences != None and self.config.loadClientAndServerParts == False:
+                sequences = [(sequences_client2server, Message.directionClient2Server),(sequences_server2client, Message.directionServer2Client)] # Keep it compatible with existing code TODO        
+        
+        if sequences != None:
             self.env['sequences'] = sequences
-            print "Successfully read input file ({0} sequences)...".format(len(sequences))
-        if not (sequences_client2server == None or sequences_server2client == None):
-            self.env['sequences_client2server'] = sequences_client2server
-            self.env['sequences_server2client'] = sequences_server2client
-            print "Successfully read client and server input files ({0} resp. {1} sequences)...".format(len(sequences_client2server), len(sequences_server2client))
+            if self.config.loadClientAndServerParts == False:
+                print "Successfully read input file ({0} sequences)...".format(len(sequences))
+            else:
+                print "Successfully read client and server input files ({0} resp. {1} sequences)...".format(len(sequences_client2server), len(sequences_server2client))
             
     def load_sequences(self, formatType, filename):
         try:

@@ -514,6 +514,7 @@ class Statemachine(object):
             sys.stdout = handle
         
         import string
+        import message
         intab = '"'
         outtab = ' '
         trantab = string.maketrans(intab,outtab)
@@ -521,9 +522,9 @@ class Statemachine(object):
         print "digraph G {"
         for t in self.__transitions:
             s = t.getMessage()[:25].translate(trantab)
-            if t.getDirection()=='client':
+            if t.getDirection()==message.Message.directionClient2Server:
                 print '{0} -> {1} [color=red,fontsize=10,label="{2}...",penwidth={3}]'.format(t.getSource(),t.getDestination(),s,t.getCounter() if self.__config.weightEdges else 1)
-            elif t.getDirection()=='server':
+            elif t.getDirection()==message.Message.directionServer2Client:
                 print '{0} -> {1} [color=green,fontsize=10,label="{2}...",penwidth={3}]'.format(t.getSource(),t.getDestination(),s,t.getCounter() if self.__config.weightEdges else 1)
             else:
                 print '{0} -> {1} [color=black,fontsize=10,label="{2}...",penwidth={3}]'.format(t.getSource(),t.getDestination(),s,t.getCounter() if self.__config.weightEdges else 1)
