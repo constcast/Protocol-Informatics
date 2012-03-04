@@ -96,8 +96,6 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             
             #self.go(self.env['sequences_client2server'], Message.directionClient2Server)
             #self.env['cluster_collection_client'] = self.env['cluster_collection']
-            self.env['message_flows'] = {}
-            self.combineflows(self.env['cluster_collection'])
             
             #self.combineflows(self.env['cluster_collection_client'],Message.directionClient2Server)
             #===================================================================
@@ -145,12 +143,48 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         pass
     
         
-    
+    def linkmessages(self, messageFlows):
+        print "Linking messages within flow"
+        for flow in messageFlows:
+            messages = messageFlows[flow]
+            if len(messages)==1:
+                if self.__config.debug:
+                    print "Flow {0} has only 1 message. Skipping flow".format(flow)
+                    continue
+            #message_indices = messages.keys()
+            from discoverer.peekable import peekable
+            iterator = peekable(messages.items())
+            #for msg_id, message in messages.items():
+            lastMsg = None
+            (msg_id, message) = iterator.next()
+            message = message[0]
+            while not iterator.isLast():
+                if lastMsg != None:
+                    lastMsg.setNextInFlow(message)
+                    message.setPrevInFlow(lastMsg)
+                else:
+                    lastMsg = message
+                (msg_id, message) = iterator.next()
+                message = message[0]
+            if lastMsg != message:
+                lastMsg.setNextInFlow(message)
+                message.setPrevInFlow(lastMsg)
+            # Testdump
+            messages = messageFlows[flow]
+            if len(messages)>0:
+                print "Flow: {0}".format(flow)
+                (msg, dir) = messages[1] # Retrieve first msg
+                print "{0}".format(msg.get_message())
+                nextMsg = msg.getNextInFlow()
+                while nextMsg != None:
+                    print "{0}".format(nextMsg.get_message())
+                    nextMsg = message.getNextInFlow()
+                
+                
+                    
     def go(self, sequences):
         
         import discoverer.statistics
-        
-        
         discoverer.statistics.reset_statistics()
         print "Performing discoverer algorithm"
         
@@ -169,6 +203,9 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         #    
         #    self.do_setup(breakSequences=True)
         #=======================================================================
+        self.env['message_flows'] = {}
+        self.combineflows(self.env['cluster_collection'])
+        self.linkmessages(self.env['messageFlows'])
         start = time.time()
         self.do_format_inference("")
         elapsed = (time.time() - start)

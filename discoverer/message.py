@@ -53,6 +53,20 @@ class Message:
         self.__convertPayload()
         self.__payloadhash = common.hash(self.__payload)
         self.__cluster = None
+        self.__nextInFlow = None
+        self.__prevInFlow = None
+        
+    def setNextInFlow(self, message):
+        self.__nextInFlow = message
+        
+    def getNextInFlow(self):
+        return self.__nextInFlow
+    
+    def setPrevInFlow(self, message):
+        self.__prevInFlow = message
+        
+    def getPrevInFlow(self):
+        return self.__prevInFlow
     
     def getDirection(self):
         return self.__messageDirection

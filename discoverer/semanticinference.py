@@ -1,6 +1,7 @@
 import common
 from peekable import peekable
 from tokenrepresentation import TokenRepresentation
+from message import Message
 
 def perform_semantic_inference(cluster_collection, config):
     """
@@ -30,7 +31,7 @@ def perform_semantic_inference(cluster_collection, config):
                 # Check whether it is numeric
                 
                 try:
-                    isNumber = tokenRepresentation.get_tokenType()=='text' and common.is_number(token)
+                    isNumber = tokenRepresentation.get_tokenType()==Message.typeText and common.is_number(token)
                 except TypeError:
                     if config.debug:
                         print "Error checking token {0} for number semantics".format(token)
@@ -73,9 +74,9 @@ def perform_semantic_inference(cluster_collection, config):
         tokenlist = reference_message.get_tokenlist()
         idx = 0
         for tokenRepresentation in tokenlist:
-            if tokenRepresentation.get_tokenType()=='binary' and idx+1<len(tokenlist):
+            if tokenRepresentation.get_tokenType()==Message.typeBinary and idx+1<len(tokenlist):
                 ref_value = tokenRepresentation.get_token()
-                if not tokenlist[idx+1].get_tokenType()=='text': # We require that the next token is the text token in question
+                if not tokenlist[idx+1].get_tokenType()==Message.typeText: # We require that the next token is the text token in question
                     idx += 1
                     continue
                 ref_next_length = tokenlist[idx+1].get_length()
@@ -111,6 +112,74 @@ def perform_semantic_inference(cluster_collection, config):
                         message.get_tokenlist()[idx].add_semantic("lengthfield")
                         c.add_semantic_for_token(idx,"lengthfield")
             idx += 1
+        
+        # Try to identify cookie fields
+        reference_message = messages[0]
+        nextInFlow = reference_message.getNextInFlow()
+        if nextInFlow != None:
+            tokenlist = reference_message.get_tokenlist()
+            next_tokenlist = nextInFlow.get_tokenlist()
+            ref_idx = 0
+            for tokenRepresentation in tokenlist:
+                tokType = tokenRepresentation.get_tokenType()
+                # If its not a binary, it cannot be a cookie
+                if tokType!=Message.typeBinary:
+                    ref_idx += 1
+                    continue
+                fmt = c.get_format(ref_idx)
+                # If its a binary but const, it cannot be a cookie
+                if fmt[1]=="const":
+                    ref_idx += 1
+                    continue
+                # Set reference value
+                ref_val = tokenRepresentation.get_token()
+                # Walk next flow for reference value
+                next_idx = 0
+                for next_tokenRepresentation in next_tokenlist:
+                    # Retrieve next token type
+                    nextTokType = next_tokenRepresentation.get_tokenType()
+                    # If it is not a binary we don't see it as a cookie
+                    if nextTokType!=Message.typeBinary:
+                        next_idx += 1
+                        continue
+                    next_cluster = nextInFlow.getCluster()
+                    # Get format of comparating message
+                    comp_fmt = next_cluster.get_format(next_idx)
+                    # If it is const, it cannot be a cookie
+                    if comp_fmt[1]=='const':
+                        next_idx += 1
+                        continue
+                    # Load comparator value
+                    comp_val = next_tokenRepresentation.get_token()
+                    if ref_val==comp_val: # We've got a potential hit, now compare all messages for the same idx pairs
+                        isCookie = True
+                        for cmp_ref_msg in messages:
+                            if not isCookie:
+                                break
+                            if cmp_ref_msg == messages[0]: # Skip first message (we've already checked that one
+                                continue
+                            cmp_ref_tok_list = cmp_ref_msg.get_tokenlist()
+                            cmp_ref_val = cmp_ref_tok_list[ref_idx].get_token()
+                            cmp_cmp_msg = cmp_ref_msg.getNextInFlow()
+                            if cmp_cmp_msg == None:
+                                isCookie = False
+                            else:
+                                cmp_cmp_tok_list = cmp_cmp_msg.get_tokenlist()
+                                cmp_cmp_val = cmp_cmp_tok_list[next_idx].get_token()
+                                if (cmp_ref_val != cmp_cmp_val) or ((cmp_ref_val == cmp_cmp_val) and (cmp_ref_val == ref_val)):
+                                    isCookie = False
+                        if isCookie:
+                            # Set cookie semantic in this message and the other
+                            for message in messages: # Set for every message and the cluster itself
+                                message.get_tokenlist()[ref_idx].add_semantic("cookie")
+                                c.add_semantic_for_token(ref_idx,"cookie")
+                                # Set to corresponding message as well
+                                # TODO: How?         
+                    next_idx += 1
+                
+                ref_idx += 1
+                
+            
     
     # Push to cluster
     pushUpToCluster(cluster_collection, config)    
