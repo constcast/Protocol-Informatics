@@ -70,6 +70,11 @@ def perform_semantic_inference(cluster_collection, config):
         # explicitely iterate through all messages like stated in the paper
         # we could also postpone this to the call of 'pushToClusterSeminatics" but..
         
+        
+    
+        # Doesn't work correctly yet
+        raise Exception('Not yet fully implemented. Cookie is always false and IndexOutOfBounds')
+        
         reference_message = messages[0]
         tokenlist = reference_message.get_tokenlist()
         idx = 0
