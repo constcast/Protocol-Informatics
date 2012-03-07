@@ -26,7 +26,13 @@ def perform_semantic_inference(cluster_collection, config):
             while not iterator.isLast():
             #for tokenRepresentation in tokenlist:
                 tokenRepresentation = iterator.next()
-                tokenRepresentation.set_semantics([]) # Clear existing semantics from previous run
+                # TODO: do we need to keep semantics which involve multiple cluster? e.g. cookie?
+                if "cookie" in tokenRepresentation.get_semantics():    
+                    tokenRepresentation.set_semantics([]) # Clear existing semantics from previous run
+                    tokenRepresentation.add_semantic("cookie") # Just cookie?
+                else:
+                    tokenRepresentation.set_semantics([]) # Clear existing semantics from previous run
+                    
                 token = tokenRepresentation.get_token()
                 # Check whether it is numeric
                 
@@ -69,11 +75,6 @@ def perform_semantic_inference(cluster_collection, config):
         # Perform other tests like "is length field?"
         # explicitely iterate through all messages like stated in the paper
         # we could also postpone this to the call of 'pushToClusterSeminatics" but..
-        
-        
-    
-        # Doesn't work correctly yet
-        raise Exception('Not yet fully implemented. Cookie is always false and IndexOutOfBounds')
         
         reference_message = messages[0]
         tokenlist = reference_message.get_tokenlist()
@@ -119,6 +120,9 @@ def perform_semantic_inference(cluster_collection, config):
             idx += 1
         
         # Try to identify cookie fields
+        #raise Exception('Not yet fully implemented. Cookie is always false and IndexOutOfBounds')
+        
+        
         reference_message = messages[0]
         nextInFlow = reference_message.getNextInFlow()
         if nextInFlow != None:
@@ -133,7 +137,7 @@ def perform_semantic_inference(cluster_collection, config):
                     continue
                 fmt = c.get_format(ref_idx)
                 # If its a binary but const, it cannot be a cookie
-                if fmt[1]=="const":
+                if fmt[1]==Message.typeConst:
                     ref_idx += 1
                     continue
                 # Set reference value
@@ -164,12 +168,20 @@ def perform_semantic_inference(cluster_collection, config):
                             if cmp_ref_msg == messages[0]: # Skip first message (we've already checked that one
                                 continue
                             cmp_ref_tok_list = cmp_ref_msg.get_tokenlist()
+                            
                             cmp_ref_val = cmp_ref_tok_list[ref_idx].get_token()
                             cmp_cmp_msg = cmp_ref_msg.getNextInFlow()
                             if cmp_cmp_msg == None:
                                 isCookie = False
-                            else:
+                            else:         
                                 cmp_cmp_tok_list = cmp_cmp_msg.get_tokenlist()
+                                if next_idx>=len(cmp_cmp_tok_list):
+                                    # Obviously "next" points to messages in different clusters
+                                    # so the len might differ from the reference next cluster
+                                    # used to find our reference cookie value
+                                    # Therefore this cannot be a cookie
+                                    isCookie = False
+                                    continue
                                 cmp_cmp_val = cmp_cmp_tok_list[next_idx].get_token()
                                 if (cmp_ref_val != cmp_cmp_val) or ((cmp_ref_val == cmp_cmp_val) and (cmp_ref_val == ref_val)):
                                     isCookie = False
@@ -177,11 +189,10 @@ def perform_semantic_inference(cluster_collection, config):
                             # Set cookie semantic in this message and the other
                             for message in messages: # Set for every message and the cluster itself
                                 message.get_tokenlist()[ref_idx].add_semantic("cookie")
-                                c.add_semantic_for_token(ref_idx,"cookie")
-                                # Set to corresponding message as well
-                                # TODO: How?         
+                                nextMsg = message.getNextInFlow()
+                                nextMsg.get_tokenlist()[next_idx].add_semantic("cookie")
+                            c.add_semantic_for_token(ref_idx,"cookie")
                     next_idx += 1
-                
                 ref_idx += 1
                 
             

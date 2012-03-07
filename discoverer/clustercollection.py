@@ -4,6 +4,7 @@ import random
 import discoverer
 import curses
 import formatinference
+from message import Message
 
 class ClusterCollection():
     """
@@ -352,7 +353,7 @@ class ClusterCollection():
                         values += newstr
                     print "Length field, {0} values: {1}".format(len(sumUp), values[:-2])
                 else:
-                    if fmt[1].getType() == "const":
+                    if fmt[1].getType() == Message.typeConst:
                         value = messages[0].get_tokenAt(idx).get_token()
                         if fmt[0]=='binary':
                             print "const binary token, value 0x{:02x}".format(value),

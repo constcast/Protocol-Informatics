@@ -74,7 +74,7 @@ class FormatSpecification(object):
         
 class Constant(FormatSpecification):
     def __init__(self, value):
-        super(Constant, self).__init__("const ('{0}')".format(value))
+        super(Constant, self).__init__(Message.typeConst + " ('{0}')".format(value))
         
     #def __str__(self):
     #    return self.__stringRep
@@ -83,11 +83,11 @@ class Constant(FormatSpecification):
     #    return self.__stringRep
     
     def getType(self):
-        return "const"
+        return Message.typeConst
         
 class Variable(FormatSpecification):
     def __init__(self):
-        super(Variable, self).__init__("variable")
+        super(Variable, self).__init__(Message.typeVariable)
     
     #def __str__(self):
     #    return self.__stringRep
@@ -96,4 +96,4 @@ class Variable(FormatSpecification):
     #    return self.__stringRep
     
     def getType(self):
-        return "variable"
+        return Message.typeVariable

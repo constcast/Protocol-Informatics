@@ -18,7 +18,7 @@ class TokenRepresentation():
         self.__token = token
         self.__startsAt = startsAt
         self.__length = length
-        self.__semantic = []
+        self.__semantic = set() # was []
     
     def __repr__(self):
         if self.__tokenType != message.Message.typeBinary:
@@ -43,8 +43,8 @@ class TokenRepresentation():
         return self.__semantic
     
     def set_semantics(self, semantics):
-        self.__semantic = semantics
+        self.__semantic = set(semantics)
     
     def add_semantic(self, semantic):
-        self.__semantic.append(semantic)    
+        self.__semantic.add(semantic)    
     

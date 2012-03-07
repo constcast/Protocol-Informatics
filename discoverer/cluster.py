@@ -57,9 +57,10 @@ class Cluster(dict):
         Adds a single semantic for token at idx
         """
         if not self.get('semantics').has_key(idx):
-            self.get('semantics')[idx] = []
-        self.get('semantics')[idx].append(semantic)
-    
+            self.get('semantics')[idx] = set() #[]
+        #self.get('semantics')[idx].append(semantic)
+        self.get('semantics')[idx].add(semantic)
+        
     def get_semantics(self):
         """
         Gets semantics for whole cluster

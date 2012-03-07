@@ -27,6 +27,8 @@ class Message:
     typeBinary = "binary"
     typeDirection = "direction"
     
+    typeConst = "const"
+    typeVariable = "variable"
     directionClient2Server = "client2Server"
     directionServer2Client = "server2client"
     directionUnknown = "unknown"

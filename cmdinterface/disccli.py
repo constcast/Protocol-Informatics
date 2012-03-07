@@ -148,7 +148,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         for flow in messageFlows:
             messages = messageFlows[flow]
             if len(messages)==1:
-                if self.__config.debug:
+                if self.config.debug:
                     print "Flow {0} has only 1 message. Skipping flow".format(flow)
                     continue
             #message_indices = messages.keys()
@@ -172,8 +172,9 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             # Testdump
             messages = messageFlows[flow]
             if len(messages)>0:
-                print "Flow: {0}".format(flow)
-                (msg, dir) = messages[1] # Retrieve first msg
+                print "Flow: {0} ({1} messages)".format(flow, len(messages))
+                firstitemnumber = sorted(messages.keys())[0]
+                (msg, dir) = messages[firstitemnumber] # Retrieve first msg
                 print "{0}".format(msg.get_message())
                 nextMsg = msg.getNextInFlow()
                 while nextMsg != None:
