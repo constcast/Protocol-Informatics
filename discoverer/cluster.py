@@ -87,7 +87,7 @@ class Cluster(dict):
         Returns a list of all the format representations of the cluster
         """
         formats = []
-        for i in range(0,len(self.get('format_inference'))):
+        for i in range(0,len(self.get('representation'))):
             formats.append(self.get_format(i))
         return formats
     
@@ -99,9 +99,21 @@ class Cluster(dict):
         * its semantics
         """
         if self.get('semantics').has_key(idx):
-            return (self.get('representation')[idx], self.get('format_inference')[idx], set(self.get('semantics')[idx]))
-        else: 
-            return (self.get('representation')[idx], self.get('format_inference')[idx],[])
+            s = "{0}".format(self.get('semantics')[idx])
+        else:
+            s = "[]"
+        if len(self.get('format_inference'))>idx:
+            t = "{0}".format(self.get('format_inference')[idx])
+        else:
+            t = "[]"
+        return (self.get('representation')[idx], t,s)
+    
+        
+        #if self.get('semantics').has_key(idx):
+        #    return (self.get('representation')[idx], self.get('format_inference')[idx], set(self.get('semantics')[idx]))
+        #else: 
+        #    return (self.get('representation')[idx], self.get('format_inference')[idx],[])
+    
     def get_messages(self):
         return self.get('messages')
     

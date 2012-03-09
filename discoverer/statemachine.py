@@ -70,7 +70,20 @@ class Statemachine(object):
         self.__nextstate = 1
         self.__config = config
         self.__alphabet = set()
+      
+    def accepts_flow(self, testflow):
+        firstitemnumber = sorted(testflow.keys())[0]
+        (msg, dir) = testflow[firstitemnumber] # Retrieve first msg
+        print "{0} / {1}".format(msg.get_message(), msg.getCluster().get_formats())
+        nextMsg = msg.getNextInFlow()
+        while nextMsg != None:
+            print "{0} / {1}".format(nextMsg.get_message(), nextMsg.getCluster().get_formats())
+            nextMsg = nextMsg.getNextInFlow()
         
+    def pickle(self):
+        import cPickle
+        return cPickle.dumps(self)
+            
     def has_gaps(self,numbers, gap_size):
         # Based on http://stackoverflow.com/questions/4375310/finding-data-gaps-with-bit-masking
         adjacent_differences = [(y - x) for (x, y) in zip(numbers[:-1], numbers[1:])]

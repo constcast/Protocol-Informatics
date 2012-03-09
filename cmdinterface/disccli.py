@@ -123,22 +123,81 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             print "Dumping state machine"
             sm.dump(storePath)
             self.do_dumpresult("")
-                  
+            self.env['sm'] = sm
+            pickled = sm.pickle()
+            import cPickle
+            anothersm = cPickle.loads(pickled)
+            anothersm.dump("/Users/daubsi/Dropbox/anotherdump")
         else:
             # Perform discoverer only for client pat
             self.go(self.env['sequences'],"unknownDirection")
         
+    def do_statemachine_accepts(self, fileName):
+        # Tries to load the input and returns whether the statemachine accepts this input
+        
+        # Thoughts:
+        # How do I map a single line of input to a transition?
+        # A transition is the hash of a rich message format of a single message
+        # 
+        # Basic Task: Match a single message to the best matching format
+        #
+        # Idea: Tokenize our single message and create a Message object out of it
+        # The transition have linked information about the various messages that
+        # are part of the cluster whose hash is the hash of the transition
+        #
+        # Idea: Compare message format of our single message (only text, binary senseful
+        # at this moment) to the formats of the various clusters.
+        # Then first examine whether we have perfect matches with respect to text/binary
+        # (this might not be the case, if we've got rich cluster formats with merged clusters or sim.
+        # If yes, compare the matching clusters's const values with our message and see whether our
+        # values match the const value exactly. 
+        # If yes and we've only got one cluster that's our transition
+        # If yes and we've got multiple matches let's see further
+        # if we've got no match regarding the const values there are again 2 possibilities
+        # : also consider variable cluster formats (in case our message had indeed a variable instead)
+        # : also look for other cluster format combinations (e.g. merged tokens might change the length of the format, which
+        # would have sorted this one out in the first instance)
+        
+        # Furthermore there are more test possibilites
+        # e.g. load only client messages and see whether our app is able to answer with a server message
+        # or load a full new set of client and server flows and replay flow by flow
+        
+        fileName = "/Users/daubsi/Downloads/ftp_big"
+        import common
+        import cmdinterface
+       
+        client2server_file = "{0}_client".format(fileName)
+        server2client_file = "{0}_server".format(fileName)
+        
+        sequences_client2server = sequences = common.input.Bro(client2server_file, self.config.maxMessages).getConnections()
+        sequences_server2client = sequences = common.input.Bro(server2client_file, self.config.maxMessages).getConnections()
+        sequences = [(sequences_client2server, Message.directionClient2Server),(sequences_server2client, Message.directionServer2Client)] # Keep it compatible with existing code TODO        
+        
+        print "Loaded {0} test sequences from file".format(len(sequences[0][0])+len(sequences[1][0]))
+        setup = discoverer.setup.Setup(sequences, self.config)
+        testcluster = setup.get_cluster_collection()
+        testflows = self.combineflows(testcluster)
+        
+        self.linkmessages(testflows)
+        discoverer.formatinference.perform_format_inference_for_cluster_collection(testcluster, self.config)
+    
+        testflow = testflows[testflows.keys()[0]]
+        self.env['sm'].accepts_flow(testflow)
+        
+        
     def combineflows(self, cluster_collection):
-        if not self.env.has_key('messageFlows'):
-            self.env['messageFlows'] = {}
+        #if not self.env.has_key('messageFlows'):
+        #    self.env['messageFlows'] = {}
+        tmp_flows = {}
         for c in cluster_collection.get_all_cluster():
             for message in c.get_messages():
-                if not self.env['messageFlows'].has_key(message.getConnectionIdentifier()):
-                    self.env['messageFlows'][message.getConnectionIdentifier()] = {}
-                subflow = self.env['messageFlows'][message.getConnectionIdentifier()]
+                if not tmp_flows.has_key(message.getConnectionIdentifier()):
+                    tmp_flows[message.getConnectionIdentifier()] = {}
+                subflow = tmp_flows[message.getConnectionIdentifier()]
                 subflow[message.getFlowSequenceNumber()] = (message, message.getDirection())
                 # subflow[message.getFlowSequenceNumber()] = (message, flowDirection)
-   
+        return tmp_flows
+    
     def printflows(self):
         pass
     
@@ -162,26 +221,38 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
                 if lastMsg != None:
                     lastMsg.setNextInFlow(message)
                     message.setPrevInFlow(lastMsg)
-                else:
-                    lastMsg = message
+                lastMsg = message
+                #else
+                #    lastMsg = message
                 (msg_id, message) = iterator.next()
                 message = message[0]
             if lastMsg != message:
                 lastMsg.setNextInFlow(message)
                 message.setPrevInFlow(lastMsg)
-            # Testdump
-            messages = messageFlows[flow]
-            if len(messages)>0:
-                print "Flow: {0} ({1} messages)".format(flow, len(messages))
-                firstitemnumber = sorted(messages.keys())[0]
-                (msg, dir) = messages[firstitemnumber] # Retrieve first msg
-                print "{0}".format(msg.get_message())
-                nextMsg = msg.getNextInFlow()
-                while nextMsg != None:
-                    print "{0}".format(nextMsg.get_message())
-                    nextMsg = message.getNextInFlow()
-                
-                
+            
+            if self.config.debug:
+                 messages = messageFlows[flow]
+                 if len(messages)>0:
+                    print "Flow: {0} ({1} messages)".format(flow, len(messages))
+                    firstitemnumber = sorted(messages.keys())[0]
+                    (msg, dir) = messages[firstitemnumber] # Retrieve first msg
+                    print "{0}".format(msg.get_message())
+                    nextMsg = msg.getNextInFlow()
+                    while nextMsg != None:
+                        print "{0}".format(nextMsg.get_message())
+                        #nextMsg = message.getNextInFlow()
+                        nextMsg = nextMsg.getNextInFlow()
+    def do_dump_state(self, str):
+        import cPickle
+        handle = open("/Users/daubsi/Dropbox/disc_state","wb")
+        cPickle.dump(self.env, handle,2)
+        handle.close()
+        
+    def do_load_state(self, str):
+        import cPickle
+        handle = open("/Users/daubsi/Dropbox/disc_state","rb")
+        self.env = cPickle.load(handle)
+        handle.close()
                     
     def go(self, sequences):
         
@@ -205,7 +276,8 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         #    self.do_setup(breakSequences=True)
         #=======================================================================
         self.env['message_flows'] = {}
-        self.combineflows(self.env['cluster_collection'])
+        self.env['messageFlows'] = self.combineflows(self.env['cluster_collection'])
+        #self.combineflows(self.env['cluster_collection'])
         self.linkmessages(self.env['messageFlows'])
         start = time.time()
         self.do_format_inference("")
