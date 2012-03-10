@@ -5,14 +5,21 @@ Created on 20.02.2012
 '''
 
 class Transition(object):
-    def __init__(self, src, hash, dest, direction, msg):
+    def __init__(self, src, hash, dest, direction, msg,regex):
         self.__src = src
         self.__hash = hash
         self.__dest = dest
         self.__direction = direction
         self.__msg = msg
+        self.__regex = regex
         self.__counter = 1
     
+    def getRegEx(self):
+        return self.__regex
+    
+    def setRegEx(self, r):
+        self.__regex = r
+        
     def getSource(self):
         return self.__src
     
@@ -72,13 +79,17 @@ class Statemachine(object):
         self.__alphabet = set()
       
     def accepts_flow(self, testflow):
-        firstitemnumber = sorted(testflow.keys())[0]
-        (msg, dir) = testflow[firstitemnumber] # Retrieve first msg
-        print "{0} / {1}".format(msg.get_message(), msg.getCluster().get_formats())
-        nextMsg = msg.getNextInFlow()
-        while nextMsg != None:
-            print "{0} / {1}".format(nextMsg.get_message(), nextMsg.getCluster().get_formats())
-            nextMsg = nextMsg.getNextInFlow()
+        pass
+        #=======================================================================
+        # firstitemnumber = sorted(testflow.keys())[0]
+        # (msg, dir) = testflow[firstitemnumber] # Retrieve first msg
+        # print "{0} / {1}".format(msg.get_message(), msg.getCluster().get_formats())
+        # nextMsg = msg.getNextInFlow()
+        # while nextMsg != None:
+        #    print "{0} / {1}".format(nextMsg.get_message(), nextMsg.getCluster().get_formats())
+        #    nextMsg = nextMsg.getNextInFlow()
+        #=======================================================================
+        
         
     def pickle(self):
         import cPickle
@@ -112,9 +123,13 @@ class Statemachine(object):
                 return False
         return True
     
-    def addTransition(self,src,trans,dest, direction, msg):
-        self.__transitions.add(Transition(src,trans,dest,direction,msg))
+    def addTransition(self,src,trans,dest, direction, msg, regex):
+        self.__transitions.add(Transition(src,trans,dest,direction,msg, regex))
         
+    def dumpTransitions(self):
+        for t in self.__transitions:
+            print "{0},{1},{2},{3}".format(t.getSource(), t.getHash(), t.getDestination(), t.getRegEx())
+            
     def fake(self):
         self.__start = "s43"
         self.__states = ["s43","s44","s45","s46","s47","s48","s49","s50", "s51", "s52","s53","s54","s55","s56","s57"]
@@ -182,7 +197,9 @@ class Statemachine(object):
                                 print "Exactly this transition already exists"
                             continue
                         else: # A transition with this hash does exist, but from a different src state
-                            self.addTransition(curstate,hash,existingTransition.getDestination(), message[1], message[0].get_message())
+                            regexp = ""
+                            regexp = message[0].getCluster().getRegEx()
+                            self.addTransition(curstate,hash,existingTransition.getDestination(), message[1], message[0].get_message(),regexp)
                             curstate = existingTransition.getDestination()
                             if self.__config.debug:
                                 print "A transition with this hash already exists, bending link to ({0},{1},{2})".format(curstate, hash, existingTransition.getDestination())
@@ -190,7 +207,9 @@ class Statemachine(object):
                     else: # This transition does not yet exist, add new transition with new state    
                         newstate = "s{0}".format(self.__nextstate)
                         self.__states.append(newstate)
-                        self.addTransition(curstate,hash,newstate, message[1], message[0].get_message())
+                        regexp = ""
+                        regexp = message[0].getCluster().getRegEx()
+                        self.addTransition(curstate,hash,newstate, message[1], message[0].get_message(), regexp)
                         self.__nextstate += 1
                         if self.__config.debug:
                             print "Created new state in transition ({0},{1},{2},{3},1,{4})".format(curstate,hash,newstate, message[1], message[0].get_message())
@@ -413,7 +432,7 @@ class Statemachine(object):
         superfinal = "s{0}".format(self.__nextstate)
         self.__states.append(superfinal)
         for s in self.__finals:
-            self.addTransition(s,"epsilon",superfinal, "epsilon","epsilon")
+            self.addTransition(s,"epsilon",superfinal, "epsilon","epsilon", "")
         self.__finals = [superfinal]
     #===========================================================================
     # def fakedelta(self,state,c):

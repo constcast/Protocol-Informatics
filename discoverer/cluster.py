@@ -1,5 +1,8 @@
 import tokenrepresentation
 import common
+import formatinference
+from message import Message
+from peekable import peekable
 
 class Cluster(dict):
     """
@@ -28,7 +31,43 @@ class Cluster(dict):
         """        
         if self.get('semantics').has_key(idx):                
             del self.get('semantics')[idx]
+           
+    def getRegEx(self):
+        regexstr = "^"
+        idx = 0
+        iterator = peekable(self.get('format_inference'))
+        while not iterator.isLast():
+            item = iterator.next()
+            tokType = self.get('representation')[idx]
+            if tokType!=Message.typeDirection:
+                if isinstance(item,formatinference.Constant):
+                    #if isinstance(item.getConstValue(),str):
+                    if self.get('representation')[idx]==Message.typeText:
+                        regexstr += item.getConstValue()
+                    else:
+                        val = hex(item.getConstValue())[2:]
+                        if len(val)==1:
+                            val = "0{0}".format(val)
+                        regexstr += "\\x{0}".format(val)
+                elif isinstance(item,formatinference.Variable):
+                    regexstr += "*?" # Non greedy match
+                if tokType == Message.typeText:
+                    # peek ahead if next is also text
+                    nextOne = iterator.peek()
+                    if nextOne!=None:
+                        nextType = self.get('representation')[idx+1]
+                        if nextType == Message.typeText:
+                            regexstr += "\s" # Add whitespace token separator
+                     
+            idx += 1
             
+            # Add separator for tokenseparator (nothing by bin-bin, bin-text, text-bin but whitespace when text-text
+            # text-text is separated by \s (whitespace)
+        regexstr += "$"
+        return regexstr 
+                
+                        
+                
     def has_semantic_for_token(self, idx, semantic):
         """
         Checks whether the token at position idx has a given semantic
@@ -103,9 +142,10 @@ class Cluster(dict):
         else:
             s = "[]"
         if len(self.get('format_inference'))>idx:
-            t = "{0}".format(self.get('format_inference')[idx])
+            #t = "{0}".format(self.get('format_inference')[idx])
+            t = self.get('format_inference')[idx]
         else:
-            t = "[]"
+            t = None
         return (self.get('representation')[idx], t,s)
     
         

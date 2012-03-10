@@ -122,6 +122,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             #sm.fake()
             print "Dumping state machine"
             sm.dump(storePath)
+            sm.dumpTransitions()
             self.do_dumpresult("")
             self.env['sm'] = sm
             pickled = sm.pickle()
@@ -162,26 +163,38 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         # e.g. load only client messages and see whether our app is able to answer with a server message
         # or load a full new set of client and server flows and replay flow by flow
         
-        fileName = "/Users/daubsi/Downloads/ftp_big"
-        import common
-        import cmdinterface
-       
-        client2server_file = "{0}_client".format(fileName)
-        server2client_file = "{0}_server".format(fileName)
+       #========================================================================
+       # fileName = "/Users/daubsi/Downloads/ftp_big"
+       # import common
+       # import cmdinterface
+       # 
+       # client2server_file = "{0}_client".format(fileName)
+       # server2client_file = "{0}_server".format(fileName)
+       # 
+       # sequences_client2server = sequences = common.input.Bro(client2server_file, self.config.maxMessages).getConnections()
+       # sequences_server2client = sequences = common.input.Bro(server2client_file, self.config.maxMessages).getConnections()
+       # sequences = [(sequences_client2server, Message.directionClient2Server),(sequences_server2client, Message.directionServer2Client)] # Keep it compatible with existing code TODO        
+       # 
+       # print "Loaded {0} test sequences from file".format(len(sequences[0][0])+len(sequences[1][0]))
+       # setup = discoverer.setup.Setup(sequences, self.config)
+       # testcluster = setup.get_cluster_collection()
+       # testflows = self.combineflows(testcluster)
+       # 
+       #========================================================================
         
-        sequences_client2server = sequences = common.input.Bro(client2server_file, self.config.maxMessages).getConnections()
-        sequences_server2client = sequences = common.input.Bro(server2client_file, self.config.maxMessages).getConnections()
-        sequences = [(sequences_client2server, Message.directionClient2Server),(sequences_server2client, Message.directionServer2Client)] # Keep it compatible with existing code TODO        
-        
-        print "Loaded {0} test sequences from file".format(len(sequences[0][0])+len(sequences[1][0]))
-        setup = discoverer.setup.Setup(sequences, self.config)
-        testcluster = setup.get_cluster_collection()
-        testflows = self.combineflows(testcluster)
-        
-        self.linkmessages(testflows)
-        discoverer.formatinference.perform_format_inference_for_cluster_collection(testcluster, self.config)
+        #self.linkmessages(testflows)
+        #discoverer.formatinference.perform_format_inference_for_cluster_collection(testcluster, self.config)
     
-        testflow = testflows[testflows.keys()[0]]
+        #testflow = testflows[testflows.keys()[0]]
+        
+        testflow = []
+        testflow.append("USER anonymous")
+        testflow.append("PASS me@home.com")
+        testflow.append("CD somewhere")
+        testflow.append("CD somewhereelse")
+        testflow.append("RETR wuzlprmpft")
+        testflow.append("QUIT")
+        
         self.env['sm'].accepts_flow(testflow)
         
         
