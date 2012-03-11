@@ -36,6 +36,52 @@ class Cluster(dict):
         regexstr = "^"
         idx = 0
         iterator = peekable(self.get('format_inference'))
+        content_msg = self.get_messages()[0]
+        while not iterator.isLast():
+            item = iterator.next()
+            tokType = self.get('representation')[idx]
+            if tokType!=Message.typeDirection:
+                if isinstance(item,formatinference.Constant):
+                    #if isinstance(item.getConstValue(),str):
+                    token = content_msg.get_tokenAt(idx)
+                    startsAt = token.get_startsAt()
+                    length = token.get_length()
+                    
+                    payload = content_msg.get_payload()[startsAt:startsAt+length]
+                    s = "".join([str(elem) for elem in payload])
+                    regexstr += s
+                       
+                    #===========================================================
+                    # if self.get('representation')[idx]==Message.typeText:
+                    #     #regexstr += item.getConstValue()
+                    # else:
+                    #    val = hex(item.getConstValue())[2:]
+                    #    if len(val)==1:
+                    #        val = "0{0}".format(val)
+                    #    regexstr += "\\x{0}".format(val)
+                    #===========================================================
+                elif isinstance(item,formatinference.Variable):
+                    #regexstr += "*?" # Non greedy match
+                    regexstr += ".*" # Non greedy match
+                if tokType == Message.typeText:
+                    # peek ahead if next is also text
+                    # Add separator for tokenseparator (nothing by bin-bin, bin-text, text-bin but whitespace when text-text
+                    # text-text is separated by \s (whitespace)
+                    nextOne = iterator.peek()
+                    if nextOne!=None:
+                        nextType = self.get('representation')[idx+1]
+                        if nextType == Message.typeText:
+                            #regexstr += "((20)|(08)|(0a)|(0d))?" # Add whitespace token separator
+                            regexstr += "20" # Add whitespace token separator                
+                            
+            idx += 1
+        regexstr += "$"
+        return regexstr 
+        
+    def getRegExVisual(self):
+        regexstr = "^"
+        idx = 0
+        iterator = peekable(self.get('format_inference'))
         while not iterator.isLast():
             item = iterator.next()
             tokType = self.get('representation')[idx]
@@ -50,19 +96,18 @@ class Cluster(dict):
                             val = "0{0}".format(val)
                         regexstr += "\\x{0}".format(val)
                 elif isinstance(item,formatinference.Variable):
-                    regexstr += "*?" # Non greedy match
+                    #regexstr += "*?" # Non greedy match
+                    regexstr += ".*" # Non greedy match
                 if tokType == Message.typeText:
                     # peek ahead if next is also text
+                    # Add separator for tokenseparator (nothing by bin-bin, bin-text, text-bin but whitespace when text-text
+                    # text-text is separated by \s (whitespace)
                     nextOne = iterator.peek()
                     if nextOne!=None:
                         nextType = self.get('representation')[idx+1]
                         if nextType == Message.typeText:
-                            regexstr += "\s" # Add whitespace token separator
-                     
+                            regexstr += "\s" # Add whitespace token separator                
             idx += 1
-            
-            # Add separator for tokenseparator (nothing by bin-bin, bin-text, text-bin but whitespace when text-text
-            # text-text is separated by \s (whitespace)
         regexstr += "$"
         return regexstr 
                 

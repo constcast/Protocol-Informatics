@@ -102,8 +102,14 @@ class Message:
         return self.__message
     
     def get_payload(self):
-        """Returns the payload of this message object"""        
-        return self.__payload
+        """Returns the payload of this message object"""
+        
+        #p = [hex(elem)[2:] for elem in self.__payload]      
+        return ["{:02x}".format(elem) for elem in self.__payload]      
+    
+    def get_payload_as_string(self):
+        return "".join(["{:02x}".format(elem) for elem in self.__payload])
+        #return "".join([str(hex(elem)[2:]) for elem in self.__payload])
     
     def get_tokenAt(self, idx):
         """
@@ -271,6 +277,7 @@ class Message:
         tokens = textSegment.split()
         tokenList = []
         lastLength = 0
+        tokenStartPos = startsAt
         for t in tokens: 
             #===================================================================
             # tail = t
@@ -285,11 +292,15 @@ class Message:
             #    tokenList.append(TokenRepresentation(Message.typeBinary, 0xd, startsAt+lastLength+1, 1))
             #    tokenList.append(TokenRepresentation(Message.typeBinary, 0xa, startsAt+lastLength+2, 1))       
             #===================================================================
-            tokenStartPos = startsAt+lastLength
-            if not lastLength == 0: # Add whitespace gap for every token but the first
-                tokenStartPos += 1
+            #===================================================================
+            # tokenStartPos = startsAt+lastLength
+            # if not lastLength == 0: # Add whitespace gap for every token but the first
+            #        tokenStartPos += 2
+            # tokenList.append(TokenRepresentation(Message.typeText, t, tokenStartPos, len(t)))
+            # lastLength+=len(t)
+            #===================================================================
             tokenList.append(TokenRepresentation(Message.typeText, t, tokenStartPos, len(t)))
-            lastLength+=len(t)
+            tokenStartPos+=len(t)+1
         return tokenList           
     
     #===========================================================================

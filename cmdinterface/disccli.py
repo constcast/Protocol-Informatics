@@ -110,6 +110,14 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             if self.config.debug:
                 self.printflows() 
             
+            for c in self.env['cluster_collection'].get_all_cluster():
+                print "Cluster:"
+                print c.get_formats()
+                print c.getRegEx()
+                print c.getRegExVisual()
+                print
+                
+            
             # Build statemachine
             
             sm = discoverer.statemachine.Statemachine(self.env['messageFlows'], self.config)  
@@ -125,10 +133,10 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             sm.dumpTransitions()
             self.do_dumpresult("")
             self.env['sm'] = sm
-            pickled = sm.pickle()
-            import cPickle
-            anothersm = cPickle.loads(pickled)
-            anothersm.dump("/Users/daubsi/Dropbox/anotherdump")
+            #pickled = sm.pickle()
+            #import cPickle
+            #anothersm = cPickle.loads(pickled)
+            #anothersm.dump("/Users/daubsi/Dropbox/anotherdump")
         else:
             # Perform discoverer only for client pat
             self.go(self.env['sequences'],"unknownDirection")
@@ -162,38 +170,38 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         # Furthermore there are more test possibilites
         # e.g. load only client messages and see whether our app is able to answer with a server message
         # or load a full new set of client and server flows and replay flow by flow
+       
+        # Do it with flows 
+        fileName = "/Users/daubsi/Downloads/ftp_big"
+        import common
+        import cmdinterface
         
-       #========================================================================
-       # fileName = "/Users/daubsi/Downloads/ftp_big"
-       # import common
-       # import cmdinterface
-       # 
-       # client2server_file = "{0}_client".format(fileName)
-       # server2client_file = "{0}_server".format(fileName)
-       # 
-       # sequences_client2server = sequences = common.input.Bro(client2server_file, self.config.maxMessages).getConnections()
-       # sequences_server2client = sequences = common.input.Bro(server2client_file, self.config.maxMessages).getConnections()
-       # sequences = [(sequences_client2server, Message.directionClient2Server),(sequences_server2client, Message.directionServer2Client)] # Keep it compatible with existing code TODO        
-       # 
-       # print "Loaded {0} test sequences from file".format(len(sequences[0][0])+len(sequences[1][0]))
-       # setup = discoverer.setup.Setup(sequences, self.config)
-       # testcluster = setup.get_cluster_collection()
-       # testflows = self.combineflows(testcluster)
-       # 
-       #========================================================================
+        client2server_file = "{0}_client".format(fileName)
+        server2client_file = "{0}_server".format(fileName)
         
-        #self.linkmessages(testflows)
-        #discoverer.formatinference.perform_format_inference_for_cluster_collection(testcluster, self.config)
+        sequences_client2server = sequences = common.input.Bro(client2server_file, self.config.maxMessages).getConnections()
+        sequences_server2client = sequences = common.input.Bro(server2client_file, self.config.maxMessages).getConnections()
+        sequences = [(sequences_client2server, Message.directionClient2Server),(sequences_server2client, Message.directionServer2Client)] # Keep it compatible with existing code TODO        
+        
+        print "Loaded {0} test sequences from file".format(len(sequences[0][0])+len(sequences[1][0]))
+        setup = discoverer.setup.Setup(sequences, self.config)
+        testcluster = setup.get_cluster_collection()
+        testflows = self.combineflows(testcluster)
+        
+        
+        self.linkmessages(testflows)
+#        discoverer.formatinference.perform_format_inference_for_cluster_collection(testcluster, self.config)
     
-        #testflow = testflows[testflows.keys()[0]]
+        testflow = testflows[testflows.keys()[1]]
         
-        testflow = []
-        testflow.append("USER anonymous")
-        testflow.append("PASS me@home.com")
-        testflow.append("CD somewhere")
-        testflow.append("CD somewhereelse")
-        testflow.append("RETR wuzlprmpft")
-        testflow.append("QUIT")
+        #testflow = []
+        # testflow.append("USER anonymous")
+        # testflow.append("PASS me@home.com")
+        # testflow.append("CD somewhere")
+        # testflow.append("CD somewhereelse")
+        # testflow.append("RETR wuzlprmpft")
+        # testflow.append("QUIT")
+        #=======================================================================
         
         self.env['sm'].accepts_flow(testflow)
         

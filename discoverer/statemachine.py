@@ -5,15 +5,21 @@ Created on 20.02.2012
 '''
 
 class Transition(object):
-    def __init__(self, src, hash, dest, direction, msg,regex):
+    def __init__(self, src, hash, dest, direction, msg,regex, regexvisual):
         self.__src = src
         self.__hash = hash
         self.__dest = dest
         self.__direction = direction
         self.__msg = msg
         self.__regex = regex
+        self.__regexvisual = regexvisual
         self.__counter = 1
     
+    def getRegExVisual(self):
+        return self.__regexvisual
+    
+    def setRegExVisual(self, regexvisual):
+        self.__regexvisual = regexvisual
     def getRegEx(self):
         return self.__regex
     
@@ -79,7 +85,50 @@ class Statemachine(object):
         self.__alphabet = set()
       
     def accepts_flow(self, testflow):
-        pass
+        import re
+        curState = self.__start
+        for key, value in testflow.items() :
+            f = value[0]
+            stateTransitions = self.get_transitions_from(curState)
+            print "Current state: {0}".format(curState)
+            print "Possible transitions: "
+            for t in stateTransitions:
+                print "Destination: {0}, hash: {1}, visual regex: {2}, regex: {3}, message: {4}".format(t.getDestination(), t.getHash(), t.getRegExVisual(), t.getRegEx(), t.getMessage())
+            print "Current input:"
+            print "Msg: {0}".format(f.get_message())
+            payload = f.get_payload_as_string()
+            print "Payload: {0}".format(payload)
+            gotOne = False
+            for t in stateTransitions:
+                r = t.getRegEx()
+                print "Testing regex visual: {0}".format(t.getRegExVisual())
+                print "Testing regex:        {0}".format(t.getRegEx())
+                res = None
+                try:
+                    p = re.compile(r)
+                    res = p.match(payload)
+                except AssertionError as ae:
+                    print "AssertionError: {0}".format(ae)
+                if res:
+                    gotOne = True
+                    break
+            if gotOne:
+                print "Found matching transition: {0}".format(t)
+                curState = t.getDestination()
+            else:
+                print "Did not found any matching transition"
+                failed = True
+                break
+        
+        if failed:
+            print "ERROR: Flow not accepted by statemachine"
+            # Try to match the message payload with one of the regex of our transitions
+        else:
+            if curState in self.__finals:
+                print "Statemachine did reach acceptance state"
+            else:
+                print "ERROR: Statemachine did not halt in acceptance state"  
+        
         #=======================================================================
         # firstitemnumber = sorted(testflow.keys())[0]
         # (msg, dir) = testflow[firstitemnumber] # Retrieve first msg
@@ -123,8 +172,8 @@ class Statemachine(object):
                 return False
         return True
     
-    def addTransition(self,src,trans,dest, direction, msg, regex):
-        self.__transitions.add(Transition(src,trans,dest,direction,msg, regex))
+    def addTransition(self,src,trans,dest, direction, msg, regex, regexvisual):
+        self.__transitions.add(Transition(src,trans,dest,direction,msg, regex, regexvisual))
         
     def dumpTransitions(self):
         for t in self.__transitions:
@@ -199,7 +248,8 @@ class Statemachine(object):
                         else: # A transition with this hash does exist, but from a different src state
                             regexp = ""
                             regexp = message[0].getCluster().getRegEx()
-                            self.addTransition(curstate,hash,existingTransition.getDestination(), message[1], message[0].get_message(),regexp)
+                            regexpvisual = message[0].getCluster().getRegExVisual()
+                            self.addTransition(curstate,hash,existingTransition.getDestination(), message[1], message[0].get_message(),regexp, regexpvisual)
                             curstate = existingTransition.getDestination()
                             if self.__config.debug:
                                 print "A transition with this hash already exists, bending link to ({0},{1},{2})".format(curstate, hash, existingTransition.getDestination())
@@ -209,7 +259,8 @@ class Statemachine(object):
                         self.__states.append(newstate)
                         regexp = ""
                         regexp = message[0].getCluster().getRegEx()
-                        self.addTransition(curstate,hash,newstate, message[1], message[0].get_message(), regexp)
+                        regexpvisual = message[0].getCluster().getRegExVisual()
+                        self.addTransition(curstate,hash,newstate, message[1], message[0].get_message(), regexp, regexpvisual)
                         self.__nextstate += 1
                         if self.__config.debug:
                             print "Created new state in transition ({0},{1},{2},{3},1,{4})".format(curstate,hash,newstate, message[1], message[0].get_message())
@@ -410,6 +461,13 @@ class Statemachine(object):
                     if self.has_transition(p,t,q):
                         return True
         return False
+   
+    def get_transitions_from(self, p):
+        l = []
+        for t in self.__transitions:
+            if t.getSource()==p:
+                l.append(t)
+        return l
     
     def has_transition(self, p,s,q):
         for t in self.__transitions:
@@ -432,7 +490,7 @@ class Statemachine(object):
         superfinal = "s{0}".format(self.__nextstate)
         self.__states.append(superfinal)
         for s in self.__finals:
-            self.addTransition(s,"epsilon",superfinal, "epsilon","epsilon", "")
+            self.addTransition(s,"epsilon",superfinal, "epsilon","epsilon", "","")
         self.__finals = [superfinal]
     #===========================================================================
     # def fakedelta(self,state,c):
