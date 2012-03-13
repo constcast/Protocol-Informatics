@@ -720,6 +720,11 @@ class Statemachine(object):
     # QUIT command, but QUIT is an "arbitrary" command.
     # The expection would be that from our "common middle state, for each command there is an outgoing client transition with the actual command,
     # followed by the server response (good or bad) and then return to the "common middle state".
+    # This might also be an explanation for the observed picture of the graphs with these large reflexive
+    # transitions. If there is a "faulty" transition somewhere in the beginning, we (might) create a reflexive
+    # transition (e.g. return to middle state right after the client (and before the server reply). 
+    # In later correct flows, the existing transition is reused and not corrected.
+    # 
     
     
      
