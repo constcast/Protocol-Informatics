@@ -46,6 +46,7 @@ class Configuration:
         self.mergeSimilarClusters = False
         self.considerOneMessageAsConstant = False
         self.nativeReverXStage1 = False
+        self.performReverXMinimization = False
         # Used for NW alignment in Discoverer
         self.matchScore = 1
         self.mismatchScore = 1

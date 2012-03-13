@@ -141,7 +141,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             # Perform discoverer only for client pat
             self.go(self.env['sequences'],"unknownDirection")
         
-    def do_statemachine_accepts(self, fileName):
+    def do_statemachine_accepts(self, args=""):
         # Tries to load the input and returns whether the statemachine accepts this input
         
         # Thoughts:
@@ -172,10 +172,17 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         # or load a full new set of client and server flows and replay flow by flow
        
         # Do it with flows 
-        fileName = "/Users/daubsi/Downloads/ftp_big"
         import common
         import cmdinterface
         
+        if len(args)!=0:
+            tok = args.split()
+            fileName = tok[0]
+            element = int(tok[1])
+            
+        fileName = "/Users/daubsi/Downloads/ftp_big"
+            
+            
         client2server_file = "{0}_client".format(fileName)
         server2client_file = "{0}_server".format(fileName)
         
@@ -187,13 +194,32 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         setup = discoverer.setup.Setup(sequences, self.config)
         testcluster = setup.get_cluster_collection()
         testflows = self.combineflows(testcluster)
-        
+        self.env['testflows']=testflows
         
         self.linkmessages(testflows)
 #        discoverer.formatinference.perform_format_inference_for_cluster_collection(testcluster, self.config)
-    
-        testflow = testflows[testflows.keys()[1]]
+        #testflow = testflows[testflows.keys()[element]]
         
+        # Test all flows
+        results = dict()
+        success = 0
+        failures = 0
+        for elem in testflows.keys():
+            res = self.do_statemachine_accepts_flow(elem)
+            results[elem] = res
+            if res:
+                success += 1
+            else:
+                failures += 1
+        print "Finished"
+        print "Testresults"
+        print "==========="
+        print "Success: {0}, Failures: {1}".format(success, failures)
+        print "Failed test flows"
+        print "NOTE: Changes SM behavior - merged finals and removed transitions with zombie states from transition table"
+        for (key, value) in results.iteritems():
+            if value==False:
+                print "{0}".format(key)
         #testflow = []
         # testflow.append("USER anonymous")
         # testflow.append("PASS me@home.com")
@@ -203,8 +229,22 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         # testflow.append("QUIT")
         #=======================================================================
         
-        self.env['sm'].accepts_flow(testflow)
+        #self.env['sm'].accepts_flow(testflow)
         
+    def do_statemachine_accepts_flow(self, flow):
+        if not self.env.has_key('testflows'):
+            print "Test flows not loaded yet!"
+            return False
+        if not self.env['testflows'].has_key(flow):
+            print "Flow {0} not in test flows!".format(flow)
+            return False
+        flowitems = self.env['testflows'][flow]
+        return self.env['sm'].accepts_flow(flowitems,flow)
+    def do_dump_transitions(self,str):
+        if self.env.has_key('sm'):
+            self.env['sm'].dumpTransitions()
+        else:
+            print "No statemachine built, cannot dump transitions"
         
     def combineflows(self, cluster_collection):
         #if not self.env.has_key('messageFlows'):
@@ -367,7 +407,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         for f in self.env['messageFlows']:
             print "Flow: %s" % f
             for entry in self.env['messageFlows'][f]:
-                print "\t{0}:\t{1} - {2}".format(entry,self.env['messageFlows'][f][entry].get_message(), self.env['messageFlows'][f][entry].getCluster().getFormatHash())
+                print "\t{0}:\t{1} - {2}".format(entry,self.env['messageFlows'][f][entry][0].get_message(), self.env['messageFlows'][f][entry][0].getCluster().getFormatHash())
         if file!="":
             handle.close()         
             sys.stdout = old_stdout           

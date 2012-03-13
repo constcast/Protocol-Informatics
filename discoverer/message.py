@@ -299,6 +299,8 @@ class Message:
             # tokenList.append(TokenRepresentation(Message.typeText, t, tokenStartPos, len(t)))
             # lastLength+=len(t)
             #===================================================================
+            while self.__payload[tokenStartPos] == 0x20: # tokenStartPos in Paylod points to a whitespace
+                tokenStartPos += 1
             tokenList.append(TokenRepresentation(Message.typeText, t, tokenStartPos, len(t)))
             tokenStartPos+=len(t)+1
         return tokenList           

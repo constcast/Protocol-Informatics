@@ -41,6 +41,10 @@ class Cluster(dict):
             item = iterator.next()
             tokType = self.get('representation')[idx]
             if tokType!=Message.typeDirection:
+                token = content_msg.get_tokenAt(idx)
+                startsAt = token.get_startsAt()
+                length = token.get_length()
+                
                 if isinstance(item,formatinference.Constant):
                     #if isinstance(item.getConstValue(),str):
                     token = content_msg.get_tokenAt(idx)
@@ -63,17 +67,25 @@ class Cluster(dict):
                 elif isinstance(item,formatinference.Variable):
                     #regexstr += "*?" # Non greedy match
                     regexstr += ".*" # Non greedy match
-                if tokType == Message.typeText:
-                    # peek ahead if next is also text
-                    # Add separator for tokenseparator (nothing by bin-bin, bin-text, text-bin but whitespace when text-text
-                    # text-text is separated by \s (whitespace)
-                    nextOne = iterator.peek()
-                    if nextOne!=None:
-                        nextType = self.get('representation')[idx+1]
-                        if nextType == Message.typeText:
-                            #regexstr += "((20)|(08)|(0a)|(0d))?" # Add whitespace token separator
-                            regexstr += "20" # Add whitespace token separator                
-                            
+                
+                if not iterator.isLast():
+                    nextStart = content_msg.get_tokenAt(idx+1).get_startsAt()
+                    if nextStart!=startsAt+length:
+                    #if nextOne.get_startsAt()!=startsAt+length+1:
+                        regexstr += "(?:20)+"
+                #===============================================================
+                # if tokType == Message.typeText:
+                #    # peek ahead if next is also text
+                #    # Add separator for tokenseparator (nothing by bin-bin, bin-text, text-bin but whitespace when text-text
+                #    # text-text is separated by \s (whitespace)
+                #    nextOne = iterator.peek()
+                #    if nextOne!=None:
+                #        nextType = self.get('representation')[idx+1]
+                #        if nextType == Message.typeText:
+                #            #regexstr += "((20)|(08)|(0a)|(0d))?" # Add whitespace token separator
+                #            regexstr += "(?:20)+" # Add whitespace token separator                
+                #            
+                #===============================================================
             idx += 1
         regexstr += "$"
         return regexstr 

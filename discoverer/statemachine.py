@@ -4,6 +4,8 @@ Created on 20.02.2012
 @author: daubsi
 '''
 
+import copy
+
 class Transition(object):
     def __init__(self, src, hash, dest, direction, msg,regex, regexvisual):
         self.__src = src
@@ -84,9 +86,29 @@ class Statemachine(object):
         self.__config = config
         self.__alphabet = set()
       
-    def accepts_flow(self, testflow):
+    def accepts_flow(self, testflow, flowID=""):
         import re
         curState = self.__start
+        failed = False
+        
+        if flowID != "":
+            print "Flow {0} under test:".format(flowID)
+            
+        messages = self.__sequences[flowID]
+        # If the flow is considered invalid by itself, return True (as if there was no error in parsing)
+        if len(messages)==1:
+            self.log("Flow {0} has only 1 message. Skipping flow".format(flowID))
+            return True
+        if not self.flow_is_valid(flowID):
+            return True
+        
+        
+        for key, value in testflow.items() :
+            print "{0} - {1}".format(key, value)
+        print
+        print "Startstate: {0}".format(self.__start)
+        print "Finals: {0}".format(",".join(self.__finals))
+        print
         for key, value in testflow.items() :
             f = value[0]
             stateTransitions = self.get_transitions_from(curState)
@@ -108,26 +130,48 @@ class Statemachine(object):
                     p = re.compile(r)
                     res = p.match(payload)
                 except AssertionError as ae:
-                    print "AssertionError: {0}".format(ae)
+                    print ae
+                    #print "AssertionError: {0}".format(ae)
                 if res:
                     gotOne = True
                     break
+            if not gotOne:
+                # Search for epsilon transitions
+                for t in stateTransitions:
+                    if t.getHash=="{{epsilon}}":
+                        gotOne = True
+                        break
             if gotOne:
                 print "Found matching transition: {0}".format(t)
                 curState = t.getDestination()
             else:
-                print "Did not found any matching transition"
+                print "Did not find any matching transition"
                 failed = True
                 break
         
+        # Consume remaining epsilons
+        if not failed:
+            tryAgain = True
+            while tryAgain:
+                tryAgain = False
+                stateTransitions = self.get_transitions_from(curState)
+                for t in stateTransitions:
+                        if t.getHash()=="{{epsilon}}" and (curState not in self.__finals):
+                            tryAgain = True
+                            curState = t.getDestination()
+                            break
+                        
         if failed:
             print "ERROR: Flow not accepted by statemachine"
+            return False
             # Try to match the message payload with one of the regex of our transitions
         else:
             if curState in self.__finals:
-                print "Statemachine did reach acceptance state"
+                print "SUCCESS: Statemachine did reach acceptance state"
+                return True
             else:
-                print "ERROR: Statemachine did not halt in acceptance state"  
+                print "ERROR: Statemachine did not halt in acceptance state"
+                return False
         
         #=======================================================================
         # firstitemnumber = sorted(testflow.keys())[0]
@@ -151,13 +195,20 @@ class Statemachine(object):
             if elem>1:
                 return True
         return False
-       
+    
+    def findTransitionBySrc(self, curState, hash):
+        # First try to find exact matches
+        for t in self.__transitions:
+            if t.getSource() == curState and t.getHash()==hash: # Exactly this transition was already in list
+                return t      
+        
     def findTransition(self,curState, hash):
         # First try to find exact matches
         for t in self.__transitions:
             if t.getSource() == curState and t.getHash()==hash: # Exactly this transition was already in list
                 return t      
-        # Now a match of the hash is enough    
+        # Now a match of the hash is enough
+        # Needed because of NFA degeneration of statemachine    
         for t in self.__transitions:
             if t.getHash() == hash: # This transition is already in list
                 return t
@@ -176,8 +227,10 @@ class Statemachine(object):
         self.__transitions.add(Transition(src,trans,dest,direction,msg, regex, regexvisual))
         
     def dumpTransitions(self):
+        print "Last of statemachine transitions:"
+        print "================================="
         for t in self.__transitions:
-            print "{0},{1},{2},{3}".format(t.getSource(), t.getHash(), t.getDestination(), t.getRegEx())
+            print "{0},{1},{2},{3},{4}".format(t.getSource(), t.getHash(), t.getDestination(), t.getRegEx(), t.getMessage())
             
     def fake(self):
         self.__start = "s43"
@@ -200,30 +253,36 @@ class Statemachine(object):
         self.addTransition("s55","RNTO","s56","client","RNTO")
         self.addTransition("s56","QUIT","s57","client","QUIT")
         self.reverx_merge()
+    def flow_is_valid(self, flow):
+        messages = self.__sequences[flow]
+        message_indices = messages.keys()
+        if self.has_gaps(message_indices,1):
+            print "ERROR: Flow {0} has gaps in sequences numberings. Skipping flow".format(flow)
+            return False
+        elif not self.is_alternating(flow):
+            print "ERROR: Flow {0} is not strictly alternating between client and server. Skippng flow".format(flow)
+            return False
+        return True
     
+    def log(self, msg):
+        if self.__config.debug:
+            print msg
+            
     def build(self):
         self.__states.append("e") # Error state
         error = 0
         for flow in self.__sequences:
             messages = self.__sequences[flow]
             if len(messages)==1:
-                if self.__config.debug:
-                    print "Flow {0} has only 1 message. Skipping flow".format(flow)
+                self.log("Flow {0} has only 1 message. Skipping flow".format(flow))
                 continue
-            message_indices = messages.keys()
-            if self.has_gaps(message_indices,1):
-                print "ERROR: Flow {0} has gaps in sequences numberings. Skipping flow".format(flow)
+            if not self.flow_is_valid(flow):
                 error += 1
-            elif not self.is_alternating(flow):
-                print "ERROR: Flow {0} is not strictly alternating between client and server. Skippng flow".format(flow)
-                error += 1                
             else:
-                if self.__config.debug:
-                    print "Running flow {0}, {1} messages".format(flow,len(messages))                
+                self.log("Running flow {0}, {1} messages".format(flow,len(messages)))                
                 curstate = "s0"
                 for msg_id, message in messages.items():
-                    if self.__config.debug:
-                        print "Message {0} ({1}): {2}, hash {3} with format {4}".format(msg_id,message[1],message[0].get_message(), message[0].getCluster().getFormatHash(),message[0].getCluster().get_formats())
+                    self.log("Message {0} ({1}): {2}, hash {3} with format {4}".format(msg_id,message[1],message[0].get_message(), message[0].getCluster().getFormatHash(),message[0].getCluster().get_formats()))
                     # Walk transitions for curstate and message's hash
                     hash = message[0].getCluster().getFormatHash()
                     self.__alphabet.add(hash)
@@ -237,13 +296,14 @@ class Statemachine(object):
                     # However it should be possible as well to do this during the build phase
                     
                     existingTransition = self.findTransition(curstate, hash)
+                    #existingTransition = self.findTransitionBySrc(curstate, hash)
+                    
                     if existingTransition:
                         if existingTransition.getSource()==curstate:
                             # Exactly this transition exists
                             curstate = existingTransition.getDestination()
                             existingTransition.incCounter() # Inc link usage
-                            if self.__config.debug:
-                                print "Exactly this transition already exists"
+                            self.log("Exactly this transition already exists")
                             continue
                         else: # A transition with this hash does exist, but from a different src state
                             regexp = ""
@@ -251,8 +311,7 @@ class Statemachine(object):
                             regexpvisual = message[0].getCluster().getRegExVisual()
                             self.addTransition(curstate,hash,existingTransition.getDestination(), message[1], message[0].get_message(),regexp, regexpvisual)
                             curstate = existingTransition.getDestination()
-                            if self.__config.debug:
-                                print "A transition with this hash already exists, bending link to ({0},{1},{2})".format(curstate, hash, existingTransition.getDestination())
+                            self.log("A transition with this hash already exists, bending link to ({0},{1},{2})".format(curstate, hash, existingTransition.getDestination()))
                             continue
                     else: # This transition does not yet exist, add new transition with new state    
                         newstate = "s{0}".format(self.__nextstate)
@@ -262,8 +321,7 @@ class Statemachine(object):
                         regexpvisual = message[0].getCluster().getRegExVisual()
                         self.addTransition(curstate,hash,newstate, message[1], message[0].get_message(), regexp, regexpvisual)
                         self.__nextstate += 1
-                        if self.__config.debug:
-                            print "Created new state in transition ({0},{1},{2},{3},1,{4})".format(curstate,hash,newstate, message[1], message[0].get_message())
+                        self.log("Created new state in transition ({0},{1},{2},{3},1,{4})".format(curstate,hash,newstate, message[1], message[0].get_message()))
                         curstate = newstate
         if error>0:
             print "{0} errors observed during statemachine bulding".format(error)
@@ -292,10 +350,10 @@ class Statemachine(object):
         #=======================================================================
         
         self.compute_finals()
-        print "Performing ReverX merge. Number of states {0}, transitions {1}".format(len(self.__states), len(self.__transitions))
-        self.reverx_merge()
-       
-        print "Performed ReverX merge. Number of states {0}, transitions: {1}".format(len(self.__states),len(self.__transitions))
+        if self.__config.performReverXMinimization:
+            print "Performing ReverX merge. Number of states {0}, transitions {1}".format(len(self.__states), len(self.__transitions))
+            self.reverx_merge()
+            print "Performed ReverX merge. Number of states {0}, transitions: {1}".format(len(self.__states),len(self.__transitions))
         self.compute_finals()
         
         if self.__config.debug:
@@ -420,7 +478,7 @@ class Statemachine(object):
         #    self.current_state = q2
         if self.__start == p:
             self.__start = q
-        import copy
+        
         for t in copy.copy(self.__transitions):
             # Redirect target states
             if t.getSource()==p:
@@ -477,21 +535,46 @@ class Statemachine(object):
      
     def compute_finals(self):
         # Compute finals - ugly but quick n dirty
-        self.__finals = []
-        for t in self.__transitions:
-            s = t.getDestination() # designated final state
-            isFinal = True
-            for t2 in self.__transitions:
-                if t2.getSource() == s:
-                    isFinal = False
-                    break
-            if isFinal:
-                self.__finals.append(s)
-        superfinal = "s{0}".format(self.__nextstate)
-        self.__states.append(superfinal)
-        for s in self.__finals:
-            self.addTransition(s,"epsilon",superfinal, "epsilon","epsilon", "","")
-        self.__finals = [superfinal]
+        iterate = True
+        while iterate:
+            iterate = False
+            tmpfinals = set()
+            for t in copy.copy(self.__transitions):
+                s = t.getDestination() # designated final state
+                isFinal = True
+                for t2 in copy.copy(self.__transitions):
+                    if t2.getSource() == s:
+                        isFinal = False
+                        break
+                if isFinal:
+                    if s in self.__states:
+                        tmpfinals.add(s)
+                    else:
+                        #raise Exception("CONSISTENCY ERROR: Identified {0} as final according to transition, but {0} is not in list of states!".format(s))
+                        print "CONSISTENCY ERROR: Identified {0} as final according to transition, but {0} is not in list of states!".format(s)
+                        # Force delete of transitions with existing state
+                        for t in copy.copy(self.__transitions):
+                            if t.getSource()==s or t.getDestination()==s:
+                                pass
+                                #self.__transitions.remove(t)
+            # Merge all states declared as final
+            # Pairwise match, order of matching irrelevant
+            
+            finallist = list(tmpfinals)
+            if len(finallist)>=2:
+                self.__finals = finallist
+                #self.mergeStates(finallist[0],finallist[1])
+            #iterate = len(finallist)>=2
+            iterate = False
+        self.__finals = finallist
+            
+        #=======================================================================
+        # superfinal = "s{0}".format(self.__nextstate)
+        # self.__states.append(superfinal)
+        # for s in self.__finals:
+        #    self.addTransition(s,"{{epsilon}}",superfinal, "epsilon","epsilon", "","")
+        # self.__finals = [superfinal]
+        #=======================================================================
     #===========================================================================
     # def fakedelta(self,state,c):
     #        if state=="s0":

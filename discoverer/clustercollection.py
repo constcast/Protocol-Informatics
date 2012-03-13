@@ -320,8 +320,9 @@ class ClusterCollection():
         print "Statistics: {0}".format(discoverer.statistics.stats)        
         print "Protocol is classified as: {0}".format(discoverer.statistics.get_classification())
         
-            
-        for c in cluster:         
+        totalNumOfNoConstCluster = 0
+        for c in cluster:
+                
             messages =  c.get_messages()  
             formats = c.get_formats()
             print "*"*50
@@ -332,6 +333,7 @@ class ClusterCollection():
             #for message in messages:
             #    print message
             idx = 0
+            numOfConst = 0
             for fmt in formats:
                 print "Token {0}:".format(idx) ,
                 if "FD" in fmt[2]:
@@ -353,7 +355,7 @@ class ClusterCollection():
                         values += newstr
                     print "Length field, {0} values: {1}".format(len(sumUp), values[:-2])
                 else:
-                    if fmt[1].getType() == Message.typeConst:
+                    if fmt[1].getType()==Message.typeConst: # format is "const (xyz)"
                         value = messages[0].get_tokenAt(idx).get_token()
                         if fmt[0]=='binary':
                             print "const binary token, value 0x{:02x}".format(value),
@@ -363,6 +365,11 @@ class ClusterCollection():
                                 print ""
                         else:
                             print "const {} token, value '{}'".format(fmt[0],value)  
+                        
+                        # Count token as contributing to const if it is no EOL and no direction token
+                        if value!=0x0a and value!=0x0d and fmt[0]!=Message.typeDirection:
+                            numOfConst += 1
+                        
                     else: # variable
                         rawValues = c.get_all_values_for_token(idx)
                         sumUp = Counter(rawValues)
@@ -388,6 +395,13 @@ class ClusterCollection():
                             print "variable text token, values: {0}".format(values)
                         
                 idx += 1
+            if numOfConst == 0:
+                # We've got a variable only cluster
+                totalNumOfNoConstCluster += 1
+    
+        print
+        print "Cluster without a single const token (excl. EOL): {0}".format(totalNumOfNoConstCluster)
+                                                                            
         if not file=="":
             handle.close()         
             sys.stdout = old_stdout
