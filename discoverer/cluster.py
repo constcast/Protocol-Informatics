@@ -31,7 +31,18 @@ class Cluster(dict):
         """        
         if self.get('semantics').has_key(idx):                
             del self.get('semantics')[idx]
-           
+    def hasConstToken(self):
+        numOfConst = 0
+        formats = self.get_formats()
+        messages = self.get_messages()
+        idx = 0
+        for fmt in formats:
+            if fmt[1].getType()==Message.typeConst: # format is "const (xyz)"
+                value = messages[0].get_tokenAt(idx).get_token()
+                if value!=0x0a and value!=0x0d and fmt[0]!=Message.typeDirection:
+                    numOfConst += 1
+            idx += 1
+        return numOfConst>0       
     def getRegEx(self):
         regexstr = "^"
         idx = 0

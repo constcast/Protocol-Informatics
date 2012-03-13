@@ -112,6 +112,23 @@ class Statemachine(object):
         for key, value in testflow.items() :
             f = value[0]
             stateTransitions = self.get_transitions_from(curState)
+            # Sort stateTransitions such that pure variable transistions come last
+            #===================================================================
+            # idx = 0
+            # for steps in range(1,len(stateTransitions)):
+            #    regex = stateTransitions[idx].getRegEx()
+            #    p = re.compile("^.*[a-fA-F0-9]+.*$") # Match for any const value in regex
+            #    res = p.match(regex)
+            #    if res == None:
+            #        # transition regex contains no const value hook, push to back
+            #        t = stateTransitions[idx]
+            #        stateTransitions.remove(t)
+            #        stateTransitions.append(t)
+            #    else:
+            #        idx+=1
+            #         
+            # 
+            #===================================================================
             print "Current state: {0}".format(curState)
             print "Possible transitions: "
             for t in stateTransitions:
