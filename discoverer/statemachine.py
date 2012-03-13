@@ -286,7 +286,8 @@ class Statemachine(object):
             print msg
             
     def build(self):
-        self.__states.append("e") # Error state
+        #self.__states.append("e") # Error state
+        self.__finals = set()
         error = 0
         for flow in self.__sequences:
             messages = self.__sequences[flow]
@@ -298,10 +299,15 @@ class Statemachine(object):
             else:
                 self.log("Running flow {0}, {1} messages".format(flow,len(messages)))                
                 curstate = "s0"
-                for msg_id, message in messages.items():
-                    self.log("Message {0} ({1}): {2}, hash {3} with format {4}".format(msg_id,message[1],message[0].get_message(), message[0].getCluster().getFormatHash(),message[0].getCluster().get_formats()))
+                msg_keys = messages.keys()
+                for msg_key in msg_keys:
+                    message = messages[msg_key]
+                    self.log("Message {0} ({1}): {2}, hash {3} with format {4}".format(msg_key,message[1],message[0].get_message(), message[0].getCluster().getFormatHash(),message[0].getCluster().get_formats()))
                     # Walk transitions for curstate and message's hash
                     hash = message[0].getCluster().getFormatHash()
+                    regexp = message[0].getCluster().getRegEx()
+                    regexpvisual = message[0].getCluster().getRegExVisual()
+                        
                     self.__alphabet.add(hash)
                     #direction = message
                     
@@ -310,7 +316,7 @@ class Statemachine(object):
                     # If found add "cur, hash, existingState" for this message and continue
                     # with the next one
                     # In the ReverX paper, this step is executed after the trivial DFA is built.
-                    # However it should be possible as well to do this during the build phase
+                    # However it should be possible as well to do this during the build phase like done here
                     
                     existingTransition = self.findTransition(curstate, hash)
                     #existingTransition = self.findTransitionBySrc(curstate, hash)
@@ -318,28 +324,28 @@ class Statemachine(object):
                     if existingTransition:
                         if existingTransition.getSource()==curstate:
                             # Exactly this transition exists
-                            curstate = existingTransition.getDestination()
                             existingTransition.incCounter() # Inc link usage
                             self.log("Exactly this transition already exists")
+                            if msg_key == msg_keys[-1]: # Is this the last
+                                self.__finals.add(existingTransition.getDestination()) 
+                            curstate = existingTransition.getDestination()
                             continue
                         else: # A transition with this hash does exist, but from a different src state
-                            regexp = ""
-                            regexp = message[0].getCluster().getRegEx()
-                            regexpvisual = message[0].getCluster().getRegExVisual()
                             self.addTransition(curstate,hash,existingTransition.getDestination(), message[1], message[0].get_message(),regexp, regexpvisual)
                             curstate = existingTransition.getDestination()
                             self.log("A transition with this hash already exists, bending link to ({0},{1},{2})".format(curstate, hash, existingTransition.getDestination()))
+                            if msg_key == msg_keys[-1]: # Is this the last
+                                self.__finals.add(existingTransition.getDestination()) 
                             continue
                     else: # This transition does not yet exist, add new transition with new state    
                         newstate = "s{0}".format(self.__nextstate)
                         self.__states.append(newstate)
-                        regexp = ""
-                        regexp = message[0].getCluster().getRegEx()
-                        regexpvisual = message[0].getCluster().getRegExVisual()
                         self.addTransition(curstate,hash,newstate, message[1], message[0].get_message(), regexp, regexpvisual)
                         self.__nextstate += 1
                         self.log("Created new state in transition ({0},{1},{2},{3},1,{4})".format(curstate,hash,newstate, message[1], message[0].get_message()))
                         curstate = newstate
+                        if msg_key == msg_keys[-1]: # Is this the last
+                                self.__finals.add(newstate) 
         if error>0:
             print "{0} errors observed during statemachine bulding".format(error)
                     
@@ -366,21 +372,33 @@ class Statemachine(object):
         #                    print "Already in transition table! Forwarding to state {0}".format(curstate)
         #=======================================================================
         
-        self.compute_finals()
+        self.collapse_finals()
         if self.__config.performReverXMinimization:
             print "Performing ReverX merge. Number of states {0}, transitions {1}".format(len(self.__states), len(self.__transitions))
             self.reverx_merge()
             print "Performed ReverX merge. Number of states {0}, transitions: {1}".format(len(self.__states),len(self.__transitions))
-        self.compute_finals()
+        self.collapse_finals()
+        
         
         if self.__config.debug:
             print "Finished"
-            print "States: ", "\n".join(self.__states)
+            print "States: ", ",".join(self.__states)
             
             print "Transitions: "
             for t in self.__transitions:
                 print t
-            print "Finals: ", "\n".join(self.__finals)
+            print "Finals: ", ",".join(self.__finals)
+            
+            print "Consistency check: (States in transitions but not in list of states)"
+            c = set()
+            for t in self.__transitions:
+                if not t.getSource() in self.__states:
+                    c.add(t.getSource())
+                if not t.getDestination() in self.__states:
+                    c.add(t.getDestination())
+            print c
+                    
+            
     
     def canTransition(self, p,q):
         l = []
@@ -490,6 +508,8 @@ class Statemachine(object):
         self.__states.remove(p)
         if p in self.__finals:
             self.__finals.remove(p)
+            # if p was a final and p and q are merged, q has to be final too
+            self.__finals.add(q)
         
         #if self.current_state == q1:
         #    self.current_state = q2
@@ -498,16 +518,28 @@ class Statemachine(object):
         
         for t in copy.copy(self.__transitions):
             # Redirect target states
-            if t.getSource()==p:
-                #self.__transitions.remove(t)
+            
+            if t.getSource()==p or t.getDestination()==p:
                 self.__transitions.remove(t)
-                t.setSource(q)
+                if t.getSource()==p:
+                    t.setSource(q)
+                if t.getDestination()==p:
+                    t.setDestination(q)
                 self.__transitions.add(t)
-                continue
-            if t.getDestination()==p:
-                self.__transitions.remove(t)
-                t.setDestination(q)
-                self.__transitions.add(t)
+            #===================================================================
+            # if t.getSource()==p:
+            #    print t
+            #    #self.__transitions.remove(t)
+            #    self.__transitions.remove(t)
+            #    t.setSource(q)
+            #    self.__transitions.add(t)
+            #    
+            # if t.getDestination()==p:
+            #    print t
+            #    self.__transitions.remove(t)
+            #    t.setDestination(q)
+            #    self.__transitions.add(t)
+            #===================================================================
         return True
     
     def referenceBetween(self, p, q):
@@ -550,41 +582,14 @@ class Statemachine(object):
                 return True
         return False
      
-    def compute_finals(self):
-        # Compute finals - ugly but quick n dirty
-        iterate = True
-        while iterate:
-            iterate = False
-            tmpfinals = set()
-            for t in copy.copy(self.__transitions):
-                s = t.getDestination() # designated final state
-                isFinal = True
-                for t2 in copy.copy(self.__transitions):
-                    if t2.getSource() == s:
-                        isFinal = False
-                        break
-                if isFinal:
-                    if s in self.__states:
-                        tmpfinals.add(s)
-                    else:
-                        #raise Exception("CONSISTENCY ERROR: Identified {0} as final according to transition, but {0} is not in list of states!".format(s))
-                        print "CONSISTENCY ERROR: Identified {0} as final according to transition, but {0} is not in list of states!".format(s)
-                        # Force delete of transitions with existing state
-                        for t in copy.copy(self.__transitions):
-                            if t.getSource()==s or t.getDestination()==s:
-                                pass
-                                #self.__transitions.remove(t)
-            # Merge all states declared as final
-            # Pairwise match, order of matching irrelevant
-            
-            finallist = list(tmpfinals)
-            if len(finallist)>=2:
-                self.__finals = finallist
-                #self.mergeStates(finallist[0],finallist[1])
-            #iterate = len(finallist)>=2
-            iterate = False
-        self.__finals = finallist
-            
+    def collapse_finals(self):
+        
+        while len(self.__finals)>1:
+            l = list(self.__finals)
+            self.mergeStates(l[0], l[1])
+        return
+        
+          
         #=======================================================================
         # superfinal = "s{0}".format(self.__nextstate)
         # self.__states.append(superfinal)
@@ -613,7 +618,8 @@ class Statemachine(object):
         alphabet.add("epsilon")   
         delta = self.delta   
         start = "s0"
-        self.compute_finals()
+        self.collapse_finals()
+        
         finals = self.__finals[:]
         
         #=======================================================================
@@ -693,6 +699,24 @@ class Statemachine(object):
                 return t.getDestination()
         return "e"
         
+        
+    # Important observation:
+    # ======================
+    #
+    # We consider a state "final" where the last element of a flow ends, as
+    # we cannot assume anything else.
+    # Now we currently have three problems with our test sets
+    # a) We have a maximum we read:
+    #    If our maxMessages ends within reading a flow, we mistakenly consider
+    #    our broken flow as final, thus declaring final states where there should be none
+    # b) In order to reverse engineer a protocol perfectly, the test data has to be perfect
+    #    as well. If we've got invalid protocol behavior - and we HAVE these - our reverse
+    #    engineered protocol can never be 100% exact according to spec
+    # c) Out ftp testset almost never ends with QUIT but with arbitrary commands. Therefore
+    #    we create a lot of finals (not because of a or b), just because it IS the last command/server response
+    #    This again does not necessarily reflect the true protocol.
+    
+     
     def dump(self, file=""):
         """
         Dumps the generated graph to stdout or a .dot file
@@ -710,14 +734,18 @@ class Statemachine(object):
         trantab = string.maketrans(intab,outtab)
         
         print "digraph G {"
+        # Add final node definitions
+        for s in self.__finals:
+            print '{0} [shape=circle,peripheries=2];'.format(s)
+            
         for t in self.__transitions:
             s = t.getMessage()[:25].translate(trantab)
             if t.getDirection()==message.Message.directionClient2Server:
-                print '{0} -> {1} [color=red,fontsize=10,label="{2}...",penwidth={3}]'.format(t.getSource(),t.getDestination(),s,t.getCounter() if self.__config.weightEdges else 1)
+                print '{0} -> {1} [color=red,fontsize=10,label="{2}...",penwidth={3}];'.format(t.getSource(),t.getDestination(),s,t.getCounter() if self.__config.weightEdges else 1)
             elif t.getDirection()==message.Message.directionServer2Client:
-                print '{0} -> {1} [color=green,fontsize=10,label="{2}...",penwidth={3}]'.format(t.getSource(),t.getDestination(),s,t.getCounter() if self.__config.weightEdges else 1)
+                print '{0} -> {1} [color=green,fontsize=10,label="{2}...",penwidth={3}];'.format(t.getSource(),t.getDestination(),s,t.getCounter() if self.__config.weightEdges else 1)
             else:
-                print '{0} -> {1} [color=black,fontsize=10,label="{2}...",penwidth={3}]'.format(t.getSource(),t.getDestination(),s,t.getCounter() if self.__config.weightEdges else 1)
+                print '{0} -> {1} [color=black,fontsize=10,label="{2}...",penwidth={3}];'.format(t.getSource(),t.getDestination(),s,t.getCounter() if self.__config.weightEdges else 1)
         print "}"
         if not file=="":
             handle.close()         

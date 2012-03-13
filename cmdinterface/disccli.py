@@ -215,11 +215,11 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         print "Testresults"
         print "==========="
         print "Success: {0}, Failures: {1}".format(success, failures)
-        print "Failed test flows"
-        print "NOTE: Changes SM behavior - merged finals and removed transitions with zombie states from transition table"
-        for (key, value) in results.iteritems():
-            if value==False:
-                print "{0}".format(key)
+        if failures>0:
+            print "Failed test flows"
+            for (key, value) in results.iteritems():
+                if value==False:
+                    print "{0}".format(key)
         #testflow = []
         # testflow.append("USER anonymous")
         # testflow.append("PASS me@home.com")
