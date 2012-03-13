@@ -715,6 +715,12 @@ class Statemachine(object):
     # c) Out ftp testset almost never ends with QUIT but with arbitrary commands. Therefore
     #    we create a lot of finals (not because of a or b), just because it IS the last command/server response
     #    This again does not necessarily reflect the true protocol.
+    #
+    # The result of this, with respect to the ftp protocol is, that a) our protocol does not finish at the
+    # QUIT command, but QUIT is an "arbitrary" command.
+    # The expection would be that from our "common middle state, for each command there is an outgoing client transition with the actual command,
+    # followed by the server response (good or bad) and then return to the "common middle state".
+    
     
      
     def dump(self, file=""):
