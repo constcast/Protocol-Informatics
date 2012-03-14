@@ -87,9 +87,10 @@ class ClusterCollection():
         config = self.__config
         
         if not config.mergeSimilarClusters:
+            print "Cluster merging disabled via configuration"
             return
         
-        copiedCollection = self.__cluster[:]  # <-- [:] is very important to work on a copy of the list
+        copiedCollection = self.__cluster[:]  
         ori_len = len(copiedCollection)
         tempCollection = ClusterCollection(config)
 

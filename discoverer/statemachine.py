@@ -286,6 +286,11 @@ class Statemachine(object):
             print msg
             
     def build(self):
+        if self.__config.performReverXMinimization and not self.__config.fastReverXStage1 and not self.__config.nativeReverXStage1:
+            # When ReverX minimization is desired we need either the fast or native stage 1!
+            raise Exception("ReverX minimization is desired but neither 'nativeReverXStage1' nor 'fastReverXStage1' are set to true!")        
+        if self.__config.performReverXMinimization and self.__config.fastReverXStage1:
+            print "Performing fast ReverX stage 1 during iterative build"
         #self.__states.append("e") # Error state
         self.__finals = set()
         error = 0
@@ -321,8 +326,34 @@ class Statemachine(object):
                     existingTransition = self.findTransition(curstate, hash)
                     #existingTransition = self.findTransitionBySrc(curstate, hash)
                     
-                    if existingTransition:
-                        if existingTransition.getSource()==curstate:
+                    if self.__config.fastReverXStage1 and self.__config.performReverXMinimization: # Perform quick stage 1 if ReverX minimization is desired at all
+                        if existingTransition:
+                            if existingTransition.getSource()==curstate:
+                                # Exactly this transition exists
+                                existingTransition.incCounter() # Inc link usage
+                                self.log("Exactly this transition already exists")
+                                if msg_key == msg_keys[-1]: # Is this the last
+                                    self.__finals.add(existingTransition.getDestination()) 
+                                curstate = existingTransition.getDestination()
+                                continue
+                            else: # A transition with this hash does exist, but from a different src state
+                                self.addTransition(curstate,hash,existingTransition.getDestination(), message[1], message[0].get_message(),regexp, regexpvisual)
+                                curstate = existingTransition.getDestination()
+                                self.log("A transition with this hash already exists, bending link to ({0},{1},{2})".format(curstate, hash, existingTransition.getDestination()))
+                                if msg_key == msg_keys[-1]: # Is this the last
+                                    self.__finals.add(existingTransition.getDestination()) 
+                                continue
+                        else: # This transition does not yet exist, add new transition with new state    
+                            newstate = "s{0}".format(self.__nextstate)
+                            self.__states.append(newstate)
+                            self.addTransition(curstate,hash,newstate, message[1], message[0].get_message(), regexp, regexpvisual)
+                            self.__nextstate += 1
+                            self.log("Created new state in transition ({0},{1},{2},{3},1,{4})".format(curstate,hash,newstate, message[1], message[0].get_message()))
+                            curstate = newstate
+                            if msg_key == msg_keys[-1]: # Is this the last
+                                self.__finals.add(newstate)
+                    else: # Perform Reverx stage 1 later on, build SM stupid
+                        if existingTransition and existingTransition.getSource()==curstate:
                             # Exactly this transition exists
                             existingTransition.incCounter() # Inc link usage
                             self.log("Exactly this transition already exists")
@@ -330,24 +361,21 @@ class Statemachine(object):
                                 self.__finals.add(existingTransition.getDestination()) 
                             curstate = existingTransition.getDestination()
                             continue
-                        else: # A transition with this hash does exist, but from a different src state
-                            self.addTransition(curstate,hash,existingTransition.getDestination(), message[1], message[0].get_message(),regexp, regexpvisual)
-                            curstate = existingTransition.getDestination()
-                            self.log("A transition with this hash already exists, bending link to ({0},{1},{2})".format(curstate, hash, existingTransition.getDestination()))
+                        else:
+                            newstate = "s{0}".format(self.__nextstate)
+                            self.__states.append(newstate)
+                            self.addTransition(curstate,hash,newstate, message[1], message[0].get_message(), regexp, regexpvisual)
+                            self.__nextstate += 1
+                            self.log("Created new state in transition ({0},{1},{2},{3},1,{4})".format(curstate,hash,newstate, message[1], message[0].get_message()))
+                            curstate = newstate
                             if msg_key == msg_keys[-1]: # Is this the last
-                                self.__finals.add(existingTransition.getDestination()) 
-                            continue
-                    else: # This transition does not yet exist, add new transition with new state    
-                        newstate = "s{0}".format(self.__nextstate)
-                        self.__states.append(newstate)
-                        self.addTransition(curstate,hash,newstate, message[1], message[0].get_message(), regexp, regexpvisual)
-                        self.__nextstate += 1
-                        self.log("Created new state in transition ({0},{1},{2},{3},1,{4})".format(curstate,hash,newstate, message[1], message[0].get_message()))
-                        curstate = newstate
-                        if msg_key == msg_keys[-1]: # Is this the last
-                                self.__finals.add(newstate) 
+                                self.__finals.add(newstate)
+                            
         if error>0:
             print "{0} errors observed during statemachine bulding".format(error)
+        
+        
+        self.pruneOutliers()
                     
         #=======================================================================
         #                
@@ -377,7 +405,9 @@ class Statemachine(object):
             print "Performing ReverX merge. Number of states {0}, transitions {1}".format(len(self.__states), len(self.__transitions))
             self.reverx_merge()
             print "Performed ReverX merge. Number of states {0}, transitions: {1}".format(len(self.__states),len(self.__transitions))
-        self.collapse_finals()
+            self.collapse_finals()
+        else:
+            print("ReverX merge disabled by configuration")
         
         
         if self.__config.debug:
@@ -398,7 +428,57 @@ class Statemachine(object):
                     c.add(t.getDestination())
             print c
                     
+    def pruneOutliers(self):
+        if not self.__config.pruneDFAOutliers:
+            return
+        print "Trying to prune state machine outliers with link score below {0}".format(self.__config.pruneBelowLinkScore)
+        if self.__config.performReverXMinimization and self.__config.fastReverXStage1:
+            print "WARNING: Statemachine was built with fast ReverX stage 1. Pruning will probably falsify results!"
+        
+        print "Pruning transitions..."
+        prunedTransitions = 0
+        for t in copy.copy(self.__transitions):
+            if t.getCounter()<self.__config.pruneBelowLinkScore:
+                self.__transitions.remove(t)
+                prunedTransitions += 1
+        
+        print "Pruned {0} transitions".format(prunedTransitions)
+        
+        if prunedTransitions == 0:
+            print "No transitions pruned, no need to prune states. Pruning finished"
+            return
+        
+        nodesPruned = self.removeOrphans()
+        print "Pruned {0} nodes".format(nodesPruned)
+        
+    
+    def removeOrphans(self, removed=0):
+        
+        nodesPruned = 0
+        reachable = set()
+        states = set(self.__states)
+        for t in self.__transitions:
+            s = t.getDestination()
+            reachable.add(s)
+        reachable.add(self.__start) # Always declare the start node reachable 
+        if len(reachable)!=len(states): # Not all states could be reached
+            nodesToPrune = states.difference(reachable)
+            nodesPruned = len(nodesToPrune) 
+            for s in nodesToPrune:
+                if s in self.__finals:
+                    self.__finals.remove(s)                            
+                self.__states.remove(s)
             
+                for t in copy.copy(self.__transitions):
+                    if t.getSource()==s or t.getDestination()==s:
+                        self.__transitions.remove(t)
+            self.removeOrphans(removed=nodesPruned)
+        return nodesPruned+removed
+            
+        
+        
+        
+             
     
     def canTransition(self, p,q):
         l = []
@@ -416,7 +496,7 @@ class Statemachine(object):
         import time
         if self.__config.nativeReverXStage1:
             start = time.time()
-            print "Performing ReverX merge stage 1"
+            print "Performing native ReverX merge stage 1"
             # merge states reached from similar message types
         
             for q in self.__states[:]:
@@ -448,12 +528,13 @@ class Statemachine(object):
                         
             elapsed = (time.time() - start)
                     
-            print "Transitions:"
-            for t in self.__transitions:
-                print t
+            if self.__config.debug:
+                print "Transitions:"
+                for t in self.__transitions:
+                    print t
             print "Performed ReverX merge stage 1. {} states left, transitions {} (Took: {:.3f} seconds)".format(len(self.__states),len(self.__transitions), elapsed)
         else:
-            print "Skipping ReverX merge stage 1 by configuration"    
+            print "Skipping native ReverX merge stage 1 by configuration"    
         print "Performing ReverX merge stage 2"
         # merge states without a causal relation that share at least one message type
         start = time.time()
@@ -583,11 +664,11 @@ class Statemachine(object):
         return False
      
     def collapse_finals(self):
-        
-        while len(self.__finals)>1:
-            l = list(self.__finals)
-            self.mergeStates(l[0], l[1])
-        return
+        if self.__config.collapseFinals:
+            while len(self.__finals)>1:
+                l = list(self.__finals)
+                self.mergeStates(l[0], l[1])
+            return
         
           
         #=======================================================================
@@ -750,13 +831,30 @@ class Statemachine(object):
             print '{0} [shape=circle,peripheries=2];'.format(s)
             
         for t in self.__transitions:
-            s = t.getMessage()[:25].translate(trantab)
+            
+            s = "'{0}'".format(t.getMessage()[:25].translate(trantab))
+            if len(t.getMessage())>25:
+                s+="..."
+            s+=" ({0})".format(t.getCounter())
+            
             if t.getDirection()==message.Message.directionClient2Server:
-                print '{0} -> {1} [color=red,fontsize=10,label="{2}...",penwidth={3}];'.format(t.getSource(),t.getDestination(),s,t.getCounter() if self.__config.weightEdges else 1)
+                color="red"
             elif t.getDirection()==message.Message.directionServer2Client:
-                print '{0} -> {1} [color=green,fontsize=10,label="{2}...",penwidth={3}];'.format(t.getSource(),t.getDestination(),s,t.getCounter() if self.__config.weightEdges else 1)
+                color="green"
             else:
-                print '{0} -> {1} [color=black,fontsize=10,label="{2}...",penwidth={3}];'.format(t.getSource(),t.getDestination(),s,t.getCounter() if self.__config.weightEdges else 1)
+                color="black"
+            
+            penwidth = 1
+            if self.__config.highlightOutlier:
+                if t.getCounter()<self.__config.pruneBelowLinkScore: 
+                    penwidth = "2,style=dotted"
+                    color="blue"
+                else:
+                    penwidth = 1
+            elif self.__config.weightEdges:
+                penwidth = t.getCounter()
+                            
+            print '{0} -> {1} [color={2},fontsize=10,label="{3}",penwidth={4}];'.format(t.getSource(),t.getDestination(),color,s,penwidth)
         print "}"
         if not file=="":
             handle.close()         

@@ -46,7 +46,12 @@ class Configuration:
         self.mergeSimilarClusters = False
         self.considerOneMessageAsConstant = False
         self.nativeReverXStage1 = False
+        self.fastReverXStage1 = True
         self.performReverXMinimization = False
+        self.collapseFinals = True
+        self.pruneBelowLinkScore = 2
+        self.pruneDFAOutliers = False
+        self.highlightOutlier = True
         # Used for NW alignment in Discoverer
         self.matchScore = 1
         self.mismatchScore = 1
@@ -73,6 +78,9 @@ class Configuration:
         if self.minWordLength<1:
             print "FATAL: MinWordLength must be greater than 0"
             return False
+        if self.fastReverXStage1 and self.nativeReverXStage1:
+            print "FATAL: 'fastReverXStage1' and 'nativeReverXStage1' must not be both set to True!"
+            return True
         return True
 
     def print_config(self):

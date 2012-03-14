@@ -106,7 +106,12 @@ class CommandLineInterface(cmd.Cmd):
             # ok, we didn't find it yet. lets try for format 
             # "config <variable>=<value>
             words = string.split('=')
+            
             if len(words) != 2:
+                if len(words) == 1: # Print current Config
+                    attr = getattr(self.config, words[0])
+                    print "Current value of configurtion item '{0}' = '{1}'".format(words[0],attr)
+                    return
                 # ok, we have no idea what this should be ..."
                 print "Invalid command syntax"
                 self.help_config()

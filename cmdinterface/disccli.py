@@ -259,9 +259,50 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
                 # subflow[message.getFlowSequenceNumber()] = (message, flowDirection)
         return tmp_flows
     
-    def printflows(self):
-        pass
-    
+    def do_listflowIDs(self,str):
+        self.listflowIDs()
+        
+    def listflowIDs(self):
+        if not self.env.has_key('messageFlows'):
+            print "ERROR: No message flows loaded yet"
+            return
+        
+        messageFlows = self.env['messageFlows']
+        
+        print "Flow IDs in message flow collection"
+        
+        flowKeys = messageFlows.keys()
+        for flowKey in flowKeys:
+            print "\t{0}".format(flowKey) 
+            
+    def do_printflow(self, flowID):
+        self.printflow(flowID)
+        
+    def printflow(self, flowID):
+        if flowID=="":
+            print "ERROR: Usage: printflow <flowID>"
+            return
+        
+        if not self.env.has_key('messageFlows'):
+            print "ERROR: No message flows loaded yet"
+            return
+        
+        messageFlows = self.env['messageFlows']
+
+        if not messageFlows.has_key(flowID):
+            print "ERROR: Flow {0} not found in message flows. Please check flow ID".format(flowID)
+            return
+        
+        messages = messageFlows[flowID]
+        if len(messages)>0:
+            print "Flow: {0} ({1} messages)".format(flowID, len(messages))
+            firstitemnumber = sorted(messages.keys())[0]
+            (msg, direction) = messages[firstitemnumber] # Retrieve first msg
+            print "\t{0}".format(msg.get_message())
+            nextMsg = msg.getNextInFlow()
+            while nextMsg != None:
+                print "\t{0}".format(nextMsg.get_message())                
+                nextMsg = nextMsg.getNextInFlow()
         
     def linkmessages(self, messageFlows):
         print "Linking messages within flow"
@@ -270,7 +311,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             if len(messages)==1:
                 if self.config.debug:
                     print "Flow {0} has only 1 message. Skipping flow".format(flow)
-                    continue
+                continue
             #message_indices = messages.keys()
             from discoverer.peekable import peekable
             iterator = peekable(messages.items())
@@ -292,17 +333,18 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
                 message.setPrevInFlow(lastMsg)
             
             if self.config.debug:
-                 messages = messageFlows[flow]
-                 if len(messages)>0:
-                    print "Flow: {0} ({1} messages)".format(flow, len(messages))
-                    firstitemnumber = sorted(messages.keys())[0]
-                    (msg, dir) = messages[firstitemnumber] # Retrieve first msg
-                    print "{0}".format(msg.get_message())
-                    nextMsg = msg.getNextInFlow()
-                    while nextMsg != None:
-                        print "{0}".format(nextMsg.get_message())
-                        #nextMsg = message.getNextInFlow()
-                        nextMsg = nextMsg.getNextInFlow()
+                self.printflow(flow)
+                 #-------------------------------- messages = messageFlows[flow]
+                 #------------------------------------------ if len(messages)>0:
+                    # print "Flow: {0} ({1} messages)".format(flow, len(messages))
+                    #-------------- firstitemnumber = sorted(messages.keys())[0]
+                    # (msg, dir) = messages[firstitemnumber] # Retrieve first msg
+                    #--------------------- print "{0}".format(msg.get_message())
+                    #----------------------------- nextMsg = msg.getNextInFlow()
+                    #------------------------------------ while nextMsg != None:
+                        #------------- print "{0}".format(nextMsg.get_message())
+                        #-------------------- #nextMsg = message.getNextInFlow()
+                        #--------------------- nextMsg = nextMsg.getNextInFlow()
     def do_dump_state(self, str):
         import cPickle
         handle = open("/Users/daubsi/Dropbox/disc_state","wb")
@@ -336,7 +378,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         #    
         #    self.do_setup(breakSequences=True)
         #=======================================================================
-        self.env['message_flows'] = {}
+        
         self.env['messageFlows'] = self.combineflows(self.env['cluster_collection'])
         #self.combineflows(self.env['cluster_collection'])
         self.linkmessages(self.env['messageFlows'])
