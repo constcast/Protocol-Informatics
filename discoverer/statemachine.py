@@ -291,6 +291,46 @@ class Statemachine(object):
             raise Exception("ReverX minimization is desired but neither 'nativeReverXStage1' nor 'fastReverXStage1' are set to true!")        
         if self.__config.performReverXMinimization and self.__config.fastReverXStage1:
             print "Performing fast ReverX stage 1 during iterative build"
+        
+        # Rationale for "fast reverx" and "native reverx"
+        # fast reverx basically does the same as native reverx but sooner.
+        # As the number of transition is therefore kept at a low level because of the
+        # iterative approach, the speed
+        # is very high in contrast to the later performed "native reverx"which works
+        # on the completed state machine.
+        # But there is one important difference.
+        # Pruning might lead to incorrect results when the "fast" version is used.
+        # Theory behind: Lets assume there are faulty input data where the sequence
+        # of commands violates the protocol. If the faulty entries come soon in the sequence
+        # of flows, they will create transitions that are later on reused in the "quick" mode.
+        # Therefore this faulty entries are kept and maybe even exaggerated during the iterative
+        # build. When it is done lateron, we have the chance of pruning the faulty entries by
+        # removing them when they are below the edgeUseThreshold. Therefore outlies are completely
+        # removed without interfering with the rest of the statemachine. In "fast" mode, the number
+        # of edge traversals might be incremented due to the traversal reuse and get over the configured
+        # threshold.
+        # Faulty sequences are considered to be responsible for reflexive transitions that should
+        # otherwise be spread over multiple nodes.
+        
+        # Important observation:
+        # ======================
+        #
+        # We consider a state "final" where the last element of a flow ends, as
+        # we cannot assume anything else.
+        # Now we currently have three problems with our test sets
+        # a) We have a maximum we read:
+        #    If our maxMessages ends within reading a flow, we mistakenly consider
+        #    our broken flow as final, thus declaring final states where there should be none
+        # b) In order to reverse engineer a protocol perfectly, the test data has to be perfect
+        #    as well. If we've got invalid protocol behavior - and we HAVE these - our reverse
+        #    engineered protocol can never be 100% exact according to spec
+        # c) Out ftp testset almost never ends with QUIT but with arbitrary commands. Therefore
+        #    we create a lot of finals (not because of a or b), just because it IS the last command/server response
+        #    This again does not necessarily reflect the true protocol.
+
+        
+        
+        
         #self.__states.append("e") # Error state
         self.__finals = set()
         error = 0
@@ -377,30 +417,8 @@ class Statemachine(object):
         
         self.pruneOutliers()
                     
-        #=======================================================================
-        #                
-        #                found = False
-        #            for transition in self.__transitions:
-        #                # Check for equiality of current state, transitional hash and client2server or server2client
-        #                if transition[0]==curstate and transition[1]==hash and transition[3]==message[1]:
-        #                    found = True
-        #                    curstate = transition[2]
-        #                    transition[4]+=1 # Inc link usage
-        #                    break
-        #            if not found:
-        #                newstate = "s{0}".format(self.__nextstate)
-        #                self.__states.append(newstate)
-        #                self.__transitions.append([curstate,hash,newstate, message[1],1, message[0].get_message()])
-        #                self.__nextstate += 1
-        #                if self.__config.debug:
-        #                    print "Created new state in transition ({0},{1},{2},{3},1,{4})".format(curstate,hash,newstate, message[1], message[0].get_message())
-        #                curstate = newstate
-        #            else:
-        #                if self.__config.debug:
-        #                    print "Already in transition table! Forwarding to state {0}".format(curstate)
-        #=======================================================================
-        
         self.collapse_finals()
+        
         if self.__config.performReverXMinimization:
             print "Performing ReverX merge. Number of states {0}, transitions {1}".format(len(self.__states), len(self.__transitions))
             self.reverx_merge()
@@ -429,6 +447,13 @@ class Statemachine(object):
             print c
                     
     def pruneOutliers(self):
+        # Rationale:
+        # Find all nodes that are reached by transitions (== that are on the rhs)
+        # removeOrphans:
+        # Then substract this list from the list of all nodes --> unreachable nodes
+        # Then remove all transitions where these nodes are src or dest
+        # Then perform recursion until nolonger nodes are deleted
+        
         if not self.__config.pruneDFAOutliers:
             return
         print "Trying to prune state machine outliers with link score below {0}".format(self.__config.pruneBelowLinkScore)
