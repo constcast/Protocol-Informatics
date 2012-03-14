@@ -63,7 +63,7 @@ def perform_semantic_inference(cluster_collection, config):
                     if isinstance(nextOne, TokenRepresentation):
                         if nextOne.get_token() == 0xa:
                             inferred_formats = c.get_format_inference()
-                            if inferred_formats[idx].getType()=='const' and inferred_formats[idx+1].getType()=='const':
+                            if inferred_formats[idx].getType()==Message.typeConst and inferred_formats[idx+1].getType()==Message.typeConst:
                                 tokenRepresentation.add_semantic("CR")
                                 #c.add_semantics(idx,"CR")
                                 nextOne = iterator.next()
@@ -155,7 +155,7 @@ def perform_semantic_inference(cluster_collection, config):
                     # Get format of comparating message
                     comp_fmt = next_cluster.get_format(next_idx)
                     # If it is const, it cannot be a cookie
-                    if comp_fmt[1]=='const':
+                    if comp_fmt[1]==Message.typeConst:
                         next_idx += 1
                         continue
                     # Load comparator value

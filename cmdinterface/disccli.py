@@ -107,15 +107,16 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             #self.go(self.env['sequences_server2client'],Message.directionServer2Client)
             #self.env['cluster_collection_server'] = self.env['cluster_collection']
             #self.combineflows(self.env['cluster_collection_server'],Message.directionServer2Client)
-            if self.config.debug:
-                self.printflows() 
+             
             
-            for c in self.env['cluster_collection'].get_all_cluster():
-                print "Cluster:"
-                print c.get_formats()
-                print c.getRegEx()
-                print c.getRegExVisual()
-                print
+            #===================================================================
+            # for c in self.env['cluster_collection'].get_all_cluster():
+            #    print "Cluster:"
+            #    print c.get_formats()
+            #    print c.getRegEx()
+            #    print c.getRegExVisual()
+            #    print
+            #===================================================================
                 
             
             # Build statemachine
@@ -132,7 +133,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             sm.dump(storePath)
             sm.dumpTransitions()
             self.do_dumpresult("")
-            self.env['sm'] = sm
+            #self.env['sm'] = sm
             #pickled = sm.pickle()
             #import cPickle
             #anothersm = cPickle.loads(pickled)
@@ -334,17 +335,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             
             if self.config.debug:
                 self.printflow(flow)
-                 #-------------------------------- messages = messageFlows[flow]
-                 #------------------------------------------ if len(messages)>0:
-                    # print "Flow: {0} ({1} messages)".format(flow, len(messages))
-                    #-------------- firstitemnumber = sorted(messages.keys())[0]
-                    # (msg, dir) = messages[firstitemnumber] # Retrieve first msg
-                    #--------------------- print "{0}".format(msg.get_message())
-                    #----------------------------- nextMsg = msg.getNextInFlow()
-                    #------------------------------------ while nextMsg != None:
-                        #------------- print "{0}".format(nextMsg.get_message())
-                        #-------------------- #nextMsg = message.getNextInFlow()
-                        #--------------------- nextMsg = nextMsg.getNextInFlow()
+                 
     def do_dump_state(self, str):
         import cPickle
         handle = open("/Users/daubsi/Dropbox/disc_state","wb")

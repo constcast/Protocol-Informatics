@@ -126,7 +126,7 @@ class Cluster(dict):
                     # Add separator for tokenseparator (nothing by bin-bin, bin-text, text-bin but whitespace when text-text
                     # text-text is separated by \s (whitespace)
                     nextOne = iterator.peek()
-                    if nextOne!=None:
+                    if nextOne!=peekable.sentinel:
                         nextType = self.get('representation')[idx+1]
                         if nextType == Message.typeText:
                             regexstr += "\s" # Add whitespace token separator                
@@ -205,10 +205,10 @@ class Cluster(dict):
         * the inferred format (constant vs. variable)
         * its semantics
         """
+        s = []
         if self.get('semantics').has_key(idx):
-            s = "{0}".format(self.get('semantics')[idx])
-        else:
-            s = "[]"
+            s.extend(self.get('semantics')[idx]) # Take all strings from the set and add them to the list
+            
         if len(self.get('format_inference'))>idx:
             #t = "{0}".format(self.get('format_inference')[idx])
             t = self.get('format_inference')[idx]
