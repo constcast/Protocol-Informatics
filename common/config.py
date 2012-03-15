@@ -52,6 +52,7 @@ class Configuration:
         self.pruneBelowLinkScore = 2
         self.pruneDFAOutliers = False
         self.highlightOutlier = True
+        self.testFile = None
         # Used for NW alignment in Discoverer
         self.matchScore = 1
         self.mismatchScore = 1

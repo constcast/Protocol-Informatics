@@ -133,7 +133,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             sm.dump(storePath)
             sm.dumpTransitions()
             self.do_dumpresult("")
-            #self.env['sm'] = sm
+            self.env['sm'] = sm
             #pickled = sm.pickle()
             #import cPickle
             #anothersm = cPickle.loads(pickled)
@@ -181,7 +181,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             fileName = tok[0]
             element = int(tok[1])
             
-        fileName = "/Users/daubsi/Downloads/ftp_big"
+        fileName = self.config.testFile
             
             
         client2server_file = "{0}_client".format(fileName)
@@ -205,8 +205,13 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         results = dict()
         success = 0
         failures = 0
+        test2go = len(testflows.keys())
+        self.env['sm'].setConfig(self.config)
+        self.env['sm'].setTestFlows(testflows)
         for elem in testflows.keys():
+            print "{0} flows left to test".format(test2go)
             res = self.do_statemachine_accepts_flow(elem)
+            test2go -= 1
             results[elem] = res
             if res:
                 success += 1
@@ -339,6 +344,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
     def do_dump_state(self, str):
         import cPickle
         handle = open("/Users/daubsi/Dropbox/disc_state","wb")
+        sys.setrecursionlimit(50000)
         cPickle.dump(self.env, handle,2)
         handle.close()
         

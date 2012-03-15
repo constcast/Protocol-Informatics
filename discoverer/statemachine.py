@@ -85,7 +85,12 @@ class Statemachine(object):
         self.__nextstate = 1
         self.__config = config
         self.__alphabet = set()
-      
+    
+    def setConfig(self,config):
+        self.__config=config
+    def setTestFlows(self, testflows):
+        self.__testflows = testflows
+           
     def accepts_flow(self, testflow, flowID=""):
         import re
         curState = self.__start
@@ -93,22 +98,25 @@ class Statemachine(object):
         
         if flowID != "":
             print "Flow {0} under test:".format(flowID)
-            
-        messages = self.__sequences[flowID]
+        if self.__testflows == None:
+            print "ERROR: Testflows not yet set in statemachine"
+            return
+        messages = self.__testflows[flowID]
         # If the flow is considered invalid by itself, return True (as if there was no error in parsing)
         if len(messages)==1:
             self.log("Flow {0} has only 1 message. Skipping flow".format(flowID))
             return True
-        if not self.flow_is_valid(flowID):
+        if not self.flow_is_valid(self.__testflows,flowID):
+            print "Flow is not valid"
             return True
         
-        
-        for key, value in testflow.items() :
-            print "{0} - {1}".format(key, value)
-        print
-        print "Startstate: {0}".format(self.__start)
-        print "Finals: {0}".format(",".join(self.__finals))
-        print
+        if self.__config.debug:
+            for key, value in testflow.items() :
+                print "{0} - {1}".format(key, value)
+            print
+            print "Startstate: {0}".format(self.__start)
+            print "Finals: {0}".format(",".join(self.__finals))
+            print
         for key, value in testflow.items() :
             f = value[0]
             stateTransitions = self.get_transitions_from(curState)
@@ -129,19 +137,19 @@ class Statemachine(object):
             #         
             # 
             #===================================================================
-            print "Current state: {0}".format(curState)
-            print "Possible transitions: "
+            self.log("Current state: {0}".format(curState))
+            self.log("Possible transitions: ")
             for t in stateTransitions:
-                print "Destination: {0}, hash: {1}, visual regex: {2}, regex: {3}, message: {4}".format(t.getDestination(), t.getHash(), t.getRegExVisual(), t.getRegEx(), t.getMessage())
-            print "Current input:"
-            print "Msg: {0}".format(f.get_message())
+                self.log("Destination: {0}, hash: {1}, visual regex: {2}, regex: {3}, message: {4}".format(t.getDestination(), t.getHash(), t.getRegExVisual(), t.getRegEx(), t.getMessage()))
+            self.log("Current input:")
+            self.log("Msg: {0}".format(f.get_message()))
             payload = f.get_payload_as_string()
-            print "Payload: {0}".format(payload)
+            self.log("Payload: {0}".format(payload))
             gotOne = False
             for t in stateTransitions:
                 r = t.getRegEx()
-                print "Testing regex visual: {0}".format(t.getRegExVisual())
-                print "Testing regex:        {0}".format(t.getRegEx())
+                self.log("Testing regex visual: {0}".format(t.getRegExVisual()))
+                self.log("Testing regex:        {0}".format(t.getRegEx()))
                 res = None
                 try:
                     p = re.compile(r)
@@ -159,10 +167,10 @@ class Statemachine(object):
                         gotOne = True
                         break
             if gotOne:
-                print "Found matching transition: {0}".format(t)
+                self.log("Found matching transition: {0}".format(t))
                 curState = t.getDestination()
             else:
-                print "Did not find any matching transition"
+                self.log("Did not find any matching transition")
                 failed = True
                 break
         
@@ -179,15 +187,15 @@ class Statemachine(object):
                             break
                         
         if failed:
-            print "ERROR: Flow not accepted by statemachine"
+            self.log("ERROR: Flow not accepted by statemachine")
             return False
             # Try to match the message payload with one of the regex of our transitions
         else:
             if curState in self.__finals:
-                print "SUCCESS: Statemachine did reach acceptance state"
+                self.log("SUCCESS: Statemachine did reach acceptance state")
                 return True
             else:
-                print "ERROR: Statemachine did not halt in acceptance state"
+                self.log("ERROR: Statemachine did not halt in acceptance state")
                 return False
         
         #=======================================================================
@@ -200,11 +208,6 @@ class Statemachine(object):
         #    nextMsg = nextMsg.getNextInFlow()
         #=======================================================================
         
-        
-    def pickle(self):
-        import cPickle
-        return cPickle.dumps(self)
-            
     def has_gaps(self,numbers, gap_size):
         # Based on http://stackoverflow.com/questions/4375310/finding-data-gaps-with-bit-masking
         adjacent_differences = [(y - x) for (x, y) in zip(numbers[:-1], numbers[1:])]
@@ -231,13 +234,15 @@ class Statemachine(object):
                 return t
         return None
     
-    def is_alternating(self, flow):
-        messages = self.__sequences[flow]
+    def is_alternating(self, flows, flow):
+        messages = flows[flow]
         direction = ""
-        for msg_id, message in messages.items():
-            direction2 = messages[1]
+        msg_keys = sorted(messages.keys())
+        for msg_key in msg_keys:
+            direction2 = messages[msg_key]
             if direction==direction2: # Current message has same direction as message before
                 return False
+            direction = direction2
         return True
     
     def addTransition(self,src,trans,dest, direction, msg, regex, regexvisual):
@@ -270,13 +275,13 @@ class Statemachine(object):
         self.addTransition("s55","RNTO","s56","client","RNTO")
         self.addTransition("s56","QUIT","s57","client","QUIT")
         self.reverx_merge()
-    def flow_is_valid(self, flow):
-        messages = self.__sequences[flow]
+    def flow_is_valid(self, flows, flow):
+        messages = flows[flow]
         message_indices = messages.keys()
         if self.has_gaps(message_indices,1):
             print "ERROR: Flow {0} has gaps in sequences numberings. Skipping flow".format(flow)
             return False
-        elif not self.is_alternating(flow):
+        elif not self.is_alternating(flows,flow):
             print "ERROR: Flow {0} is not strictly alternating between client and server. Skippng flow".format(flow)
             return False
         return True
@@ -339,7 +344,7 @@ class Statemachine(object):
             if len(messages)==1:
                 self.log("Flow {0} has only 1 message. Skipping flow".format(flow))
                 continue
-            if not self.flow_is_valid(flow):
+            if not self.flow_is_valid(self.__sequences,flow):
                 error += 1
             else:
                 self.log("Running flow {0}, {1} messages".format(flow,len(messages)))                
