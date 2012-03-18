@@ -187,11 +187,13 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         client2server_file = "{0}_client".format(fileName)
         server2client_file = "{0}_server".format(fileName)
         
+        print "Loading test data from {0}".format(client2server_file) 
         sequences_client2server = sequences = common.input.Bro(client2server_file, self.config.maxMessages).getConnections()
+        print "Loading test data from {0}".format(server2client_file)
         sequences_server2client = sequences = common.input.Bro(server2client_file, self.config.maxMessages).getConnections()
         sequences = [(sequences_client2server, Message.directionClient2Server),(sequences_server2client, Message.directionServer2Client)] # Keep it compatible with existing code TODO        
         
-        print "Loaded {0} test sequences from file".format(len(sequences[0][0])+len(sequences[1][0]))
+        print "Loaded {0} test sequences from input files".format(len(sequences[0][0])+len(sequences[1][0]))
         setup = discoverer.setup.Setup(sequences, self.config)
         testcluster = setup.get_cluster_collection()
         testflows = self.combineflows(testcluster)
@@ -205,6 +207,12 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         results = dict()
         success = 0
         failures = 0
+        not_in_testflows = 0
+        only_one_msg = 0
+        has_gaps = 0
+        not_alternating = 0
+        not_all_transitioned = 0
+        not_ended_in_final = 0
         test2go = len(testflows.keys())
         self.env['sm'].setConfig(self.config)
         self.env['sm'].setTestFlows(testflows)
@@ -213,15 +221,29 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             res = self.do_statemachine_accepts_flow(elem)
             test2go -= 1
             results[elem] = res
-            if res:
+            if res['testSuccessful']==True:
                 success += 1
             else:
                 failures += 1
+                if not res['isInTestFlows']: not_in_testflows += 1
+                elif not res['hasMoreThanOneMessage']: only_one_msg += 1
+                elif not res['has_no_gaps']: has_gaps += 1
+                elif not res['is_alternating']: not_alternating += 1
+                elif not res['did_all_transitions' ]: not_all_transitioned += 1
+                elif not res['finished_in_final']: not_ended_in_final += 1
         print "Finished"
         print "Testresults"
         print "==========="
-        print "Success: {0}, Failures: {1}".format(success, failures)
+        print "Number of flows: {0}, Success: {1}, Failures: {2}".format(success+failures, success, failures)
         if failures>0:
+            print "Test flowID not in test flows: {0}".format(not_in_testflows)
+            print "Flow had only one message: {0}".format(only_one_msg)
+            print "Flow had gaps: {0}".format(has_gaps)
+            print "Flow was not alternating: {0}".format(not_alternating)
+            print "Flow rejected prematurely: {0}".format(not_all_transitioned)
+            print "Flow did not end in final state: {0}".format(not_ended_in_final)
+            print
+            
             print "Failed test flows"
             for (key, value) in results.iteritems():
                 if value==False:
@@ -240,10 +262,11 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
     def do_statemachine_accepts_flow(self, flow):
         if not self.env.has_key('testflows'):
             print "Test flows not loaded yet!"
-            return False
+            return dict({"testSuccessful": False, "isInTestFlows": False, "hasMoreThanOneMessage": False, "has_no_gaps": False, "is_alternating": False, "did_all_transitions": False, "finished_in_final": False})
         if not self.env['testflows'].has_key(flow):
             print "Flow {0} not in test flows!".format(flow)
-            return False
+            return dict({"testSuccessful": False, "isInTestFlows": False, "hasMoreThanOneMessage": False, "has_no_gaps": False, "is_alternating": False, "did_all_transitions": False, "finished_in_final": False})
+               
         flowitems = self.env['testflows'][flow]
         return self.env['sm'].accepts_flow(flowitems,flow)
     def do_dump_transitions(self,str):
@@ -451,7 +474,12 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             handle.close()         
             sys.stdout = old_stdout           
             print "Finished. File size %0.1f KB" % (os.path.getsize(storePath)/1024.0)
-                  
+            
+    def do_print_clusterinfo(self, string):
+        if not self.env.has_key('cluster_collection'):
+            print "No cluster loaded yet"
+            return
+        self.env['cluster_collection'].print_clusterCollectionInfo()
     def do_dumpresult(self, string):
         if self.config.loadClientAndServerParts == True:
             # Dump 2 collections to two files

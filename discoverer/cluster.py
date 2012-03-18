@@ -3,7 +3,8 @@ import common
 import formatinference
 from message import Message
 from peekable import peekable
-
+from formatinference import VariableTextStatistics
+from formatinference import VariableNumberStatistics
 class Cluster(dict):
     """
     This class represents a cluster of messages.
@@ -16,8 +17,30 @@ class Cluster(dict):
     via get_messages_with_value_at()
     """
     def __init__(self, representation):
-        self.update({'messages':[], 'representation':representation, 'format_inference':[], 'semantics':{}})        
-     
+        self.update({'messages':[], 'representation':representation, 'format_inference':[], 'semantics':{}, 'variable_statistics': []})        
+    
+    def getVariableStatistics(self):
+        if self['variable_statistics']==[]:
+            self.calculateVariableStatistics()
+        return self['variable_statistics']
+    
+    def calculateVariableStatistics(self):
+        for idx, elem in enumerate(self['format_inference']):
+            if elem.getType()==Message.typeVariable:
+                stats = None
+                if self['representation'][idx]==Message.typeBinary:
+                    stats = VariableNumberStatistics()
+                else:
+                    stats = VariableTextStatistics()
+                for m in self.get_messages():
+                    tokAt = m.get_tokenAt(idx)
+                    val = tokAt.get_token()
+                    stats.addValue(val)
+                self['variable_statistics'].append(stats)   
+            else:
+                self['variable_statistics'].append(None)      
+                
+            
     def clear_semantics(self):
         """
         Removes all the semantic information from the whole cluster

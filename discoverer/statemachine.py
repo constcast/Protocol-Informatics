@@ -96,20 +96,31 @@ class Statemachine(object):
         curState = self.__start
         failed = False
         
+        # returns a tuple with the testresults
+        # structure:
+        # tuple(testSuccessful, isInTestFlows, hasMoreThanOneMessage, 
+        #       has_no_gaps, is_alternating, did_all_transitions, finished_in_final)
+        # tuple is built in the various checks
+        
         if flowID != "":
             print "Flow {0} under test:".format(flowID)
         if self.__testflows == None:
             print "ERROR: Testflows not yet set in statemachine"
-            return
+            return dict({"testSuccessful": False, "isInTestFlows": False, "hasMoreThanOneMessage": False, "has_no_gaps": False, "is_alternating": False, "did_all_transitions": False, "finished_in_final": False})
+        
         messages = self.__testflows[flowID]
         # If the flow is considered invalid by itself, return True (as if there was no error in parsing)
         if len(messages)==1:
             self.log("Flow {0} has only 1 message. Skipping flow".format(flowID))
-            return True
-        if not self.flow_is_valid(self.__testflows,flowID):
+            return dict({"testSuccessful":False, "isInTestFlows": True, "hasMoreThanOneMessage": False, "has_no_gaps": False, "is_alternating": False, "did_all_transitios": False, "finished_in_final":  False})    
+        returntuple = self.flow_is_valid(self.__testflows,flowID)
+        if returntuple[0]==False or returntuple[1] == False:
             print "Flow is not valid"
-            return True
-        
+            if returntuple[0]==False:
+                return dict({"testSuccessful": False, "isInTestFlows": True, "hasMoreThanOneMessage": True, "has_no_gaps": False, "is_alternating": False, "did_all_transitions": False, "finished_in_final": False})    
+            else:
+                return dict({"testSuccessful": False, "isInTestFlows": True, "hasMoreThanOneMessage": True, "has_no_gaps": True, "is_alternating": False, "did_all_transitions": False, "finished_in_final": False})
+                              
         if self.__config.debug:
             for key, value in testflow.items() :
                 print "{0} - {1}".format(key, value)
@@ -188,15 +199,19 @@ class Statemachine(object):
                         
         if failed:
             self.log("ERROR: Flow not accepted by statemachine")
-            return False
+            return dict({"testSuccessful": False, "isInTestFlows": True, "hasMoreThanOneMessage": True, "has_no_gaps": True, "is_alternating": True, "did_all_transitions": False, "finished_in_final": False})
+        
             # Try to match the message payload with one of the regex of our transitions
         else:
             if curState in self.__finals:
                 self.log("SUCCESS: Statemachine did reach acceptance state")
-                return True
+                return dict({"testSuccessful": True, "isInTestFlows": True, "hasMoreThanOneMessage": True, "has_no_gaps": True, "is_alternating": True, "did_all_transitions": True, "finished_in_final": True})
+        
             else:
                 self.log("ERROR: Statemachine did not halt in acceptance state")
-                return False
+                return dict({"testSuccessful": False, "isInTestFlows": True, "hasMoreThanOneMessage": True, "has_no_gaps": True, "is_alternating": True, "did_all_transitions": True, "finished_in_final": False})
+                             
+        
         
         #=======================================================================
         # firstitemnumber = sorted(testflow.keys())[0]
@@ -278,13 +293,14 @@ class Statemachine(object):
     def flow_is_valid(self, flows, flow):
         messages = flows[flow]
         message_indices = messages.keys()
+        
         if self.has_gaps(message_indices,1):
             print "ERROR: Flow {0} has gaps in sequences numberings. Skipping flow".format(flow)
-            return False
+            return tuple([False, False]) # return that it has failed has_gaps and is_alternating
         elif not self.is_alternating(flows,flow):
             print "ERROR: Flow {0} is not strictly alternating between client and server. Skippng flow".format(flow)
-            return False
-        return True
+            return tuple([True, False]) # return that it has passed has_gaps but failed is_alternating
+        return tuple([True, True]) # return that is has passed has_gaps and is_alternating
     
     def log(self, msg):
         if self.__config.debug:
