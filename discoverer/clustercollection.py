@@ -336,10 +336,8 @@ class ClusterCollection():
                     print "Index {0}, Numeric: Min: {1}, Max: {2}, Mean: {3}, Variance: {4}, Distinct: {5}, Top3: {6}".format(idx, elem.getMin(), elem.getMax(), elem.getMean(), elem.getVariance(), elem.numberOfDistinctSamples(), ", ".join("'" + str(idx)+"' ("+str(item) +")" for idx,item in elem.getTop3()))
                 elif isinstance(elem,formatinference.VariableTextStatistics):
                     print "Index {0}, Text: Shortest: '{1}', Longest: '{2}', Distinct: {3}, Top3: {4}".format(idx, elem.getShortest(), elem.getLongest(), elem.numberOfDistinctSamples(), ", ".join("'" + str(idx)+"' ("+str(item)+")" for idx,item in elem.getTop3()))      
-                
-            print ""
             print "Messageformat hash:\t\t{0}".format(c.getFormatHash())
-            print "RegEx\t\t\t\t{0}".format(c.getRegEx())
+            print "RegEx\t\t\t\t\t{0}".format(c.getRegEx())
             print "RegExVisual:\t\t\t{0}".format(c.getRegExVisual())
             # print "Token fmt: {0}".fmt(c.get_representation())s            
             #for message in messages:
