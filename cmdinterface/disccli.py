@@ -130,7 +130,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             #sm.dfa()
             #sm.fake()
             print "Dumping state machine"
-            sm.dump(storePath)
+            sm.dump_dot(storePath)
             sm.dumpTransitions()
             self.do_dumpresult("")
             self.env['sm'] = sm

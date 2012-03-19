@@ -5,6 +5,7 @@ Created on 20.02.2012
 '''
 
 import copy
+import uuid
 
 class Transition(object):
     def __init__(self, src, hash, dest, direction, msg,regex, regexvisual):
@@ -85,6 +86,10 @@ class Statemachine(object):
         self.__nextstate = 1
         self.__config = config
         self.__alphabet = set()
+        self.__internalname = uuid.uuid1()
+        
+    def getInternalName(self):
+        return self.__internalname
     
     def setConfig(self,config):
         self.__config=config
@@ -855,7 +860,7 @@ class Statemachine(object):
     
     
      
-    def dump(self, file=""):
+    def dump_dot(self, file=""):
         """
         Dumps the generated graph to stdout or a .dot file
         """
@@ -908,4 +913,40 @@ class Statemachine(object):
             import os            
             print "Finished. 'dot' file written to file {}, file size {:.1f} KB".format(file,os.path.getsize(file)/1024.0)               
 
+    def dump_structure(self, filename=""):
+        """
+        Dumps the generated graph to stdout or a .dot file
+        """
+        if not filename == "":            
+            import sys
+            old_stdout = sys.stdout
+            handle = open(file,"w")
+            sys.stdout = handle
+        
+        print "Start state: {0}".format(self.__start)
+        print "Finals: {0}".format(",".join(self.__finals))
+        print "Transitions:"
+        for idx, t in enumerate(self.__transitions):
+            print "Idx: {7}, Internal name: {0}, Source: {1}, Transition: {2}, Destination: {3}, Counter: {4}, Direction: {5}, RegEx: {6}".format(t.getInternalName(), t.getSource(), t.getHash(), t.getDestination(), t.getCounter(), t.getDirection(), t.getRegEx(), idx)
+        print "States:"
+        for idx, s in enumerate(self.__states):
+            t_list = self.get_transitions_from(s)
+            total = 0
+            numOfTrans = len(t_list)
+            for t in t_list:
+                total += t.getCounter()
+            print "Idx: {0}, Internal name: {1}, Number of transitions from: {2}",format(idx, s, numOfTrans)
+            for idx2, t in t_list:
+                print "\tIdx: {0}, Internal name: {1}, Probability: {2}".format(idx2, t.getInternalName(), t.getCounter()/100.0)
             
+        import string
+        import message
+        intab = '"'
+        outtab = ' '
+        trantab = string.maketrans(intab,outtab)
+        
+        if not file=="":
+            handle.close()         
+            sys.stdout = old_stdout
+            import os            
+            print "Finished. statemachine structure written to file {}, file size {:.1f} KB".format(file,os.path.getsize(file)/1024.0)               
