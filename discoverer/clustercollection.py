@@ -328,6 +328,7 @@ class ClusterCollection():
             formats = c.get_formats()
             print "*"*50
             print "Cluster information: {0} entries".format(len(messages))
+            print "Internal name: {0}".format(c.getInternalName())
             print "Format inferred ({0} token):\t{1}".format(len(formats),formats)
             print "Variable stats:"
             var_stats = c.getVariableStatistics()

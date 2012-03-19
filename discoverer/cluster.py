@@ -1,6 +1,7 @@
 import tokenrepresentation
 import common
 import formatinference
+import uuid
 from message import Message
 from peekable import peekable
 from formatinference import VariableTextStatistics
@@ -18,6 +19,10 @@ class Cluster(dict):
     """
     def __init__(self, representation):
         self.update({'messages':[], 'representation':representation, 'format_inference':[], 'semantics':{}, 'variable_statistics': []})        
+        self.__internalname = uuid.uuid1()
+        
+    def getInternalName(self):
+        return self.__internalname
     
     def getVariableStatistics(self):
         if self['variable_statistics']==[]:

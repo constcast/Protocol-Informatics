@@ -8,7 +8,7 @@ import copy
 import uuid
 
 class Transition(object):
-    def __init__(self, src, hash, dest, direction, msg,regex, regexvisual):
+    def __init__(self, src, hash, dest, direction, msg,regex, regexvisual, cluster):
         self.__src = src
         self.__hash = hash
         self.__dest = dest
@@ -17,6 +17,14 @@ class Transition(object):
         self.__regex = regex
         self.__regexvisual = regexvisual
         self.__counter = 1
+        self.__cluster = cluster
+        self.__internalname = uuid.uuid1()
+        
+    def getInternalName(self):
+        return self.__internalname
+    
+    def getCluster(self):
+        return self.__cluster
     
     def getRegExVisual(self):
         return self.__regexvisual
@@ -86,10 +94,6 @@ class Statemachine(object):
         self.__nextstate = 1
         self.__config = config
         self.__alphabet = set()
-        self.__internalname = uuid.uuid1()
-        
-    def getInternalName(self):
-        return self.__internalname
     
     def setConfig(self,config):
         self.__config=config
@@ -265,8 +269,8 @@ class Statemachine(object):
             direction = direction2
         return True
     
-    def addTransition(self,src,trans,dest, direction, msg, regex, regexvisual):
-        self.__transitions.add(Transition(src,trans,dest,direction,msg, regex, regexvisual))
+    def addTransition(self,src,trans,dest, direction, msg, regex, regexvisual, cluster):
+        self.__transitions.add(Transition(src,trans,dest,direction,msg, regex, regexvisual, cluster))
         
     def dumpTransitions(self):
         print "Last of statemachine transitions:"
@@ -375,7 +379,8 @@ class Statemachine(object):
                     message = messages[msg_key]
                     self.log("Message {0} ({1}): {2}, hash {3} with format {4}".format(msg_key,message[1],message[0].get_message(), message[0].getCluster().getFormatHash(),message[0].getCluster().get_formats()))
                     # Walk transitions for curstate and message's hash
-                    hash = message[0].getCluster().getFormatHash()
+                    cluster = message[0].getCluster()
+                    hash = cluster.getFormatHash()
                     regexp = message[0].getCluster().getRegEx()
                     regexpvisual = message[0].getCluster().getRegExVisual()
                         
@@ -403,7 +408,7 @@ class Statemachine(object):
                                 curstate = existingTransition.getDestination()
                                 continue
                             else: # A transition with this hash does exist, but from a different src state
-                                self.addTransition(curstate,hash,existingTransition.getDestination(), message[1], message[0].get_message(),regexp, regexpvisual)
+                                self.addTransition(curstate,hash,existingTransition.getDestination(), message[1], message[0].get_message(),regexp, regexpvisual, cluster)
                                 curstate = existingTransition.getDestination()
                                 self.log("A transition with this hash already exists, bending link to ({0},{1},{2})".format(curstate, hash, existingTransition.getDestination()))
                                 if msg_key == msg_keys[-1]: # Is this the last
@@ -412,7 +417,7 @@ class Statemachine(object):
                         else: # This transition does not yet exist, add new transition with new state    
                             newstate = "s{0}".format(self.__nextstate)
                             self.__states.append(newstate)
-                            self.addTransition(curstate,hash,newstate, message[1], message[0].get_message(), regexp, regexpvisual)
+                            self.addTransition(curstate,hash,newstate, message[1], message[0].get_message(), regexp, regexpvisual, cluster)
                             self.__nextstate += 1
                             self.log("Created new state in transition ({0},{1},{2},{3},1,{4})".format(curstate,hash,newstate, message[1], message[0].get_message()))
                             curstate = newstate
@@ -430,7 +435,7 @@ class Statemachine(object):
                         else:
                             newstate = "s{0}".format(self.__nextstate)
                             self.__states.append(newstate)
-                            self.addTransition(curstate,hash,newstate, message[1], message[0].get_message(), regexp, regexpvisual)
+                            self.addTransition(curstate,hash,newstate, message[1], message[0].get_message(), regexp, regexpvisual, cluster)
                             self.__nextstate += 1
                             self.log("Created new state in transition ({0},{1},{2},{3},1,{4})".format(curstate,hash,newstate, message[1], message[0].get_message()))
                             curstate = newstate
@@ -913,21 +918,21 @@ class Statemachine(object):
             import os            
             print "Finished. 'dot' file written to file {}, file size {:.1f} KB".format(file,os.path.getsize(file)/1024.0)               
 
-    def dump_structure(self, filename=""):
+    def dumpStructure(self, filename=""):
         """
         Dumps the generated graph to stdout or a .dot file
         """
         if not filename == "":            
             import sys
             old_stdout = sys.stdout
-            handle = open(file,"w")
+            handle = open(filename,"w")
             sys.stdout = handle
         
         print "Start state: {0}".format(self.__start)
         print "Finals: {0}".format(",".join(self.__finals))
         print "Transitions:"
         for idx, t in enumerate(self.__transitions):
-            print "Idx: {7}, Internal name: {0}, Source: {1}, Transition: {2}, Destination: {3}, Counter: {4}, Direction: {5}, RegEx: {6}".format(t.getInternalName(), t.getSource(), t.getHash(), t.getDestination(), t.getCounter(), t.getDirection(), t.getRegEx(), idx)
+            print "Idx: {0}, Internal name: {1}, Source: {2}, Transition: {3}, Destination: {4}, Counter: {5}, Direction: {6}, Cluster-Reference: {7}, RegEx: {8}".format(idx, t.getInternalName(), t.getSource(), t.getHash(), t.getDestination(), t.getCounter(), t.getDirection(), t.getCluster().getInternalName(), t.getRegEx())
         print "States:"
         for idx, s in enumerate(self.__states):
             t_list = self.get_transitions_from(s)
@@ -935,17 +940,11 @@ class Statemachine(object):
             numOfTrans = len(t_list)
             for t in t_list:
                 total += t.getCounter()
-            print "Idx: {0}, Internal name: {1}, Number of transitions from: {2}",format(idx, s, numOfTrans)
-            for idx2, t in t_list:
-                print "\tIdx: {0}, Internal name: {1}, Probability: {2}".format(idx2, t.getInternalName(), t.getCounter()/100.0)
+            print "Idx: {0}, Internal name: {1}, Number of transitions from: {2}".format(idx, s, numOfTrans)
+            for idx2, t in enumerate(t_list):
+                print "\tIdx: {0}, Internal name: {1}, Probability: {2}".format(idx2, t.getInternalName(), t.getCounter()/float(total))
             
-        import string
-        import message
-        intab = '"'
-        outtab = ' '
-        trantab = string.maketrans(intab,outtab)
-        
-        if not file=="":
+        if not filename=="":
             handle.close()         
             sys.stdout = old_stdout
             import os            

@@ -132,6 +132,8 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             print "Dumping state machine"
             sm.dump_dot(storePath)
             sm.dumpTransitions()
+            storePath = "{0}{1}{2}_statemachine.txt".format(path,os.sep,filename) 
+            sm.dumpStructure()
             self.do_dumpresult("")
             self.env['sm'] = sm
             #pickled = sm.pickle()
