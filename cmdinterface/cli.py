@@ -122,6 +122,7 @@ class CommandLineInterface(cmd.Cmd):
             targetClassType = type(getattr(self.config, words[0]))
             import types
             if targetClassType == types.NoneType or words[0] == "None":
+                print "Config variable {0} is of type 'None', value not set".format(words[0])
                 newVal = None
             elif targetClassType == types.BooleanType:
                 if words[1] == "True":

@@ -29,7 +29,7 @@ class Configuration:
         self.gnuplotFile = None
         self.onlyUniq = False
         self.interactive = True
-        self.inputFile = None
+        self.inputFile = ""
         # New for "Discoverer"
         self.minWordLength = 3        
         self.maxMessagePrefix = 2048
@@ -52,7 +52,7 @@ class Configuration:
         self.pruneBelowLinkScore = 2
         self.pruneDFAOutliers = False
         self.highlightOutlier = True
-        self.testFile = None
+        self.testFile = ""
         # Used for NW alignment in Discoverer
         self.matchScore = 1
         self.mismatchScore = 1
