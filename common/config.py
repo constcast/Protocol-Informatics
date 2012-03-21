@@ -53,6 +53,8 @@ class Configuration:
         self.pruneDFAOutliers = False
         self.highlightOutlier = True
         self.testFile = None
+        self.flowsMustBeStrictlyAlternating = True
+        self.performReverXStage2 = False
         # Used for NW alignment in Discoverer
         self.matchScore = 1
         self.mismatchScore = 1

@@ -29,7 +29,7 @@ class Message:
     
     typeConst = "const"
     typeVariable = "variable"
-    directionClient2Server = "client2Server"
+    directionClient2Server = "client2server"
     directionServer2Client = "server2client"
     directionUnknown = "unknown"
     

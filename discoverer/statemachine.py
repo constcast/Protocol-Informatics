@@ -7,6 +7,30 @@ Created on 20.02.2012
 import copy
 import uuid
 
+class State(object):
+    typeIncomingClient2ServerMsg = 'IncomingClient2ServerMsg'
+    typeIncomingServer2ClientMsg = 'IncomingServer2ClientMsg'
+    typeIncomingNoneMsg = 'IncomingNoneMsg'
+    def __init__(self, name, stateType):
+        self.__name = name
+        self.__internalname = uuid.uuid1()
+        self.__stateType = stateType
+        
+    def getName(self):
+        return self.__name
+    
+    def getType(self):
+        return self.__stateType
+    
+    def getInternalName(self):
+        return self.__internalname
+    
+    def __repr__(self):
+        return self.__name
+    
+    def __eq__(self, other):
+        return self.__name == other.__name and self.__stateType == other.__stateType
+    
 class Transition(object):
     def __init__(self, src, hash, dest, direction, msg,regex, regexvisual, cluster):
         self.__src = src
@@ -88,8 +112,10 @@ class Statemachine(object):
         Constructor
         '''
         self.__sequences = sequences
-        self.__start = "s0"
-        self.__states = ["s0"]
+        #self.__start = "s0"
+        #self.__states = ["s0"]
+        self.__start = State("s0",State.typeIncomingNoneMsg)
+        self.__states = [self.__start]
         self.__transitions = set()
         self.__nextstate = 1
         self.__config = config
@@ -263,7 +289,7 @@ class Statemachine(object):
         direction = ""
         msg_keys = sorted(messages.keys())
         for msg_key in msg_keys:
-            direction2 = messages[msg_key]
+            direction2 = messages[msg_key][1]
             if direction==direction2: # Current message has same direction as message before
                 return False
             direction = direction2
@@ -299,6 +325,7 @@ class Statemachine(object):
         self.addTransition("s55","RNTO","s56","client","RNTO")
         self.addTransition("s56","QUIT","s57","client","QUIT")
         self.reverx_merge()
+        
     def flow_is_valid(self, flows, flow):
         messages = flows[flow]
         message_indices = messages.keys()
@@ -306,9 +333,10 @@ class Statemachine(object):
         if self.has_gaps(message_indices,1):
             print "ERROR: Flow {0} has gaps in sequences numberings. Skipping flow".format(flow)
             return tuple([False, False]) # return that it has failed has_gaps and is_alternating
-        elif not self.is_alternating(flows,flow):
-            print "ERROR: Flow {0} is not strictly alternating between client and server. Skippng flow".format(flow)
-            return tuple([True, False]) # return that it has passed has_gaps but failed is_alternating
+        else:
+            if self.__config.flowsMustBeStrictlyAlternating and not self.is_alternating(flows,flow):
+                print "ERROR: Flow {0} is not strictly alternating between client and server. Skippng flow".format(flow)
+                return tuple([True, False]) # return that it has passed has_gaps but failed is_alternating
         return tuple([True, True]) # return that is has passed has_gaps and is_alternating
     
     def log(self, msg):
@@ -369,11 +397,13 @@ class Statemachine(object):
             if len(messages)==1:
                 self.log("Flow {0} has only 1 message. Skipping flow".format(flow))
                 continue
-            if not self.flow_is_valid(self.__sequences,flow):
+            (has_no_gaps, is_alternating) = self.flow_is_valid(self.__sequences,flow)
+            if not (has_no_gaps and is_alternating):                                                          
                 error += 1
+                continue
             else:
                 self.log("Running flow {0}, {1} messages".format(flow,len(messages)))                
-                curstate = "s0"
+                curstate = self.__start
                 msg_keys = messages.keys()
                 for msg_key in msg_keys:
                     message = messages[msg_key]
@@ -415,7 +445,9 @@ class Statemachine(object):
                                     self.__finals.add(existingTransition.getDestination()) 
                                 continue
                         else: # This transition does not yet exist, add new transition with new state    
-                            newstate = "s{0}".format(self.__nextstate)
+                            #newstate = "s{0}".format(self.__nextstate)
+                            stateType = self.determineStateType(message[1])
+                            newstate = State("s{0}".format(self.__nextstate), stateType)
                             self.__states.append(newstate)
                             self.addTransition(curstate,hash,newstate, message[1], message[0].get_message(), regexp, regexpvisual, cluster)
                             self.__nextstate += 1
@@ -433,7 +465,9 @@ class Statemachine(object):
                             curstate = existingTransition.getDestination()
                             continue
                         else:
-                            newstate = "s{0}".format(self.__nextstate)
+                            #newstate = "s{0}".format(self.__nextstate)
+                            stateType = self.determineStateType(message[1])
+                            newstate = State("s{0}".format(self.__nextstate), stateType)
                             self.__states.append(newstate)
                             self.addTransition(curstate,hash,newstate, message[1], message[0].get_message(), regexp, regexpvisual, cluster)
                             self.__nextstate += 1
@@ -461,12 +495,12 @@ class Statemachine(object):
         
         if self.__config.debug:
             print "Finished"
-            print "States: ", ",".join(self.__states)
+            print "States: ", ",".join(x.getName() for x in self.__states)
             
             print "Transitions: "
             for t in self.__transitions:
                 print t
-            print "Finals: ", ",".join(self.__finals)
+            print "Finals: ", ",".join(x.getName() for x in self.__finals)
             
             print "Consistency check: (States in transitions but not in list of states)"
             c = set()
@@ -476,7 +510,17 @@ class Statemachine(object):
                 if not t.getDestination() in self.__states:
                     c.add(t.getDestination())
             print c
-                    
+    
+    def determineStateType(self, clusterType):
+        if clusterType=='server2client':
+            stateType = State.typeIncomingServer2ClientMsg
+        elif clusterType=='client2server':
+            stateType = State.typeIncomingClient2ServerMsg
+        else:
+            stateType = State.typeIncomingNoneMsg 
+        return stateType
+                            
+                  
     def pruneOutliers(self):
         # Rationale:
         # Find all nodes that are reached by transitions (== that are on the rhs)
@@ -530,12 +574,7 @@ class Statemachine(object):
                         self.__transitions.remove(t)
             self.removeOrphans(removed=nodesPruned)
         return nodesPruned+removed
-            
-        
-        
-        
-             
-    
+
     def canTransition(self, p,q):
         l = []
         for s in self.__alphabet:
@@ -556,7 +595,11 @@ class Statemachine(object):
             # merge states reached from similar message types
         
             for q in self.__states[:]:
+                if q not in self.__states: # Has q already been removed in a previous iteration?
+                    continue
                 for p in self.__states[:]:
+                    if p not in self.__states: # Has p already been removed in a previous iteration?
+                        continue
                     #if p=="e" or q=="e" or q==p or (p not in self.__states) or (q not in self.__states):
                     #    continue
                     
@@ -569,9 +612,50 @@ class Statemachine(object):
                             for elem in s:
                                 dests = self.getState(p,elem)
                                 
-                                while dests!=None and len(dests)>1:
-                                    self.mergeStates(dests[0],dests[1])
+                                #while dests!=None and len(dests)>1:
+                                sub_finals = []
+                                sub_nonfinals = []
+                                if dests!=None:
+                                    for i in dests:
+                                        if i in self.__finals:
+                                            sub_finals.append(i)
+                                        else:
+                                            sub_nonfinals.append(i)
+                                while dests!=None and (len(sub_finals)>1 or len(sub_nonfinals)>1):
+                                
+                                #if dests!=None and len(dests)>1:
+                                    # Added constraint that a mixture of final and non final states may never be merged
+                                    
+                                    # Split dests in lists for final and non finals
+                                    sub_finals = []
+                                    sub_nonfinals = []
+                                    for i in dests:
+                                        if i in self.__finals:
+                                            sub_finals.append(i)
+                                        else:
+                                            sub_nonfinals.append(i)
+                                    # Merge each list on its own
+                                    while len(sub_finals)>1:
+                                        self.mergeStates(sub_finals[0], sub_finals[1])
+                                        sub_finals.pop(0)
+                                        
+                                    while len(sub_nonfinals)>1:
+                                        self.mergeStates(sub_nonfinals[0], sub_nonfinals[1])
+                                        sub_nonfinals.pop(0)
+                                    
+                                    #if ((dests[0] in self.__finals and dests[1] in self.__finals) or
+                                    #    (dests[0] not in self.__finals and dests[1] not in self.__finals)
+                                    #    ) and (dests[0].getType()==dests[1].getType()):
+                                    #    self.mergeStates(dests[0],dests[1])
                                     dests = self.getState(p,elem)
+                                    sub_finals = []
+                                    sub_nonfinals = []
+                                    if dests!=None:
+                                        for i in dests:
+                                            if i in self.__finals:
+                                                sub_finals.append(i)
+                                            else:
+                                                sub_nonfinals.append(i)    
                                 
                         s = self.canTransition(p,q)
                         if not s==None:   
@@ -579,7 +663,13 @@ class Statemachine(object):
                                 m1 = self.getState(p,elem)
                                 m2 = self.getState(q,elem)
                                 if not (m1==None or m2==None):
-                                    self.mergeStates(m1[0],m2[0])
+                                    # Added constraint that a mixture of final and non final states may never be merged
+                                    if (self.statesAreBothFinal(m1[0],m2[0]) or self.statesAreBothNotFinal(m1[0],m2[0])) and self.statesHaveSameType(m1[0],m2[0]):
+                            
+                                    #if ((m1[0] in self.__finals and m2[0] in self.__finals) or 
+                                     #   (m1[0] not in self.__finals and m2[0] not in self.__finals)
+                                      #  ) and (m1[0].getType()==m2[0].getType()):
+                                        self.mergeStates(m1[0],m2[0])
                             
                         
             elapsed = (time.time() - start)
@@ -591,6 +681,12 @@ class Statemachine(object):
             print "Performed ReverX merge stage 1. {} states left, transitions {} (Took: {:.3f} seconds)".format(len(self.__states),len(self.__transitions), elapsed)
         else:
             print "Skipping native ReverX merge stage 1 by configuration"    
+            
+            
+        # Begin ReverX Stage 2
+        if not self.__config.performReverXStage2:
+            return
+           
         print "Performing ReverX merge stage 2"
         # merge states without a causal relation that share at least one message type
         start = time.time()
@@ -598,14 +694,23 @@ class Statemachine(object):
         while reduce:
             reduce = False
             for q in self.__states[:]:
+                if q not in self.__states: # Has q already been removed in a previous iteration
+                    continue
                 for p in self.__states[:]:
-                    if p=="e" or q=="e" or q==p or (p not in self.__states) or (q not in self.__states):
+                    if p not in self.__states: # Has p already been removed in a previous iteration?
+                        continue
+                    if p.getName()=="e" or q.getName()=="e" or q==p or (p not in self.__states) or (q not in self.__states):
                         continue
                     # if there is not a causal relation
                     if (not self.referenceBetween(p,q)) or self.isMutualReachable(p,q):
                         if self.canReachSameState(p,q):
-                            self.mergeStates(p,q)
-                            reduce = True
+                            # Added constraint that a mixture of final and non final states may never be merged
+                            if (self.statesAreBothFinal(p,q) or self.statesAreBothNotFinal(p,q)) and self.statesHaveSameType(p,q):
+                            #if ((p in self.__finals and q in self.__finals) or
+                            #    (p not in self.__finals and q not in self.__finals)
+                            #    ) and (p.getType()==q.getType()):    
+                                self.mergeStates(p,q)
+                                reduce = True
             #self.minimize_dfa()
         elapsed = (time.time() - start)
         print "Transitions:"
@@ -613,7 +718,88 @@ class Statemachine(object):
             print t
         print "Performed ReverX merge stage 2. {} states left, transitions {} (Took: {:.3f} seconds)".format(len(self.__states),len(self.__transitions), elapsed)
         return
-                        
+    
+    ###
+    # Working version without considerng final/non finals and without type distinction
+    #===========================================================================
+    # def reverx_merge(self):
+    #    import time
+    #    if self.__config.nativeReverXStage1:
+    #        start = time.time()
+    #        print "Performing native ReverX merge stage 1"
+    #        # merge states reached from similar message types
+    #    
+    #        for q in self.__states[:]:
+    #            for p in self.__states[:]:
+    #                #if p=="e" or q=="e" or q==p or (p not in self.__states) or (q not in self.__states):
+    #                #    continue
+    #                
+    #                s = self.canTransition(p,q)
+    #                
+    #                if not s==None:
+    #                    # Check if getState returned multiple destinations (== NFA!!)
+    #                    # for the same transition and collapse them
+    #                    if p==q:
+    #                        for elem in s:
+    #                            dests = self.getState(p,elem)
+    #                            
+    #                            while dests!=None and len(dests)>1:
+    #                                self.mergeStates(dests[0],dests[1])
+    #                                dests = self.getState(p,elem)
+    #                            
+    #                    s = self.canTransition(p,q)
+    #                    if not s==None:   
+    #                        for elem in s:
+    #                            m1 = self.getState(p,elem)
+    #                            m2 = self.getState(q,elem)
+    #                            if not (m1==None or m2==None):
+    #                                self.mergeStates(m1[0],m2[0])
+    #                        
+    #                    
+    #        elapsed = (time.time() - start)
+    #                
+    #        if self.__config.debug:
+    #            print "Transitions:"
+    #            for t in self.__transitions:
+    #                print t
+    #        print "Performed ReverX merge stage 1. {} states left, transitions {} (Took: {:.3f} seconds)".format(len(self.__states),len(self.__transitions), elapsed)
+    #    else:
+    #        print "Skipping native ReverX merge stage 1 by configuration"    
+    #    print "Performing ReverX merge stage 2"
+    #    # merge states without a causal relation that share at least one message type
+    #    start = time.time()
+    #    reduce = True
+    #    while reduce:
+    #        reduce = False
+    #        for q in self.__states[:]:
+    #            for p in self.__states[:]:
+    #                if p=="e" or q=="e" or q==p or (p not in self.__states) or (q not in self.__states):
+    #                    continue
+    #                # if there is not a causal relation
+    #                if (not self.referenceBetween(p,q)) or self.isMutualReachable(p,q):
+    #                    if self.canReachSameState(p,q):
+    #                        self.mergeStates(p,q)
+    #                        reduce = True
+    #        #self.minimize_dfa()
+    #    elapsed = (time.time() - start)
+    #    print "Transitions:"
+    #    for t in self.__transitions:
+    #        print t
+    #    print "Performed ReverX merge stage 2. {} states left, transitions {} (Took: {:.3f} seconds)".format(len(self.__states),len(self.__transitions), elapsed)
+    #    return
+    #===========================================================================
+
+    ###
+    
+    def statesAreBothFinal(self,p,q):
+        return p in self.__finals and q in self.__finals
+    
+    def statesAreBothNotFinal(self,p,q):
+        return (p not in self.__finals) and (q not in self.__finals)
+    
+    def statesHaveSameType(self,p,q):
+        return p.getType()==q.getType()
+               
     def canReachSameState(self,p,q):
         for s in self.__alphabet:
             r1 = self.getState(p,s)
@@ -640,8 +826,19 @@ class Statemachine(object):
         if p==q:
             return False
     
+        # Make sure that final and non final states are never merged
         
-        print "Merging states {0} and {1} to {1}".format(p,q)
+        if not (self.statesAreBothFinal(p, q) or self.statesAreBothNotFinal(p, q)):
+        #if not ((p in self.__finals and q in self.__finals) or (
+        #    p not in self.__finals and q not in self.__finals)):
+            raise Exception("Final and non final states must not be merged!")
+        
+        
+        if not self.statesHaveSameType(p, q):
+            #if p.getType()!=q.getType()):
+            raise Exception("Must not merge states with different state types")
+        
+        print "Merging states {0} and {1} to {1}, total states left {2}".format(p,q, len(self.__states)-1)
         self.__states.remove(p)
         if p in self.__finals:
             self.__finals.remove(p)
@@ -677,6 +874,7 @@ class Statemachine(object):
             #    t.setDestination(q)
             #    self.__transitions.add(t)
             #===================================================================
+        
         return True
     
     def referenceBetween(self, p, q):
@@ -721,9 +919,48 @@ class Statemachine(object):
      
     def collapse_finals(self):
         if self.__config.collapseFinals:
-            while len(self.__finals)>1:
-                l = list(self.__finals)
-                self.mergeStates(l[0], l[1])
+            
+            print "Collapsing final states"
+            # Collapse finals based on node type
+            client2ServerFinals = []
+            server2ClientFinals = []
+            noneTypeFinals = []
+            for n in self.__finals:
+                if n.getType()==State.typeIncomingClient2ServerMsg:
+                    client2ServerFinals.append(n)
+                elif n.getType()==State.typeIncomingServer2ClientMsg:
+                    server2ClientFinals.append(n)
+                else: 
+                    noneTypeFinals.append(n)
+            # Merge client2Server finals
+            while len(client2ServerFinals)>1:
+                #l = list(client2ServerFinals)
+                #self.mergeStates(l[0], l[1])
+                #client2ServerFinals.remove(l[0])
+                self.mergeStates(client2ServerFinals[0], client2ServerFinals[1])
+                client2ServerFinals.pop(0)
+                
+            # Merge server2Client finals
+            while len(server2ClientFinals)>1:
+                #l = list(server2ClientFinals)
+                #self.mergeStates(l[0], l[1])
+                #server2ClientFinals.remove(l[0])
+                self.mergeStates(server2ClientFinals[0], server2ClientFinals[1])
+                server2ClientFinals.pop(0)
+                
+            # Merge finals of unknown type (there should be none...)
+            while len(noneTypeFinals)>1:
+                #l = list(noneTypeFinals)
+                #self.mergeStates(l[0], l[1])
+                #noneTypeFinals.remove(l[0])
+                self.mergeStates(noneTypeFinals[0], noneTypeFinals[1])
+                noneTypeFinals.pop(0)
+                
+            self.__finals = []
+            self.__finals.extend(client2ServerFinals)
+            self.__finals.extend(server2ClientFinals)
+            self.__finals.extend(noneTypeFinals)
+            
             return
         
           
@@ -754,7 +991,7 @@ class Statemachine(object):
         alphabet = set([t.getHash() for t in self.__transitions])  
         alphabet.add("epsilon")   
         delta = self.delta   
-        start = "s0"
+        start = self.__start
         self.collapse_finals()
         
         finals = self.__finals[:]
@@ -926,10 +1163,12 @@ class Statemachine(object):
             import sys
             old_stdout = sys.stdout
             handle = open(filename,"w")
+            print "Writing to {0}".format(filename)
             sys.stdout = handle
+            
         
         print "Start state: {0}".format(self.__start)
-        print "Finals: {0}".format(",".join(self.__finals))
+        print "Finals: {0}".format(",".join(x.getName() for x in self.__finals))
         print "Transitions:"
         for idx, t in enumerate(self.__transitions):
             print "Idx: {0}, Internal name: {1}, Source: {2}, Transition: {3}, Destination: {4}, Counter: {5}, Direction: {6}, Cluster-Reference: {7}, RegEx: {8}".format(idx, t.getInternalName(), t.getSource(), t.getHash(), t.getDestination(), t.getCounter(), t.getDirection(), t.getCluster().getInternalName(), t.getRegEx())
@@ -940,7 +1179,7 @@ class Statemachine(object):
             numOfTrans = len(t_list)
             for t in t_list:
                 total += t.getCounter()
-            print "Idx: {0}, Internal name: {1}, Number of transitions from: {2}".format(idx, s, numOfTrans)
+            print "Idx: {0}, Internal name: {1}, State ID: {2}, State type: {3}, Number of transitions from: {4}".format(idx, s, s.getInternalName(), s.getType(), numOfTrans)
             for idx2, t in enumerate(t_list):
                 print "\tIdx: {0}, Internal name: {1}, Probability: {2}".format(idx2, t.getInternalName(), t.getCounter()/float(total))
             
@@ -948,4 +1187,4 @@ class Statemachine(object):
             handle.close()         
             sys.stdout = old_stdout
             import os            
-            print "Finished. statemachine structure written to file {}, file size {:.1f} KB".format(file,os.path.getsize(file)/1024.0)               
+            print "Finished. statemachine structure written to file {}, file size {:.1f} KB".format(filename,os.path.getsize(file)/1024.0)               

@@ -121,8 +121,12 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             
             # Build statemachine
             
-            sm = discoverer.statemachine.Statemachine(self.env['messageFlows'], self.config)  
+            sm = discoverer.statemachine.Statemachine(self.env['messageFlows'], self.config)
+            start = time.time()
+              
             sm.build()
+            duration = time.time()-start
+            print "Statemachine building took {:.3f} seconds".format(duration)
             path = os.path.normpath(self.config.dumpFile)
             file = os.path.basename(self.config.inputFile)
             (filename,ext) = os.path.splitext(file)
@@ -134,6 +138,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             sm.dumpTransitions()
             storePath = "{0}{1}{2}_statemachine.txt".format(path,os.sep,filename) 
             sm.dumpStructure()
+            sm.dumpStructure(storePath)
             self.do_dumpresult("")
             self.env['sm'] = sm
             #pickled = sm.pickle()
@@ -206,7 +211,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         #testflow = testflows[testflows.keys()[element]]
         
         # Test all flows
-        results = dict()
+        failedelements = []
         success = 0
         failures = 0
         not_in_testflows = 0
@@ -222,11 +227,12 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             print "{0} flows left to test".format(test2go)
             res = self.do_statemachine_accepts_flow(elem)
             test2go -= 1
-            results[elem] = res
+            
             if res['testSuccessful']==True:
                 success += 1
             else:
                 failures += 1
+                failedelements.append(elem)
                 if not res['isInTestFlows']: not_in_testflows += 1
                 elif not res['hasMoreThanOneMessage']: only_one_msg += 1
                 elif not res['has_no_gaps']: has_gaps += 1
@@ -247,9 +253,8 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             print
             
             print "Failed test flows"
-            for (key, value) in results.iteritems():
-                if value==False:
-                    print "{0}".format(key)
+            for elem in failedelements:
+                print "{0}".format(elem)
         #testflow = []
         # testflow.append("USER anonymous")
         # testflow.append("PASS me@home.com")
