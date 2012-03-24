@@ -24,12 +24,12 @@ class Configuration:
         self.messageDelimiter = None
         self.fieldDelimiter = None
         self.textBased = False
-        self.configFile = None
+        self.configFile = ""
         self.analysis = None
         self.gnuplotFile = None
         self.onlyUniq = False
         self.interactive = True
-        self.inputFile = None
+        self.inputFile = ""
         # New for "Discoverer"
         self.minWordLength = 3        
         self.maxMessagePrefix = 2048
@@ -52,7 +52,6 @@ class Configuration:
         self.pruneBelowLinkScore = 2
         self.pruneDFAOutliers = False
         self.highlightOutlier = True
-        self.testFile = None
         self.flowsMustBeStrictlyAlternating = True
         self.performReverXStage2 = False
         # Used for NW alignment in Discoverer
