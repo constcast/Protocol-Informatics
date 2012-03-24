@@ -6,15 +6,19 @@ Created on 20.02.2012
 
 import copy
 import uuid
+from xml.sax.saxutils import escape
+from cStringIO import StringIO
 
 class State(object):
     typeIncomingClient2ServerMsg = 'IncomingClient2ServerMsg'
     typeIncomingServer2ClientMsg = 'IncomingServer2ClientMsg'
     typeIncomingNoneMsg = 'IncomingNoneMsg'
-    def __init__(self, name, stateType):
+    
+    def __init__(self, name, stateType, statemachine):
         self.__name = name
         self.__internalname = uuid.uuid1()
         self.__stateType = stateType
+        self.__statemachine = statemachine
         
     def getName(self):
         return self.__name
@@ -30,6 +34,28 @@ class State(object):
     
     def __eq__(self, other):
         return self.__name == other.__name and self.__stateType == other.__stateType
+    
+    def getXMLRepresentation(self):
+        t_list = self.__statemachine.get_transitions_from(self)
+        print '<state name="{0}" internal_name="{1}" type="{2}" numOfTransitionsFrom="{3}">'.format(self.getName(), self.getInternalName(), self.getType(), len(t_list))
+        if (len(t_list)>0):
+            print '<referenced_transitions>'
+            total = 0
+            for t in t_list:
+                total += t.getCounter()
+    
+            for idx2, t in enumerate(t_list):
+                #print "\tIdx: {0}, Internal name: {1}, Probability: {2}".format(idx2, t.getInternalName(), t.getCounter()/float(total))
+                print '<referenced_transition transitionProbability="{0}" reference="{1}" />'.format(t.getCounter()/float(total), t.getInternalName())
+                #print '\t<internal_name>{0}</internal_name>'.format(t.getInternalName())
+                #print '<referenced_transition>'
+    
+            print '</referenced_transitions>'
+        print '</state>'
+        #print "Idx: {0}, Internal name: {1}, State ID: {2}, State type: {3}, Number of transitions from: {4}".format(idx, s, s.getInternalName(), s.getType(), numOfTrans)
+            
+    
+    
     
 class Transition(object):
     def __init__(self, src, hash, dest, direction, msg,regex, regexvisual, cluster):
@@ -100,7 +126,22 @@ class Transition(object):
     
     def __repr__(self):
         return "({0},{1},{2},{3},{4},{5})".format(self.__src, self.__hash, self.__dest, self.__direction, self.__counter, self.__msg)
-        
+     
+    def getXMLRepresentation(self):
+        #return "Internal name: {0}, Source: {1}, Transition: {2}, Destination: {3}, Counter: {4}, Direction: {5}, Cluster-Reference: {6}, RegEx: {7}".format(self.getInternalName(), self.getSource(), self.getHash(), self.getDestination(), self.getCounter(), self.getDirection(), self.getCluster().getInternalName(), self.getRegEx())
+        print '<transition name="{0}" numOfTraversals="{1}" direction="{2}">'.format(self.getInternalName(), self.getCounter(), self.getDirection())
+        print '\t<source referenced_state="{0}" />'.format(self.getSource().getInternalName())
+        #print '\t\t<name>{0}</name>'.format(self.getSource())
+        #print '\t\t<internal_name>{0}</internal_name>'.format(self.getSource().getInternalName())
+        #print '\t</source>'
+        print '\t<hash>{0}</hash>'.format(self.getHash())
+        print '\t<destination referenced_state="{0}"/>'.format(self.getDestination().getInternalName())
+        #print '\t\t<name>{0}</name>'.format(self.getDestination())
+        #print '\t\t<internal_name>{0}</internal_name>'.format(self.getDestination().getInternalName())
+        #print '\t</destination>'
+        print '\t<cluster_reference>{0}</cluster_reference>'.format(self.getCluster().getInternalName())
+        print '\t<regex>{0}</regex>'.format(escape(self.getRegEx()))
+        print "</transition>" 
 class Statemachine(object):
     '''
     This class represents a statemachine derived from the given message sequences
@@ -114,7 +155,7 @@ class Statemachine(object):
         self.__sequences = sequences
         #self.__start = "s0"
         #self.__states = ["s0"]
-        self.__start = State("s0",State.typeIncomingNoneMsg)
+        self.__start = State("s0",State.typeIncomingNoneMsg, self)
         self.__states = [self.__start]
         self.__transitions = set()
         self.__nextstate = 1
@@ -447,7 +488,7 @@ class Statemachine(object):
                         else: # This transition does not yet exist, add new transition with new state    
                             #newstate = "s{0}".format(self.__nextstate)
                             stateType = self.determineStateType(message[1])
-                            newstate = State("s{0}".format(self.__nextstate), stateType)
+                            newstate = State("s{0}".format(self.__nextstate), stateType, self)
                             self.__states.append(newstate)
                             self.addTransition(curstate,hash,newstate, message[1], message[0].get_message(), regexp, regexpvisual, cluster)
                             self.__nextstate += 1
@@ -467,7 +508,7 @@ class Statemachine(object):
                         else:
                             #newstate = "s{0}".format(self.__nextstate)
                             stateType = self.determineStateType(message[1])
-                            newstate = State("s{0}".format(self.__nextstate), stateType)
+                            newstate = State("s{0}".format(self.__nextstate), stateType, self)
                             self.__states.append(newstate)
                             self.addTransition(curstate,hash,newstate, message[1], message[0].get_message(), regexp, regexpvisual, cluster)
                             self.__nextstate += 1
@@ -1155,36 +1196,54 @@ class Statemachine(object):
             import os            
             print "Finished. 'dot' file written to file {}, file size {:.1f} KB".format(file,os.path.getsize(file)/1024.0)               
 
-    def dumpStructure(self, filename=""):
+    def getXMLRepresentation(self):
         """
         Dumps the generated graph to stdout or a .dot file
         """
-        if not filename == "":            
-            import sys
-            old_stdout = sys.stdout
-            handle = open(filename,"w")
-            print "Writing to {0}".format(filename)
-            sys.stdout = handle
-            
+             
+        import sys
+        old_stdout = sys.stdout
+        #handle = open(filename,"w")
+        #print "Writing to {0}".format(filename)
+        handle = StringIO()
+        sys.stdout = handle
         
-        print "Start state: {0}".format(self.__start)
-        print "Finals: {0}".format(",".join(x.getName() for x in self.__finals))
-        print "Transitions:"
+    
+        print '<protocol_statemachine>'
+        print '\t<start_state referencedState="{0}" />'.format(self.__start.getInternalName())
+        #print '\t\t<name>{0}</name>'.format(self.__start)
+        #print '\t\t<internal_name>{0}</internal_name>'.format(self.__start.getInternalName())
+        #print '\t</start_state>'
+        print '\t<final_states numOfFinalState="{0}">'.format(len(self.__finals))
+        for f in self.__finals:
+            print '\t\t<final_state referencedState="{0}" />'.format(f.getInternalName())
+            #print '\t\t\t<name>{0}</name>'.format(f)
+            #print '\t\t\t<internal_name>{0}</internal_name>'.format(f.getInternalName())
+            #print '\t\t</final_state>'
+        print '\t</final_states>'
+        print '<transitions numOfTransitions="{0}">'.format(len(self.__transitions))
         for idx, t in enumerate(self.__transitions):
-            print "Idx: {0}, Internal name: {1}, Source: {2}, Transition: {3}, Destination: {4}, Counter: {5}, Direction: {6}, Cluster-Reference: {7}, RegEx: {8}".format(idx, t.getInternalName(), t.getSource(), t.getHash(), t.getDestination(), t.getCounter(), t.getDirection(), t.getCluster().getInternalName(), t.getRegEx())
-        print "States:"
+            t.getXMLRepresentation()
+            #print "Idx: {0}, Internal name: {1}, Source: {2}, Transition: {3}, Destination: {4}, Counter: {5}, Direction: {6}, Cluster-Reference: {7}, RegEx: {8}".format(idx, t.getInternalName(), t.getSource(), t.getHash(), t.getDestination(), t.getCounter(), t.getDirection(), t.getCluster().getInternalName(), t.getRegEx())
+        print "</transitions>"
+        print "<states>"
         for idx, s in enumerate(self.__states):
-            t_list = self.get_transitions_from(s)
-            total = 0
-            numOfTrans = len(t_list)
-            for t in t_list:
-                total += t.getCounter()
-            print "Idx: {0}, Internal name: {1}, State ID: {2}, State type: {3}, Number of transitions from: {4}".format(idx, s, s.getInternalName(), s.getType(), numOfTrans)
-            for idx2, t in enumerate(t_list):
-                print "\tIdx: {0}, Internal name: {1}, Probability: {2}".format(idx2, t.getInternalName(), t.getCounter()/float(total))
-            
-        if not filename=="":
-            handle.close()         
-            sys.stdout = old_stdout
-            import os            
-            print "Finished. statemachine structure written to file {}, file size {:.1f} KB".format(filename,os.path.getsize(file)/1024.0)               
+            s.getXMLRepresentation()
+            #===================================================================
+            # t_list = self.get_transitions_from(s)
+            # total = 0
+            # numOfTrans = len(t_list)
+            # for t in t_list:
+            #    total += t.getCounter()
+            # 
+            # print "Idx: {0}, Internal name: {1}, State ID: {2}, State type: {3}, Number of transitions from: {4}".format(idx, s, s.getInternalName(), s.getType(), numOfTrans)
+            # for idx2, t in enumerate(t_list):
+            #    print "\tIdx: {0}, Internal name: {1}, Probability: {2}".format(idx2, t.getInternalName(), t.getCounter()/float(total))
+            # 
+            #===================================================================
+        print "</states>"
+        print '</protocol_statemachine>'    
+        body = handle.getvalue()
+        handle.close
+        sys.stdout = old_stdout
+        return body

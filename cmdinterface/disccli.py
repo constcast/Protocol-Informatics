@@ -122,6 +122,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             # Build statemachine
             
             sm = discoverer.statemachine.Statemachine(self.env['messageFlows'], self.config)
+            self.env['sm'] = sm
             start = time.time()
               
             sm.build()
@@ -136,18 +137,49 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             print "Dumping state machine"
             sm.dump_dot(storePath)
             sm.dumpTransitions()
-            storePath = "{0}{1}{2}_statemachine.txt".format(path,os.sep,filename) 
-            sm.dumpStructure()
-            sm.dumpStructure(storePath)
+            storePath = "{0}{1}{2}_statemachine.xml".format(path,os.sep,filename) 
+            #sm.dumpStructure()
+            
+            
+            #sm.dumpStructure(storePath)
             self.do_dumpresult("")
-            self.env['sm'] = sm
+            
             #pickled = sm.pickle()
             #import cPickle
             #anothersm = cPickle.loads(pickled)
             #anothersm.dump("/Users/daubsi/Dropbox/anotherdump")
+            self.createXMLOutput()
         else:
             # Perform discoverer only for client pat
             self.go(self.env['sequences'],"unknownDirection")
+    
+    def createXMLOutput(self):
+        import os
+        path = os.path.normpath(self.config.dumpFile)
+        file = os.path.basename(self.config.inputFile)
+        (filename,ext) = os.path.splitext(file)
+        storePath = "{0}{1}{2}_output.xml".format(path,os.sep,filename)
+        
+        import sys
+        old_stdout = sys.stdout
+        handle = open(storePath,"w")
+        sys.stdout = handle
+        
+        print '<?xml version="1.0" encoding="iso-8859-1" ?>'
+        print "<protocol_informatics>"
+        cc_xml = self.getCCXMLRepresentation()
+        sm_xml = self.env['sm'].getXMLRepresentation()
+        print cc_xml
+        print sm_xml    
+        print "</protocol_informatics>"
+        
+        handle.close()         
+        sys.stdout = old_stdout
+        import os            
+        print "Finished XML output. File size %0.1f KB" % (os.path.getsize(storePath)/1024.0)         
+
+    def do_createXMLOutput(self, string):
+        self.createXMLOutput()
         
     def do_statemachine_accepts(self, args=""):
         # Tries to load the input and returns whether the statemachine accepts this input
@@ -495,6 +527,8 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             (filename,ext) = os.path.splitext(file)
             storePath = "{0}{1}{2}_formats_dump.txt".format(path,os.sep,filename)
             self.dump2File(self.env['cluster_collection'],storePath)
+            #storePath = "{0}{1}{2}_formats.xml".format(path,os.sep,filename)
+            #self.dumpXML(self.env['cluster_collection'], storePath)
             #storePath = "{0}{1}{2}_server_dump.txt".format(path,os.sep,filename)
             #self.dump2File(self.env['cluster_collection_server'],storePath)
         else:
@@ -504,7 +538,9 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             (filename,ext) = os.path.splitext(file)
             storePath = "{0}{1}{2}_dump.txt".format(path,os.sep,filename)
             self.dump2File(self.env['cluster_collection'],storePath)
-            
+    
+    def getCCXMLRepresentation(self):
+        return self.env['cluster_collection'].getXMLRepresentation()        
     def dump2File(self, cluster_collection, storePath):
         print "Dumping result to file {0}".format(storePath)
         cluster_collection.print_clusterCollectionInfo(storePath)
