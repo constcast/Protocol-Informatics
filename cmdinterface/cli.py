@@ -197,13 +197,15 @@ class CommandLineInterface(cmd.Cmd):
         if sequences != None:
             self.env['sequences'] = sequences
             if self.config.loadClientAndServerParts == False:
-                print "Successfully read input file ({0} sequences)...".format(len(sequences))
+                numMessages = sum(len(flow.sequences) for flow in sequences.itervalues())
+                print "Successfully read input file ({0} sequences, {1} messages)...".format(len(sequences))
             else:
-                print "Successfully read client and server input files ({0} resp. {1} sequences)...".format(len(sequences_client2server), len(sequences_server2client))
+                numMessages = sum(len(flow.sequences) for flow in sequences_client2server.itervalues()) + sum(len(flow.sequences) for flow in sequences_server2client.itervalues())
+                print "Successfully read client and server input files ({0} resp. {1} sequences, total {2} messages)...".format(len(sequences_client2server), len(sequences_server2client),numMessages)
             
     def load_sequences(self, formatType, filename):
         try:
-            print "Attempting to read %i messages from file \"%s\" as \"%s\" file" % (self.config.maxMessages, filename, formatType)
+            print "Attempting to read %i flows from file \"%s\" as \"%s\" file" % (self.config.maxMessages, filename, formatType)
             # we expect a file and a format string
             import common
             if formatType == "pcap":

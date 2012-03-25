@@ -161,17 +161,16 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         storePath = "{0}{1}{2}_output.xml".format(path,os.sep,filename)
         
         import sys
+        import codecs
         old_stdout = sys.stdout
-        handle = open(storePath,"w")
+        handle = codecs.open(storePath,"w", "utf-8-sig")
         sys.stdout = handle
         
-        print '<?xml version="1.0" encoding="iso-8859-1" ?>'
-        print "<protocol_informatics>"
-        cc_xml = self.getCCXMLRepresentation()
-        sm_xml = self.env['sm'].getXMLRepresentation()
-        print cc_xml
-        print sm_xml    
-        print "</protocol_informatics>"
+        print '<?xml version="1.0" encoding="utf-8" ?>'
+        print "<protocolInformatics>"
+        print self.getCCXMLRepresentation()
+        print self.env['sm'].getXMLRepresentation()  
+        print "</protocolInformatics>"
         
         handle.close()         
         sys.stdout = old_stdout

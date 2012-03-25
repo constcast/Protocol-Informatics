@@ -37,20 +37,20 @@ class State(object):
     
     def getXMLRepresentation(self):
         t_list = self.__statemachine.get_transitions_from(self)
-        print '<state name="{0}" internal_name="{1}" type="{2}" numOfTransitionsFrom="{3}">'.format(self.getName(), self.getInternalName(), self.getType(), len(t_list))
+        print '<state name="{0}" internalName="{1}" type="{2}" numOfTransitionsFrom="{3}">'.format(self.getName(), self.getInternalName(), self.getType(), len(t_list))
         if (len(t_list)>0):
-            print '<referenced_transitions>'
+            print '<referencedTransitions>'
             total = 0
             for t in t_list:
                 total += t.getCounter()
     
             for idx2, t in enumerate(t_list):
                 #print "\tIdx: {0}, Internal name: {1}, Probability: {2}".format(idx2, t.getInternalName(), t.getCounter()/float(total))
-                print '<referenced_transition transitionProbability="{0}" reference="{1}" />'.format(t.getCounter()/float(total), t.getInternalName())
+                print '<referencedTransition transitionProbability="{0}" reference="{1}" />'.format(t.getCounter()/float(total), t.getInternalName())
                 #print '\t<internal_name>{0}</internal_name>'.format(t.getInternalName())
                 #print '<referenced_transition>'
     
-            print '</referenced_transitions>'
+            print '</referencedTransitions>'
         print '</state>'
         #print "Idx: {0}, Internal name: {1}, State ID: {2}, State type: {3}, Number of transitions from: {4}".format(idx, s, s.getInternalName(), s.getType(), numOfTrans)
             
@@ -130,16 +130,16 @@ class Transition(object):
     def getXMLRepresentation(self):
         #return "Internal name: {0}, Source: {1}, Transition: {2}, Destination: {3}, Counter: {4}, Direction: {5}, Cluster-Reference: {6}, RegEx: {7}".format(self.getInternalName(), self.getSource(), self.getHash(), self.getDestination(), self.getCounter(), self.getDirection(), self.getCluster().getInternalName(), self.getRegEx())
         print '<transition name="{0}" numOfTraversals="{1}" direction="{2}">'.format(self.getInternalName(), self.getCounter(), self.getDirection())
-        print '\t<source referenced_state="{0}" />'.format(self.getSource().getInternalName())
+        print '\t<source referencedState="{0}" />'.format(self.getSource().getInternalName())
         #print '\t\t<name>{0}</name>'.format(self.getSource())
         #print '\t\t<internal_name>{0}</internal_name>'.format(self.getSource().getInternalName())
         #print '\t</source>'
         print '\t<hash>{0}</hash>'.format(self.getHash())
-        print '\t<destination referenced_state="{0}"/>'.format(self.getDestination().getInternalName())
+        print '\t<destination referencedState="{0}"/>'.format(self.getDestination().getInternalName())
         #print '\t\t<name>{0}</name>'.format(self.getDestination())
         #print '\t\t<internal_name>{0}</internal_name>'.format(self.getDestination().getInternalName())
         #print '\t</destination>'
-        print '\t<cluster_reference>{0}</cluster_reference>'.format(self.getCluster().getInternalName())
+        print '\t<cluster referencedCluster="{0}" />'.format(self.getCluster().getInternalName())
         print '\t<regex>{0}</regex>'.format(escape(self.getRegEx()))
         print "</transition>" 
 class Statemachine(object):
@@ -451,7 +451,12 @@ class Statemachine(object):
                     self.log("Message {0} ({1}): {2}, hash {3} with format {4}".format(msg_key,message[1],message[0].get_message(), message[0].getCluster().getFormatHash(),message[0].getCluster().get_formats()))
                     # Walk transitions for curstate and message's hash
                     cluster = message[0].getCluster()
-                    hash = cluster.getFormatHash()
+                    
+                    # Build statemachine alternatively
+                    if self.__config.buildDFAViaRegEx:
+                        hash = cluster.getRegEx()
+                    else:
+                        hash = cluster.getFormatHash()
                     regexp = message[0].getCluster().getRegEx()
                     regexpvisual = message[0].getCluster().getRegExVisual()
                         
@@ -616,6 +621,17 @@ class Statemachine(object):
             self.removeOrphans(removed=nodesPruned)
         return nodesPruned+removed
 
+    '''
+    This function is created as a superset of canTransition with more explizit semantics
+    
+    '''
+    def canTransitionViaS(self,p,q,s):
+        r = self.getState(p, s)
+        t = self.getState(q, s)
+        if r==None or t==None:
+            return False
+        return True
+    
     def canTransition(self, p,q):
         l = []
         for s in self.__alphabet:
@@ -628,97 +644,40 @@ class Statemachine(object):
             return None
         return l
     
+    '''
+    New version with more explizit semantics 
+    '''
+    
     def reverx_merge(self):
         import time
         if self.__config.nativeReverXStage1:
             start = time.time()
             print "Performing native ReverX merge stage 1"
-            # merge states reached from similar message types
+            # merge states reached via the same message types
         
-            for q in self.__states[:]:
+            for q in sorted(self.__states[:], key = lambda state: int(state.getName()[1:])):
                 if q not in self.__states: # Has q already been removed in a previous iteration?
                     continue
-                for p in self.__states[:]:
+                for p in sorted(self.__states[:], key = lambda state: int(state.getName()[1:])):
                     if p not in self.__states: # Has p already been removed in a previous iteration?
                         continue
                     #if p=="e" or q=="e" or q==p or (p not in self.__states) or (q not in self.__states):
                     #    continue
                     
-                    s = self.canTransition(p,q)
-                    
-                    if not s==None:
-                        # Check if getState returned multiple destinations (== NFA!!)
-                        # for the same transition and collapse them
-                        if p==q:
-                            for elem in s:
-                                dests = self.getState(p,elem)
-                                
-                                #while dests!=None and len(dests)>1:
-                                sub_finals = []
-                                sub_nonfinals = []
-                                if dests!=None:
-                                    for i in dests:
-                                        if i in self.__finals:
-                                            sub_finals.append(i)
-                                        else:
-                                            sub_nonfinals.append(i)
-                                while dests!=None and (len(sub_finals)>1 or len(sub_nonfinals)>1):
-                                
-                                #if dests!=None and len(dests)>1:
-                                    # Added constraint that a mixture of final and non final states may never be merged
-                                    
-                                    # Split dests in lists for final and non finals
-                                    sub_finals = []
-                                    sub_nonfinals = []
-                                    for i in dests:
-                                        if i in self.__finals:
-                                            sub_finals.append(i)
-                                        else:
-                                            sub_nonfinals.append(i)
-                                    # Merge each list on its own
-                                    while len(sub_finals)>1:
-                                        self.mergeStates(sub_finals[0], sub_finals[1])
-                                        sub_finals.pop(0)
-                                        
-                                    while len(sub_nonfinals)>1:
-                                        self.mergeStates(sub_nonfinals[0], sub_nonfinals[1])
-                                        sub_nonfinals.pop(0)
-                                    
-                                    #if ((dests[0] in self.__finals and dests[1] in self.__finals) or
-                                    #    (dests[0] not in self.__finals and dests[1] not in self.__finals)
-                                    #    ) and (dests[0].getType()==dests[1].getType()):
-                                    #    self.mergeStates(dests[0],dests[1])
-                                    dests = self.getState(p,elem)
-                                    sub_finals = []
-                                    sub_nonfinals = []
-                                    if dests!=None:
-                                        for i in dests:
-                                            if i in self.__finals:
-                                                sub_finals.append(i)
-                                            else:
-                                                sub_nonfinals.append(i)    
-                                
-                        s = self.canTransition(p,q)
-                        if not s==None:   
-                            for elem in s:
-                                m1 = self.getState(p,elem)
-                                m2 = self.getState(q,elem)
-                                if not (m1==None or m2==None):
-                                    # Added constraint that a mixture of final and non final states may never be merged
-                                    if (self.statesAreBothFinal(m1[0],m2[0]) or self.statesAreBothNotFinal(m1[0],m2[0])) and self.statesHaveSameType(m1[0],m2[0]):
-                            
-                                    #if ((m1[0] in self.__finals and m2[0] in self.__finals) or 
-                                     #   (m1[0] not in self.__finals and m2[0] not in self.__finals)
-                                      #  ) and (m1[0].getType()==m2[0].getType()):
-                                        self.mergeStates(m1[0],m2[0])
-                            
-                        
+                    for s in self.__alphabet:
+                        if self.canTransitionViaS(p, q, s):
+                            r_l = self.getState(p, s) # Could return a list
+                            t_l = self.getState(q, s)
+                            for r in r_l:
+                                for t in t_l:
+                                    if r not in self.__states or t not in self.__states:                                    
+                                        continue # Can happen when r has been merged into t in a past iteration
+                                    if r != t:
+                                        # Potentially merge
+                                        if ((self.statesAreBothFinal(r,t) or self.statesAreBothNotFinal(r,t)) and 
+                                            self.statesHaveSameType(r,t)):
+                                            self.mergeStates(r,t)       
             elapsed = (time.time() - start)
-                    
-            if self.__config.debug:
-                print "Transitions:"
-                for t in self.__transitions:
-                    print t
             print "Performed ReverX merge stage 1. {} states left, transitions {} (Took: {:.3f} seconds)".format(len(self.__states),len(self.__transitions), elapsed)
         else:
             print "Skipping native ReverX merge stage 1 by configuration"    
@@ -745,14 +704,29 @@ class Statemachine(object):
                     # if there is not a causal relation
                     if (not self.referenceBetween(p,q)) or self.isMutualReachable(p,q):
                         if self.canReachSameState(p,q):
-                            # Added constraint that a mixture of final and non final states may never be merged
-                            if (self.statesAreBothFinal(p,q) or self.statesAreBothNotFinal(p,q)) and self.statesHaveSameType(p,q):
-                            #if ((p in self.__finals and q in self.__finals) or
-                            #    (p not in self.__finals and q not in self.__finals)
-                            #    ) and (p.getType()==q.getType()):    
-                                self.mergeStates(p,q)
-                                reduce = True
-            #self.minimize_dfa()
+                            # Added additional constraint:
+                            # self.canReachSameState(p,q) must be valid for all transitions of these two nodes, nut just "\exists s \in \Sigma", because
+                            # otherwise the merge will result in a NFA because of two different incoming (client) messages and multiple result messages
+                            # --> the automaton would not know which answer belongs to which command
+                            # This is not a problem with the standard ReverX becaue ReverX does only work on client messages and not on a combined statemachine
+                            # with client and server messages! Therefore they do not need to cope for these situations!
+                            # So basically, the constraint is, that they need to have the same outgoing transition set
+                            if (self.statesAreBothFinal(p,q) or self.statesAreBothNotFinal(p,q)) and self.statesHaveSameType(p,q): 
+                                if p.getType()==State.typeIncomingClient2ServerMsg:
+                                    p_t_list = self.get_transitions_from(p)
+                                    q_t_list = self.get_transitions_from(q)
+                                    p_set = set()
+                                    q_set = set()
+                                    p_set.add(i.getHash() for i in p_t_list)
+                                    q_set.add(i.getHash() for i in q_t_list)
+                                    if p_set==q_set and len(p_set)>0:
+                                        self.mergeStates(p,q)
+                                        reduce = True
+                                    
+                                elif p.getType()==State.typeIncomingServer2ClientMsg:
+                                    self.mergeStates(p,q)
+                                    reduce = True
+                                                #self.minimize_dfa()
         elapsed = (time.time() - start)
         print "Transitions:"
         for t in self.__transitions:
@@ -760,6 +734,142 @@ class Statemachine(object):
         print "Performed ReverX merge stage 2. {} states left, transitions {} (Took: {:.3f} seconds)".format(len(self.__states),len(self.__transitions), elapsed)
         return
     
+    
+    # Current version as of 20120324
+    #===========================================================================
+    # def reverx_merge(self):
+    #    import time
+    #    if self.__config.nativeReverXStage1:
+    #        start = time.time()
+    #        print "Performing native ReverX merge stage 1"
+    #        # merge states reached from similar message types
+    #    
+    #        for q in self.__states[:]:
+    #            if q not in self.__states: # Has q already been removed in a previous iteration?
+    #                continue
+    #            for p in self.__states[:]:
+    #                if p not in self.__states: # Has p already been removed in a previous iteration?
+    #                    continue
+    #                #if p=="e" or q=="e" or q==p or (p not in self.__states) or (q not in self.__states):
+    #                #    continue
+    #                
+    #                s = self.canTransition(p,q)
+    #                
+    #                if not s==None:
+    #                    # Check if getState returned multiple destinations (== NFA!!)
+    #                    # for the same transition and collapse them
+    #                    if p==q:
+    #                        for elem in s:
+    #                            dests = self.getState(p,elem)
+    #                            
+    #                            #while dests!=None and len(dests)>1:
+    #                            sub_finals = []
+    #                            sub_nonfinals = []
+    #                            if dests!=None:
+    #                                for i in dests:
+    #                                    if i in self.__finals:
+    #                                        sub_finals.append(i)
+    #                                    else:
+    #                                        sub_nonfinals.append(i)
+    #                            while dests!=None and (len(sub_finals)>1 or len(sub_nonfinals)>1):
+    #                            
+    #                            #if dests!=None and len(dests)>1:
+    #                                # Added constraint that a mixture of final and non final states may never be merged
+    #                                
+    #                                # Split dests in lists for final and non finals
+    #                                sub_finals = []
+    #                                sub_nonfinals = []
+    #                                for i in dests:
+    #                                    if i in self.__finals:
+    #                                        sub_finals.append(i)
+    #                                    else:
+    #                                        sub_nonfinals.append(i)
+    #                                # Merge each list on its own
+    #                                while len(sub_finals)>1:
+    #                                    self.mergeStates(sub_finals[0], sub_finals[1])
+    #                                    sub_finals.pop(0)
+    #                                    
+    #                                while len(sub_nonfinals)>1:
+    #                                    self.mergeStates(sub_nonfinals[0], sub_nonfinals[1])
+    #                                    sub_nonfinals.pop(0)
+    #                                
+    #                                #if ((dests[0] in self.__finals and dests[1] in self.__finals) or
+    #                                #    (dests[0] not in self.__finals and dests[1] not in self.__finals)
+    #                                #    ) and (dests[0].getType()==dests[1].getType()):
+    #                                #    self.mergeStates(dests[0],dests[1])
+    #                                dests = self.getState(p,elem)
+    #                                sub_finals = []
+    #                                sub_nonfinals = []
+    #                                if dests!=None:
+    #                                    for i in dests:
+    #                                        if i in self.__finals:
+    #                                            sub_finals.append(i)
+    #                                        else:
+    #                                            sub_nonfinals.append(i)    
+    #                            
+    #                    s = self.canTransition(p,q)
+    #                    if not s==None:   
+    #                        for elem in s:
+    #                            m1 = self.getState(p,elem)
+    #                            m2 = self.getState(q,elem)
+    #                            if not (m1==None or m2==None):
+    #                                # Added constraint that a mixture of final and non final states may never be merged
+    #                                if (self.statesAreBothFinal(m1[0],m2[0]) or self.statesAreBothNotFinal(m1[0],m2[0])) and self.statesHaveSameType(m1[0],m2[0]):       
+    #                                    self.mergeStates(m1[0],m2[0])
+    #                        
+    #                    
+    #        elapsed = (time.time() - start)
+    #                
+    #        #===================================================================
+    #        # if self.__config.debug:
+    #        #    print "Transitions:"
+    #        #    for t in self.__transitions:
+    #        #        print t
+    #        #===================================================================
+    #        # #===================================================================
+    #        #===================================================================
+    #        print "Performed ReverX merge stage 1. {} states left, transitions {} (Took: {:.3f} seconds)".format(len(self.__states),len(self.__transitions), elapsed)
+    #    else:
+    #        print "Skipping native ReverX merge stage 1 by configuration"    
+    #        
+    #        
+    #    # Begin ReverX Stage 2
+    #    if not self.__config.performReverXStage2:
+    #        return
+    #       
+    #    print "Performing ReverX merge stage 2"
+    #    # merge states without a causal relation that share at least one message type
+    #    start = time.time()
+    #    reduce = True
+    #    while reduce:
+    #        reduce = False
+    #        for q in self.__states[:]:
+    #            if q not in self.__states: # Has q already been removed in a previous iteration
+    #                continue
+    #            for p in self.__states[:]:
+    #                if p not in self.__states: # Has p already been removed in a previous iteration?
+    #                    continue
+    #                if p.getName()=="e" or q.getName()=="e" or q==p or (p not in self.__states) or (q not in self.__states):
+    #                    continue
+    #                # if there is not a causal relation
+    #                if (not self.referenceBetween(p,q)) or self.isMutualReachable(p,q):
+    #                    if self.canReachSameState(p,q):
+    #                        # Added constraint that a mixture of final and non final states may never be merged
+    #                        if (self.statesAreBothFinal(p,q) or self.statesAreBothNotFinal(p,q)) and self.statesHaveSameType(p,q):
+    #                        #if ((p in self.__finals and q in self.__finals) or
+    #                        #    (p not in self.__finals and q not in self.__finals)
+    #                        #    ) and (p.getType()==q.getType()):    
+    #                            self.mergeStates(p,q)
+    #                            reduce = True
+    #        #self.minimize_dfa()
+    #    elapsed = (time.time() - start)
+    #    print "Transitions:"
+    #    for t in self.__transitions:
+    #        print t
+    #    print "Performed ReverX merge stage 2. {} states left, transitions {} (Took: {:.3f} seconds)".format(len(self.__states),len(self.__transitions), elapsed)
+    #    return
+    # 
+    #===========================================================================
     ###
     # Working version without considerng final/non finals and without type distinction
     #===========================================================================
@@ -878,7 +988,10 @@ class Statemachine(object):
         if not self.statesHaveSameType(p, q):
             #if p.getType()!=q.getType()):
             raise Exception("Must not merge states with different state types")
-        
+        if self.__config.checkConsistencyOnMerge:
+            filename = "/Users/daubsi/Dropbox/dot_debug_before.dot"
+            self.dump_dot(filename)
+            
         print "Merging states {0} and {1} to {1}, total states left {2}".format(p,q, len(self.__states)-1)
         self.__states.remove(p)
         if p in self.__finals:
@@ -915,8 +1028,40 @@ class Statemachine(object):
             #    t.setDestination(q)
             #    self.__transitions.add(t)
             #===================================================================
+        if self.__config.checkConsistencyOnMerge:
+            filename = "/Users/daubsi/Dropbox/dot_debug_after.dot"
+            self.dump_dot(filename)
+             # Sanity check
+            self.checkConsistency()
         
         return True
+    
+    def checkConsistency(self):
+        for s in self.__states:
+            # Check for incoming edges of the same kind
+            
+            # Check: if incoming are all the same hash, there may be multiple outgoing hashs
+            
+            # Check: if incoming are multiple hashs, there may be only one outgoing hash when it is a client2server node
+            if s.getType()==State.typeIncomingClient2ServerMsg:
+                l_incoming_hashs = self.getTransitionsInto(s)
+                incoming_set = set()
+                for h in l_incoming_hashs:
+                    incoming_set.add(h.getHash())
+                if len(incoming_set)>1: 
+                    l_outgoing_hashs = self.get_transitions_from(s)
+                    outgoing_set = set()
+                    for h in l_outgoing_hashs:
+                        outgoing_set.add(h.getHash())
+                    if len(outgoing_set)>1:
+                        raise Exception("Consistency check failed: multiple incoming hashs and multiple outgoing hashs for a client2server node: {0}".format(s))
+                
+    def getTransitionsInto(self, s):
+        l = []
+        for t in self.__transitions:
+            if t.getDestination()==s:
+                l.append(t)
+        return l
     
     def referenceBetween(self, p, q):
         # Checks for causal relation between two states
@@ -1170,6 +1315,7 @@ class Statemachine(object):
             if len(t.getMessage())>25:
                 s+="..."
             s+=" ({0})".format(t.getCounter())
+            s+="\\n{0}".format(t.getHash())
             
             if t.getDirection()==message.Message.directionClient2Server:
                 color="red"
@@ -1209,18 +1355,18 @@ class Statemachine(object):
         sys.stdout = handle
         
     
-        print '<protocol_statemachine>'
-        print '\t<start_state referencedState="{0}" />'.format(self.__start.getInternalName())
+        print '<protocolStatemachine>'
+        print '\t<startState referencedState="{0}" />'.format(self.__start.getInternalName())
         #print '\t\t<name>{0}</name>'.format(self.__start)
         #print '\t\t<internal_name>{0}</internal_name>'.format(self.__start.getInternalName())
         #print '\t</start_state>'
-        print '\t<final_states numOfFinalState="{0}">'.format(len(self.__finals))
+        print '\t<finalStates numOfFinalState="{0}">'.format(len(self.__finals))
         for f in self.__finals:
-            print '\t\t<final_state referencedState="{0}" />'.format(f.getInternalName())
+            print '\t\t<finalState referencedState="{0}" />'.format(f.getInternalName())
             #print '\t\t\t<name>{0}</name>'.format(f)
             #print '\t\t\t<internal_name>{0}</internal_name>'.format(f.getInternalName())
             #print '\t\t</final_state>'
-        print '\t</final_states>'
+        print '\t</finalStates>'
         print '<transitions numOfTransitions="{0}">'.format(len(self.__transitions))
         for idx, t in enumerate(self.__transitions):
             t.getXMLRepresentation()
@@ -1242,7 +1388,7 @@ class Statemachine(object):
             # 
             #===================================================================
         print "</states>"
-        print '</protocol_statemachine>'    
+        print '</protocolStatemachine>'    
         body = handle.getvalue()
         handle.close
         sys.stdout = old_stdout

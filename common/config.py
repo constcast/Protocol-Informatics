@@ -54,6 +54,8 @@ class Configuration:
         self.highlightOutlier = True
         self.flowsMustBeStrictlyAlternating = True
         self.performReverXStage2 = False
+        self.buildDFAViaRegEx = True
+        self.checkConsistencyOnMerge = False
         # Used for NW alignment in Discoverer
         self.matchScore = 1
         self.mismatchScore = 1

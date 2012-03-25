@@ -184,11 +184,12 @@ class Bro(Input):
         if len(data) != contentLength:
             raise Exception("Error while parsing input file. Message:\n\n%s\n\nReal length %d does not match ContentLength %s" % (data, len(data), contentLength))
 
-        self.readMessages += 1
+        #self.readMessages += 1
 
         if not connectionID in self.connections:
             self.connections[connectionID] = sequences.FlowInfo(connectionID)
-
+            self.readMessages += 1 # Count flows instead of single messages
+            
         # transform hex-encoding into byte sequences
         seq = []
         idx = 0
@@ -221,7 +222,7 @@ class Bro(Input):
 
         fd = open(filename, "r")
         for line in fd:
-            if self.maxMessages != 0 and self.readMessages > self.maxMessages:
+            if self.maxMessages != 0 and self.readMessages > self.maxMessages - 1:
                 # already consumed maxMessages. stop reading more messages
                 return
 
