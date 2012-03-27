@@ -56,6 +56,8 @@ class Configuration:
         self.performReverXStage2 = False
         self.buildDFAViaRegEx = True
         self.checkConsistencyOnMerge = False
+        self.lastMessageIsDirectlyFinal = True
+        self.strictMergeOfOutgoingEdges = True
         # Used for NW alignment in Discoverer
         self.matchScore = 1
         self.mismatchScore = 1

@@ -110,7 +110,7 @@ class CommandLineInterface(cmd.Cmd):
             if len(words) != 2:
                 if len(words) == 1: # Print current Config
                     attr = getattr(self.config, words[0])
-                    print "Current value of configurtion item '{0}' = '{1}'".format(words[0],attr)
+                    print "Current value of configuration item '{0}' = '{1}'".format(words[0],attr)
                     return
                 # ok, we have no idea what this should be ..."
                 print "Invalid command syntax"

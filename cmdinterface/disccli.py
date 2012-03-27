@@ -149,6 +149,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             #anothersm = cPickle.loads(pickled)
             #anothersm.dump("/Users/daubsi/Dropbox/anotherdump")
             self.createXMLOutput()
+            
         else:
             # Perform discoverer only for client pat
             self.go(self.env['sequences'],"unknownDirection")
@@ -263,13 +264,17 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
                 success += 1
             else:
                 failures += 1
-                failedelements.append(elem)
+                
                 if not res['isInTestFlows']: not_in_testflows += 1
                 elif not res['hasMoreThanOneMessage']: only_one_msg += 1
                 elif not res['has_no_gaps']: has_gaps += 1
                 elif not res['is_alternating']: not_alternating += 1
-                elif not res['did_all_transitions' ]: not_all_transitioned += 1
-                elif not res['finished_in_final']: not_ended_in_final += 1
+                elif not res['did_all_transitions' ]: 
+                    not_all_transitioned += 1
+                    failedelements.append(elem)
+                elif not res['finished_in_final']: 
+                    not_ended_in_final += 1
+                    failedelements.append(elem)
         print "Finished"
         print "Testresults"
         print "==========="
@@ -283,7 +288,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             print "Flow did not end in final state: {0}".format(not_ended_in_final)
             print
             
-            print "Failed test flows"
+            print "Failed test flows (only tested flows):"
             for elem in failedelements:
                 print "{0}".format(elem)
         #testflow = []

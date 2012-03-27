@@ -269,7 +269,6 @@ class Message:
         Tokenizes textSegment, creating new text resp. binary tokens from it
         Tokens are separated by whitespaces
         """
-        # TODO: Should we add explicit whitespace tokens as well?
         if len(textSegment)<self.__config.minWordLength:
             # Word length to short
             # Create artificially binary token
