@@ -154,6 +154,19 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             # Perform discoverer only for client pat
             self.go(self.env['sequences'],"unknownDirection")
     
+    def dump_sm_dot(self, filename=""):
+        if filename=="":
+            path = os.path.normpath(self.config.dumpFile)
+            file = os.path.basename(self.config.inputFile)
+            (filename,ext) = os.path.splitext(file)
+            storePath = "{0}{1}{2}.dot".format(path,os.sep,filename) 
+        else:
+            storePath = filename               
+        self.env['sm'].dump_dot(storePath)
+         
+    def do_dump_sm_dot(self, string):
+        self.dump_sm_dot()
+        
     def createXMLOutput(self):
         import os
         path = os.path.normpath(self.config.dumpFile)
@@ -288,19 +301,10 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             print "Flow did not end in final state: {0}".format(not_ended_in_final)
             print
             
-            print "Failed test flows (only tested flows):"
-            for elem in failedelements:
-                print "{0}".format(elem)
-        #testflow = []
-        # testflow.append("USER anonymous")
-        # testflow.append("PASS me@home.com")
-        # testflow.append("CD somewhere")
-        # testflow.append("CD somewhereelse")
-        # testflow.append("RETR wuzlprmpft")
-        # testflow.append("QUIT")
-        #=======================================================================
-        
-        #self.env['sm'].accepts_flow(testflow)
+            if len(failedelements)>0:
+                print "Failed test flows (only tested flows):"
+                for elem in failedelements:
+                    print "{0}".format(elem)
         
     def do_statemachine_accepts_flow(self, flow):
         if not self.env.has_key('testflows'):
@@ -311,7 +315,8 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             return dict({"testSuccessful": False, "isInTestFlows": False, "hasMoreThanOneMessage": False, "has_no_gaps": False, "is_alternating": False, "did_all_transitions": False, "finished_in_final": False})
                
         flowitems = self.env['testflows'][flow]
-        return self.env['sm'].accepts_flow(flowitems,flow)
+        return self.env['sm'].accepts_flow(flowitems,flow, printSteps=True)
+    
     def do_dump_transitions(self,str):
         if self.env.has_key('sm'):
             self.env['sm'].dumpTransitions()

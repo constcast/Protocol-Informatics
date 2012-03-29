@@ -171,8 +171,21 @@ class Statemachine(object):
         self.__config=config
     def setTestFlows(self, testflows):
         self.__testflows = testflows
-           
-    def accepts_flow(self, testflow, flowID=""):
+    
+    
+    '''20120330: Current state:
+    Mit 78 maxMessages akzeptiert er nicht mehr, mit 77 schon noch
+    Wichtigstes Indiz: Mit 78 gibt es aus finals fŸhrende TRansitionen und
+    Finals sind letzte Knoten - obwohl das eigene Knoten sein sollten zu denen nur noch ein epsilon fŸhrt!
+    Es dŸfte nur noch 1 Final geben!!
+    '''
+    accepts flow takes a flow of messages and runs it against the statemachine
+    to check whether it is accepted or rejected by the machine
+    It results an appropriate result record describing the nature of the error
+    printSteps: set to true to show logging messages although "debug" ist
+    disabled (recommended only for single flow tests).
+    '''       
+    def accepts_flow(self, testflow, flowID="", printSteps=False):
         import re
         curState = self.__start
         failed = False
@@ -181,7 +194,7 @@ class Statemachine(object):
         # structure:
         # tuple(testSuccessful, isInTestFlows, hasMoreThanOneMessage, 
         #       has_no_gaps, is_alternating, did_all_transitions, finished_in_final)
-        # tuple is built in the various checks
+        # tuple is assembled in the various checks
         
         if flowID != "":
             print "Flow {0} under test:".format(flowID)
@@ -202,7 +215,7 @@ class Statemachine(object):
             else:
                 return dict({"testSuccessful": False, "isInTestFlows": True, "hasMoreThanOneMessage": True, "has_no_gaps": True, "is_alternating": False, "did_all_transitions": False, "finished_in_final": False})
                               
-        if self.__config.debug:
+        if printSteps or ((not printSteps) and self.__config.debug):
             for key, value in testflow.items() :
                 print "{0} - {1}".format(key, value)
             print
@@ -229,44 +242,44 @@ class Statemachine(object):
             #         
             # 
             #===================================================================
-            self.log("Current state: {0}".format(curState))
-            self.log("Possible transitions: ")
+            self.log("Current state: {0}".format(curState), printSteps)
+            self.log("Possible transitions: ", printSteps)
             for t in stateTransitions:
-                self.log("Destination: {0}, hash: {1}, visual regex: {2}, regex: {3}, message: {4}".format(t.getDestination(), t.getHash(), t.getRegExVisual(), t.getRegEx(), t.getMessage()))
-            self.log("Current input:")
-            self.log("Msg: {0}".format(f.get_message()))
+                self.log("Destination: {0}, hash: {1}, visual regex: {2}, regex: {3}, message: {4}".format(t.getDestination(), t.getHash(), t.getRegExVisual(), t.getRegEx(), t.getMessage()), printSteps)
+            self.log("Current input:", printSteps)
+            self.log("Msg: {0}".format(f.get_message()), printSteps)
             payload = f.get_payload_as_string()
-            self.log("Payload: {0}".format(payload))
+            self.log("Payload: {0}".format(payload), printSteps)
             gotOne = False
             for t in stateTransitions:
                 r = t.getRegEx()
-                self.log("Testing regex visual: {0}".format(t.getRegExVisual()))
-                self.log("Testing regex:        {0}".format(t.getRegEx()))
+                self.log("Testing regex visual: {0}".format(t.getRegExVisual()), printSteps)
+                self.log("Testing regex:        {0}".format(t.getRegEx()), printSteps)
                 res = None
                 try:
                     p = re.compile(r)
                     res = p.match(payload)
-                except AssertionError as ae:
+                except Exception as ae:
                     print ae
                     #print "AssertionError: {0}".format(ae)
                 if res:
                     gotOne = True
                     break
             if not gotOne:
-                # Search for epsilon transitions
+                # Search for epsilon transitions if nothing else works
                 for t in stateTransitions:
                     if t.getHash=="{{epsilon}}":
                         gotOne = True
                         break
             if gotOne:
-                self.log("Found matching transition: {0}".format(t))
+                self.log("Found matching transition: {0}".format(t), printSteps)
                 curState = t.getDestination()
             else:
-                self.log("Did not find any matching transition")
+                self.log("ERROR: Did not find any matching transition", printSteps)
                 failed = True
                 break
         
-        # Consume remaining epsilons
+        # Consume remaining epsilons if flow has already ended
         if not failed:
             tryAgain = True
             while tryAgain:
@@ -279,17 +292,15 @@ class Statemachine(object):
                             break
                         
         if failed:
-            self.log("ERROR: Flow not accepted by statemachine")
+            self.log("ERROR: Flow not accepted by statemachine", printSteps)
             return dict({"testSuccessful": False, "isInTestFlows": True, "hasMoreThanOneMessage": True, "has_no_gaps": True, "is_alternating": True, "did_all_transitions": False, "finished_in_final": False})
-        
-            # Try to match the message payload with one of the regex of our transitions
         else:
             if curState in self.__finals:
-                self.log("SUCCESS: Statemachine did reach acceptance state")
+                self.log("SUCCESS: Statemachine did reach acceptance state", printSteps)
                 return dict({"testSuccessful": True, "isInTestFlows": True, "hasMoreThanOneMessage": True, "has_no_gaps": True, "is_alternating": True, "did_all_transitions": True, "finished_in_final": True})
         
             else:
-                self.log("ERROR: Statemachine did not halt in acceptance state")
+                self.log("ERROR: Statemachine did not halt in acceptance state", printSteps)
                 return dict({"testSuccessful": False, "isInTestFlows": True, "hasMoreThanOneMessage": True, "has_no_gaps": True, "is_alternating": True, "did_all_transitions": True, "finished_in_final": False})
                              
         
@@ -385,8 +396,8 @@ class Statemachine(object):
                 return tuple([True, False]) # return that it has passed has_gaps but failed is_alternating
         return tuple([True, True]) # return that is has passed has_gaps and is_alternating
     
-    def log(self, msg):
-        if self.__config.debug:
+    def log(self, msg, printDebug=False):
+        if self.__config.debug or printDebug:
             print msg
             
     def build(self):
@@ -475,8 +486,9 @@ class Statemachine(object):
                     # In the ReverX paper, this step is executed after the trivial DFA is built.
                     # However it should be possible as well to do this during the build phase like done here
                     
-                    existingTransition = self.findTransition(curstate, hash)
-                    #existingTransition = self.findTransitionBySrc(curstate, hash)
+                    #existingTransition = self.findTransition(curstate, hash)
+                    # TODO: Chech whether we need to use findTransition or findTransitionBySrc
+                    existingTransition = self.findTransitionBySrc(curstate, hash)
                     
                     if self.__config.fastReverXStage1 and self.__config.performReverXMinimization: # Perform quick stage 1 if ReverX minimization is desired at all
                         if existingTransition:
@@ -720,9 +732,9 @@ class Statemachine(object):
         print "Performing ReverX merge stage 2"
         # merge states without a causal relation that share at least one message type
         start = time.time()
-        reduce = True
-        while reduce:
-            reduce = False
+        reduced = True
+        while reduced:
+            reduced = False
             for q in self.__states[:]:
                 if q not in self.__states: # Has q already been removed in a previous iteration
                     continue
@@ -755,10 +767,10 @@ class Statemachine(object):
                                     q_set.add(i.getHash() for i in q_t_list)
                                     if p_set==q_set and len(p_set)>0:
                                         self.mergeStates(p,q)
-                                        reduce = True
+                                        reduced = True
                                 else:
                                     self.mergeStates(p,q)
-                                    reduce = True
+                                    reduced = True
                                                 #self.minimize_dfa()
         elapsed = (time.time() - start)
         print "Transitions:"

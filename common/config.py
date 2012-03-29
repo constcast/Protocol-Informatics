@@ -58,6 +58,7 @@ class Configuration:
         self.checkConsistencyOnMerge = False
         self.lastMessageIsDirectlyFinal = True
         self.strictMergeOfOutgoingEdges = True
+        self.testFile = "/Users/daubsi/Dropbox/ftp_big"
         # Used for NW alignment in Discoverer
         self.matchScore = 1
         self.mismatchScore = 1
