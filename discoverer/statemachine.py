@@ -8,6 +8,8 @@ import copy
 import uuid
 from xml.sax.saxutils import escape
 from cStringIO import StringIO
+from collections import Counter
+     
 
 class State(object):
     typeIncomingClient2ServerMsg = 'IncomingClient2ServerMsg'
@@ -124,6 +126,29 @@ class Transition(object):
             return True
         return False
     
+    def __cmp__(self,other):
+        # Return -1 if self<other
+        # Return  0 if self==other
+        # Return  1 if self>other
+        this_regex = self.getRegEx()
+        other_regex = other.getRegEx()
+        
+        if this_regex == other_regex: return 0
+        
+        res = False
+        try:
+            import re
+            p = re.compile(this_regex)
+            other_regex = other_regex[1:-1] # Remove the ^ and $ meta characters from matching regex
+            other_regex = other_regex.replace("(?:20)+","20") # Remove regex meta characters
+            res = p.match(other_regex) 
+        except Exception:
+            pass
+        if res:
+            # this_regex can match other_regex --> this_regex is more generic
+            return -1
+        return 1
+
     def __repr__(self):
         return "({0},{1},{2},{3},{4},{5})".format(self.__src, self.__hash, self.__dest, self.__direction, self.__counter, self.__msg)
      
@@ -162,7 +187,11 @@ class Statemachine(object):
         #self.__states = ["s0"]
         self.__start = State("s0",State.typeIncomingNoneMsg, self)
         self.__states = [self.__start]
-        self.__transitions = set()
+        #self.__transitions = set()
+        # Two new hashmaps for faster queries for src/dest states
+        self.__transitions_from = dict()
+        self.__transitions_into = dict()
+        self.numOfTransitions = 0
         self.__nextstate = 1
         self.__config = config
         self.__alphabet = set()
@@ -175,10 +204,9 @@ class Statemachine(object):
     
     '''20120330: Current state:
     Mit 78 maxMessages akzeptiert er nicht mehr, mit 77 schon noch
-    Wichtigstes Indiz: Mit 78 gibt es aus finals fŸhrende TRansitionen und
-    Finals sind letzte Knoten - obwohl das eigene Knoten sein sollten zu denen nur noch ein epsilon fŸhrt!
-    Es dŸfte nur noch 1 Final geben!!
-    '''
+    Wichtigstes Indiz: Mit 78 gibt es aus finals fuehrende TRansitionen und
+    Finals sind letzte Knoten - obwohl das eigene Knoten sein sollten zu denen nur noch ein epsilon fuehrt!
+
     accepts flow takes a flow of messages and runs it against the statemachine
     to check whether it is accepted or rejected by the machine
     It results an appropriate result record describing the nature of the error
@@ -251,29 +279,42 @@ class Statemachine(object):
             payload = f.get_payload_as_string()
             self.log("Payload: {0}".format(payload), printSteps)
             gotOne = False
+            
+            regexList = []
             for t in stateTransitions:
                 r = t.getRegEx()
-                self.log("Testing regex visual: {0}".format(t.getRegExVisual()), printSteps)
-                self.log("Testing regex:        {0}".format(t.getRegEx()), printSteps)
+                #self.log("Testing regex visual: {0}".format(t.getRegExVisual()), printSteps)
+                #self.log("Testing regex:        {0}".format(t.getRegEx()), printSteps)
                 res = None
                 try:
                     p = re.compile(r)
                     res = p.match(payload)
                 except Exception as ae:
-                    print ae
-                    #print "AssertionError: {0}".format(ae)
+                    pass
                 if res:
                     gotOne = True
-                    break
+                    regexList.append(t)
+                    
             if not gotOne:
                 # Search for epsilon transitions if nothing else works
                 for t in stateTransitions:
                     if t.getHash=="{{epsilon}}":
                         gotOne = True
-                        break
+                        regexList.append(t)
+                        
             if gotOne:
-                self.log("Found matching transition: {0}".format(t), printSteps)
-                curState = t.getDestination()
+                if len(regexList)==1:
+                    self.log("Found matching transition: {0}".format(regexList[0]), printSteps)
+                    curState = regexList[0].getDestination()
+                elif len(regexList)>1:
+                    self.log("Found multiple matching transitions: {0} transitions found".format(len(regexList)), printSteps)
+                    for t in regexList:
+                        print "\t{0}".format(t)
+                    # Try to find the best one of these transitions, put the most generic to the back of the list
+                    regexList.sort(reverse=True)
+                    self.log("Using {0}".format(regexList[0]))
+                    curState = regexList[0].getDestination()
+                
             else:
                 self.log("ERROR: Did not find any matching transition", printSteps)
                 failed = True
@@ -325,20 +366,36 @@ class Statemachine(object):
     
     def findTransitionBySrc(self, curState, hash):
         # First try to find exact matches
-        for t in self.__transitions:
-            if t.getSource() == curState and t.getHash()==hash: # Exactly this transition was already in list
-                return t      
-        
+        #for t in self.__transitions:
+        #    if t.getSource() == curState and t.getHash()==hash: # Exactly this transition was already in list
+        #        return t   
+        if not self.__transitions_from.has_key(curState): return   
+        l = self.__transitions_from[curState]
+        for t in l:
+            if t.getHash()==hash: return t
+            
     def findTransition(self,curState, hash):
-        # First try to find exact matches
-        for t in self.__transitions:
-            if t.getSource() == curState and t.getHash()==hash: # Exactly this transition was already in list
-                return t      
-        # Now a match of the hash is enough
-        # Needed because of NFA degeneration of statemachine    
-        for t in self.__transitions:
-            if t.getHash() == hash: # This transition is already in list
-                return t
+        #=======================================================================
+        # # First try to find exact matches
+        # for t in self.__transitions:
+        #    if t.getSource() == curState and t.getHash()==hash: # Exactly this transition was already in list
+        #        return t      
+        # # Now a match of the hash is enough
+        # # Needed because of NFA degeneration of statemachine    
+        # for t in self.__transitions:
+        #    if t.getHash() == hash: # This transition is already in list
+        #        return t
+        # return None
+        #=======================================================================
+        if not self.__transitions_from.has_key(curState): return None
+        l = self.__transitions_from[curState]
+        for t in l:
+            if t.getHash()==hash: return t
+        t_keys = self.__transitions_from.keys()
+        for t_key in t_keys:
+            l = self.__transitions_from[t_key]
+            for t in l:
+                if t.getHash()==hash: return t
         return None
     
     def is_alternating(self, flows, flow):
@@ -352,15 +409,40 @@ class Statemachine(object):
             direction = direction2
         return True
     
+    def addExistingTransition(self, t):
+        self.addTransition(t.getSource(), t.getHash(), t.getDestination(), t.getDirection(), t.getMessage(), t.getRegEx(), t.getRegExVisual(), t.getCluster())
+
     def addTransition(self,src,trans,dest, direction, msg, regex, regexvisual, cluster):
-        self.__transitions.add(Transition(src,trans,dest,direction,msg, regex, regexvisual, cluster))
+        #self.__transitions.add(Transition(src,trans,dest,direction,msg, regex, regexvisual, cluster))
+        if not self.__transitions_from.has_key(src):
+            self.__transitions_from[src] = set()
+        if not self.__transitions_into.has_key(dest):
+            self.__transitions_into[dest] = set()
+            
+        added = False
+        before = len(self.__transitions_from[src])
+        self.__transitions_from[src].add(Transition(src,trans,dest,direction,msg, regex, regexvisual, cluster))
+        after = len(self.__transitions_from[src])
+        if after == before+1: added=True
+        
+        before = len(self.__transitions_into[dest])
+        self.__transitions_into[dest].add(Transition(src,trans,dest,direction,msg, regex, regexvisual, cluster))
+        after = len(self.__transitions_into[dest])
+        if after == before+1: added=True
+        
+        if added: self.numOfTransitions+=1
         
     def dumpTransitions(self):
         print "Last of statemachine transitions:"
         print "================================="
-        for t in self.__transitions:
+        #for t in self.__transitions:
+        #    print "{0},{1},{2},{3},{4}".format(t.getSource(), t.getHash(), t.getDestination(), t.getRegEx(), t.getMessage())
+        #
+        
+        t_set = self.buildUnionTransitionSet()
+        for t in t_set:
             print "{0},{1},{2},{3},{4}".format(t.getSource(), t.getHash(), t.getDestination(), t.getRegEx(), t.getMessage())
-            
+                
     def fake(self):
         self.__start = "s43"
         self.__states = ["s43","s44","s45","s46","s47","s48","s49","s50", "s51", "s52","s53","s54","s55","s56","s57"]
@@ -496,8 +578,10 @@ class Statemachine(object):
                                 # Exactly this transition exists
                                 existingTransition.incCounter() # Inc link usage
                                 self.log("Exactly this transition already exists")
+                                # Do not create a final out of a "normal" transitions
                                 if msg_key == msg_keys[-1]: # Is this the last
-                                    self.__finals.add(existingTransition.getDestination()) 
+                                    if self.__config.lastMessageIsDirectlyFinal:
+                                        self.__finals.add(existingTransition.getDestination()) 
                                 curstate = existingTransition.getDestination()
                                 continue
                             else: # A transition with this hash does exist, but from a different src state
@@ -505,7 +589,8 @@ class Statemachine(object):
                                 curstate = existingTransition.getDestination()
                                 self.log("A transition with this hash already exists, bending link to ({0},{1},{2})".format(curstate, hash, existingTransition.getDestination()))
                                 if msg_key == msg_keys[-1]: # Is this the last
-                                    self.__finals.add(existingTransition.getDestination()) 
+                                    if self.__config.lastMessageIsDirectlyFinal:
+                                        self.__finals.add(existingTransition.getDestination()) 
                                 continue
                         else: # This transition does not yet exist, add new transition with new state    
                             #newstate = "s{0}".format(self.__nextstate)
@@ -539,8 +624,11 @@ class Statemachine(object):
                             # Exactly this transition exists
                             existingTransition.incCounter() # Inc link usage
                             self.log("Exactly this transition already exists")
+                            
+                            # Do not create a final out of a "normal" transitions
                             if msg_key == msg_keys[-1]: # Is this the last
-                                self.__finals.add(existingTransition.getDestination()) 
+                                if self.__config.lastMessageIsDirectlyFinal:
+                                    self.__finals.add(existingTransition.getDestination()) 
                             curstate = existingTransition.getDestination()
                             continue
                         else:
@@ -573,39 +661,51 @@ class Statemachine(object):
         self.collapse_finals()
         
         if self.__config.performReverXMinimization:
-            print "Performing ReverX merge. Number of states {0}, transitions {1}".format(len(self.__states), len(self.__transitions))
+            print "Performing ReverX merge. Number of states {0}, transitions {1}".format(len(self.__states), self.numOfTransitions)
             self.reverx_merge()
-            print "Performed ReverX merge. Number of states {0}, transitions: {1}".format(len(self.__states),len(self.__transitions))
+            print "Performed ReverX merge. Number of states {0}, transitions: {1}".format(len(self.__states), self.numOfTransitions)
             self.collapse_finals()
         else:
             print("ReverX merge disabled by configuration")
         
         
         if self.__config.debug:
+            
             print "Finished"
             print "States: ", ",".join(x.getName() for x in self.__states)
             
-            print "Transitions: "
-            for t in self.__transitions:
-                print t
+            self.dumpTransitions()
             print "Finals: ", ",".join(x.getName() for x in self.__finals)
             
             print "Consistency check: (States in transitions but not in list of states)"
             c = set()
-            for t in self.__transitions:
+            
+            t_full_set = self.buildUnionTransitionSet()
+            for t in t_full_set:
                 if not t.getSource() in self.__states:
                     c.add(t.getSource())
                 if not t.getDestination() in self.__states:
                     c.add(t.getDestination())
             print c
-    
+            
+            self.checkNFA()
+             
+    #===========================================================================
+    #        for t in self.__transitions:
+    #            if not t.getSource() in self.__states:
+    #                c.add(t.getSource())
+    #            if not t.getDestination() in self.__states:
+    #                c.add(t.getDestination())
+    #        print c
+    # 
+    #===========================================================================
     def determineStateType(self, clusterType):
         if clusterType=='server2client':
             stateType = State.typeIncomingServer2ClientMsg
         elif clusterType=='client2server':
             stateType = State.typeIncomingClient2ServerMsg
         else:
-            stateType = State.typeIncomingNoneMsg 
+            stateType = State.typeIncomingNoneMsg
         return stateType
                             
                   
@@ -625,11 +725,21 @@ class Statemachine(object):
         
         print "Pruning transitions..."
         prunedTransitions = 0
-        for t in copy.copy(self.__transitions):
-            if t.getCounter()<self.__config.pruneBelowLinkScore:
-                self.__transitions.remove(t)
-                prunedTransitions += 1
         
+        t_full_set = self.buildUnionTransitionSet()
+        for t in t_full_set:
+            if t.getCounter()<self.__config.pruneBelowLinkScore:
+                self.removeTransition(t)
+                prunedTransitions += 1
+            
+            
+        #=======================================================================
+        # for t in copy.copy(self.__transitions):
+        #    if t.getCounter()<self.__config.pruneBelowLinkScore:
+        #        self.__transitions.remove(t)
+        #        prunedTransitions += 1
+        # 
+        #=======================================================================
         print "Pruned {0} transitions".format(prunedTransitions)
         
         if prunedTransitions == 0:
@@ -638,16 +748,35 @@ class Statemachine(object):
         
         nodesPruned = self.removeOrphans()
         print "Pruned {0} nodes".format(nodesPruned)
-        
     
+    def removeTransition(self,t):
+        deleted = False
+        if self.__transitions_from.has_key(t.getSource()):
+            before = len(self.__transitions_from[t.getSource()]) 
+            self.__transitions_from[t.getSource()].remove(t)
+            after = len(self.__transitions_from[t.getSource()]) 
+            if after == before-1: deleted = True
+        if self.__transitions_into.has_key(t.getDestination()):
+            before = len(self.__transitions_into[t.getDestination()]) 
+            self.__transitions_into[t.getDestination()].remove(t)
+            after = len(self.__transitions_into[t.getDestination()]) 
+            if after == before-1: deleted = True
+        if deleted: self.numOfTransitions-=1     
+        
+   
     def removeOrphans(self, removed=0):
         
         nodesPruned = 0
         reachable = set()
         states = set(self.__states)
-        for t in self.__transitions:
-            s = t.getDestination()
-            reachable.add(s)
+        
+        dest_list = self.__transitions_into.keys()
+        for d in dest_list: reachable.add(d)
+        #t_set = self.buildUnionTransitionSet() # We could stay with 
+        #for t in t_set:
+        ##for t in self.__transitions:
+        #    s = t.getDestination()
+        #    reachable.add(s)
         reachable.add(self.__start) # Always declare the start node reachable 
         if len(reachable)!=len(states): # Not all states could be reached
             nodesToPrune = states.difference(reachable)
@@ -657,9 +786,12 @@ class Statemachine(object):
                     self.__finals.remove(s)                            
                 self.__states.remove(s)
             
-                for t in copy.copy(self.__transitions):
+                t_set = copy.copy(self.buildUnionTransitionSet())
+                for t in t_set:            
+                #for t in copy.copy(self.__transitions):
                     if t.getSource()==s or t.getDestination()==s:
-                        self.__transitions.remove(t)
+                        self.removeTransition(t)
+                        # self.__transitions.remove(t)
             self.removeOrphans(removed=nodesPruned)
         return nodesPruned+removed
 
@@ -697,10 +829,10 @@ class Statemachine(object):
             print "Performing native ReverX merge stage 1"
             # merge states reached via the same message types
         
-            for q in sorted(self.__states[:], key = lambda state: int(state.getName()[1:])):
+            for q in sorted(self.__states[:], key = lambda state: int(state.getName()[1:])): # Sorting just for display purposes
                 if q not in self.__states: # Has q already been removed in a previous iteration?
                     continue
-                for p in sorted(self.__states[:], key = lambda state: int(state.getName()[1:])):
+                for p in sorted(self.__states[:], key = lambda state: int(state.getName()[1:])): # Sorting just for display purpose
                     if p not in self.__states: # Has p already been removed in a previous iteration?
                         continue
                     #if p=="e" or q=="e" or q==p or (p not in self.__states) or (q not in self.__states):
@@ -720,63 +852,78 @@ class Statemachine(object):
                                             self.statesHaveSameType(r,t)):
                                             self.mergeStates(r,t)       
             elapsed = (time.time() - start)
-            print "Performed ReverX merge stage 1. {} states left, transitions {} (Took: {:.3f} seconds)".format(len(self.__states),len(self.__transitions), elapsed)
+            print "Performed ReverX merge stage 1. {} states left, transitions {} (Took: {:.3f} seconds)".format(len(self.__states),self.numOfTransitions, elapsed)
         else:
             print "Skipping native ReverX merge stage 1 by configuration"    
             
             
         # Begin ReverX Stage 2
-        if not self.__config.performReverXStage2:
-            return
-           
-        print "Performing ReverX merge stage 2"
-        # merge states without a causal relation that share at least one message type
-        start = time.time()
-        reduced = True
-        while reduced:
-            reduced = False
-            for q in self.__states[:]:
-                if q not in self.__states: # Has q already been removed in a previous iteration
-                    continue
-                for p in self.__states[:]:
-                    if p not in self.__states: # Has p already been removed in a previous iteration?
+        if self.__config.performReverXStage2:
+        
+               
+            print "Performing ReverX merge stage 2"
+            # merge states without a causal relation that share at least one message type
+            start = time.time()
+            reduced = True
+            while reduced:
+                reduced = False
+                for q in self.__states[:]:
+                    if q not in self.__states: # Has q already been removed in a previous iteration
                         continue
-                    if p.getName()=="e" or q.getName()=="e" or q==p or (p not in self.__states) or (q not in self.__states):
-                        continue
-                    # if there is not a causal relation
-                    if (not self.referenceBetween(p,q)) or self.isMutualReachable(p,q):
-                        if self.canReachSameState(p,q):
-                            # Added additional constraint:
-                            # self.canReachSameState(p,q) must be valid for all transitions of these two nodes, not just "\exists s \in \Sigma", because
-                            # otherwise the merge will result in a NFA because of two different incoming (client) messages and multiple result messages
-                            # --> the automaton would not know which answer belongs to which command
-                            # This is not a problem with the standard ReverX becaue ReverX does only work on client messages and not on a combined statemachine
-                            # with client and server messages! Therefore they do not need to cope for these situations!
-                            # So basically, the constraint is, that they need to have the same outgoing transition set
-                            if (self.statesAreBothFinal(p,q) or self.statesAreBothNotFinal(p,q)) and self.statesHaveSameType(p,q): 
-                                    # 20100327 The same problem can also occur from server2client messages...
-                                    # TODO: How can a valid transition directly lead into final?
-                                    # There should only be epsilons which transition to final??
-                                    # With these additions, all tests are passed but the DFA is not minimal
-                                if self.__config.strictMergeOfOutgoingEdges:
-                                    p_t_list = self.get_transitions_from(p)
-                                    q_t_list = self.get_transitions_from(q)
-                                    p_set = set()
-                                    q_set = set()
-                                    p_set.add(i.getHash() for i in p_t_list)
-                                    q_set.add(i.getHash() for i in q_t_list)
-                                    if p_set==q_set and len(p_set)>0:
+                    for p in self.__states[:]:
+                        if p not in self.__states: # Has p already been removed in a previous iteration?
+                            continue
+                        if p.getName()=="e" or q.getName()=="e" or q==p or (p not in self.__states) or (q not in self.__states):
+                            continue
+                        # if there is not a causal relation
+                        if (not self.referenceBetween(p,q)) or self.isMutualReachable(p,q):
+                            if self.canReachSameState(p,q):
+                                # Added additional constraint:
+                                # self.canReachSameState(p,q) must be valid for all transitions of these two nodes, not just "\exists s \in \Sigma", because
+                                # otherwise the merge will result in a NFA because of two different incoming (client) messages and multiple result messages
+                                # --> the automaton would not know which answer belongs to which command
+                                # This is not a problem with the standard ReverX becaue ReverX does only work on client messages and not on a combined statemachine
+                                # with client and server messages! Therefore they do not need to cope for these situations!
+                                # So basically, the constraint is, that they need to have the same outgoing transition set
+                                if (self.statesAreBothFinal(p,q) or self.statesAreBothNotFinal(p,q)) and self.statesHaveSameType(p,q): 
+                                        # 20100327 The same problem can also occur from server2client messages...
+                                        # TODO: How can a valid transition directly lead into final?
+                                        # There should only be epsilons which transition to final??
+                                        # With these additions, all tests are passed but the DFA is not minimal
+                                    
+                                    if self.__config.strictMergeOfOutgoingEdges:
+                                        p_t_list = self.get_transitions_from(p)
+                                        q_t_list = self.get_transitions_from(q)
+                                        p_set = set()
+                                        q_set = set()
+                                        p_set.add(i.getHash() for i in p_t_list)
+                                        q_set.add(i.getHash() for i in q_t_list)
+                                        if p_set==q_set and len(p_set)>0:
+                                            print "Merging states with same outgoing edge set"
+                                            self.mergeStates(p,q)
+                                            reduced = True
+                                        else: # Change due to NFA behavior (April 1st 2012)
+                                            # Check if p and q have the same incoming edge set and merge
+                                            # them if this requisite holds
+                                            p_into_list = self.getTransitionsInto(p)
+                                            q_into_list = self.getTransitionsInto(q)
+                                            p_set = set()
+                                            q_set = set()
+                                            p_set.add(i.getHash() for i in p_into_list)
+                                            q_set.add(i.getHash() for i in q_into_list)
+                                            if p_set==q_set and len(p_set)>0:
+                                                print "Merging states with same incoming edge set"
+                                                self.mergeState(p,q)
+                                                reduced = True
+                                    else:
                                         self.mergeStates(p,q)
                                         reduced = True
-                                else:
-                                    self.mergeStates(p,q)
-                                    reduced = True
-                                                #self.minimize_dfa()
-        elapsed = (time.time() - start)
-        print "Transitions:"
-        for t in self.__transitions:
-            print t
-        print "Performed ReverX merge stage 2. {} states left, transitions {} (Took: {:.3f} seconds)".format(len(self.__states),len(self.__transitions), elapsed)
+                                                    #self.minimize_dfa()
+            elapsed = (time.time() - start)
+            #self.dumpTransitions()
+            print "Performed ReverX merge stage 2. {} states left, transitions {} (Took: {:.3f} seconds)".format(len(self.__states),self.numOfTransitions, elapsed)
+            
+            
         
         #=======================================================================
         # # Check for duplicate transactions (same src, same dest, same hash)
@@ -1028,6 +1175,22 @@ class Statemachine(object):
 
     ###
     
+    def checkNFA(self):
+        # Print out NFA situations (multiple same hash from one state)
+        print "Checking for NFA:"
+        for s in self.__states:
+            l = self.getTransitionHashsFrom(s)
+            sumUp = Counter(l)
+            print "State {0}: ". format(s),
+            nfa = False
+            for key in sumUp.keys():
+                if sumUp[key]>1:
+                    print "Hash: {0} ({1} times),".format(key, sumUp[key]),
+                    nfa = True
+            if not nfa:
+                print "OK",
+            print
+        
     def statesAreBothFinal(self,p,q):
         return p in self.__finals and q in self.__finals
     
@@ -1049,13 +1212,25 @@ class Statemachine(object):
     def getState(self,p,s):
         l = []
         
-        for t in self.__transitions:
-            if t.getSource()==p and t.getHash()==s:
+        if not self.__transitions_from.has_key(p):
+            return None
+        t_set = self.__transitions_from[p]
+        for t in t_set:
+            if t.getHash()==s:
                 l.append(t.getDestination())
         if len(l)==0:
             return None       
         return l 
     
+    #===========================================================================
+    #    for t in self.__transitions:
+    #        if t.getSource()==p and t.getHash()==s:
+    #            l.append(t.getDestination())
+    #    if len(l)==0:
+    #        return None       
+    #    return l 
+    # 
+    #===========================================================================
     def mergeStates(self,p,q):
         """Merges p into q. All transitions to p are moved to q.
         If p was the start or current state, those are also moved to q.
@@ -1078,6 +1253,7 @@ class Statemachine(object):
             filename = "/Users/daubsi/Dropbox/dot_debug_before.dot"
             self.dump_dot(filename)
             
+            
         print "Merging states {0} and {1} to {1}, total states left {2}".format(p,q, len(self.__states)-1)
         self.__states.remove(p)
         if p in self.__finals:
@@ -1090,16 +1266,23 @@ class Statemachine(object):
         if self.__start == p:
             self.__start = q
         
-        for t in copy.copy(self.__transitions):
+        # TODO: Use hashmap for master iteration
+        for t in copy.copy(self.buildUnionTransitionSet()):
             # Redirect target states
             
             if t.getSource()==p or t.getDestination()==p:
-                self.__transitions.remove(t)
+                # TODO: Need to differentiate between source and dest when using hashmap!
+                self.removeTransition(t)
+                #self.__transitions.remove(t)
+                
                 if t.getSource()==p:
                     t.setSource(q)
                 if t.getDestination()==p:
                     t.setDestination(q)
-                self.__transitions.add(t)
+                
+                self.addExistingTransition(t)
+                
+            #===
             #===================================================================
             # if t.getSource()==p:
             #    print t
@@ -1145,9 +1328,11 @@ class Statemachine(object):
                 
     def getTransitionsInto(self, s):
         l = []
-        for t in self.__transitions:
-            if t.getDestination()==s:
-                l.append(t)
+        #for t in self.__transitions:
+        #    if t.getDestination()==s:
+        if not self.__transitions_into.has_key(s): return l
+        t_list = self.__transitions_into[s]
+        for t in t_list: l.append(t)
         return l
     
     def referenceBetween(self, p, q):
@@ -1179,9 +1364,12 @@ class Statemachine(object):
    
     def get_transitions_from(self, p):
         l = []
-        for t in self.__transitions:
-            if t.getSource()==p:
-                l.append(t)
+        #for t in self.__transitions:
+        #    if t.getSource()==p:
+        if not self.__transitions_from.has_key(p): return l
+        t_list = self.__transitions_from[p]
+        for t in t_list:
+            l.append(t)
         return l
     
     def getTransitionHashsFrom(self, p):
@@ -1192,7 +1380,10 @@ class Statemachine(object):
         return l2
     
     def has_transition(self, p,s,q):
-        for t in self.__transitions:
+        if not self.__transitions_from.has_key(p): return False
+        t_list = self.__transitions_from[p]
+        #for t in self.__transitions:
+        for t in t_list:
             if t.getSource()==p and t.getHash()==s and t.getDestination()==q:
                 return True
         return False
@@ -1206,6 +1397,7 @@ class Statemachine(object):
             server2ClientFinals = []
             noneTypeFinals = []
             for n in self.__finals:
+                #print "{0} - {1}".format(n.getName(), n.getType())
                 if n.getType()==State.typeIncomingClient2ServerMsg:
                     client2ServerFinals.append(n)
                 elif n.getType()==State.typeIncomingServer2ClientMsg:
@@ -1268,6 +1460,8 @@ class Statemachine(object):
     def dfa(self):
         #states = set([t[0] for t in self.__transitions].extend([t[2] for t in self.__transitions]))
         states = self.__states[:]
+        
+        raise Exception("daubsi: Need update for hashmaps")
         alphabet = set([t.getHash() for t in self.__transitions])  
         alphabet.add("epsilon")   
         delta = self.delta   
@@ -1346,6 +1540,7 @@ class Statemachine(object):
         #=======================================================================
         
     def delta(self,state,trans):
+        raise Exception("Daubsi: Need update for hashmaps")
         if state=='e': # Error state handling
             return "e"
         for t in self.__transitions:
@@ -1380,7 +1575,15 @@ class Statemachine(object):
     # In later correct flows, the existing transition is reused and not corrected.
     # 
     
-    
+    def buildUnionTransitionSet(self):
+        t_full_set = set()
+        for src_key in self.__transitions_from.keys():
+            src_set = self.get_transitions_from(src_key)
+            t_full_set.update(src_set)
+        for dest_key in self.__transitions_into.keys():
+            dest_set = self.getTransitionsInto(dest_key)
+            t_full_set.update(dest_set)
+        return t_full_set
      
     def dump_dot(self, file=""):
         """
@@ -1402,8 +1605,11 @@ class Statemachine(object):
         # Add final node definitions
         for s in self.__finals:
             print '{0} [shape=circle,peripheries=2];'.format(s)
-            
-        for t in self.__transitions:
+        
+        # Build a set with all transitions
+        t_full_set = self.buildUnionTransitionSet()
+                
+        for t in t_full_set:
             
             s = "'{0}'".format(t.getMessage()[:25].translate(trantab))
             if len(t.getMessage())>25:
@@ -1461,12 +1667,13 @@ class Statemachine(object):
             #print '\t\t\t<internal_name>{0}</internal_name>'.format(f.getInternalName())
             #print '\t\t</final_state>'
         print '\t</finalStates>'
-        print '<transitions numOfTransitions="{0}">'.format(len(self.__transitions))
-        for idx, t in enumerate(self.__transitions):
+        t_full_set = self.buildUnionTransitionSet()
+        print '<transitions numOfTransitions="{0}">'.format(len(t_full_set))
+        for idx, t in enumerate(t_full_set):
             t.getXMLRepresentation()
             #print "Idx: {0}, Internal name: {1}, Source: {2}, Transition: {3}, Destination: {4}, Counter: {5}, Direction: {6}, Cluster-Reference: {7}, RegEx: {8}".format(idx, t.getInternalName(), t.getSource(), t.getHash(), t.getDestination(), t.getCounter(), t.getDirection(), t.getCluster().getInternalName(), t.getRegEx())
         print "</transitions>"
-        print "<states>"
+        print '<states numOfStates="{0}">'.format(len(self.__states))
         for idx, s in enumerate(self.__states):
             s.getXMLRepresentation()
             #===================================================================

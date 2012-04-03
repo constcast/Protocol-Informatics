@@ -16,7 +16,7 @@ def saveConfig(configuration, filename):
 class Configuration:
     def __init__(self, d = None):
         # Defaults
-        self.format = "pcap"
+        self.format = "bro"
         self.weight = float(1.0)
         self.graph = False
         self.maxMessages = 50
@@ -34,31 +34,32 @@ class Configuration:
         self.minWordLength = 3        
         self.maxMessagePrefix = 2048
         self.minimumClusterSize = 5
-        self.maxDistinctFDValues = 5
+        self.maxDistinctFDValues = 35
         self.requireTotalLengthChangeForLengthField = False
-        self.dumpFile = "discoverer_dump.txt"
+        self.dumpFile = "/Users/daubsi/Dropbox"
         self.breakSequences = False
         self.breakSequenceAt = "0d0a"
-        self.loadClientAndServerParts = False
+        self.loadClientAndServerParts = True
         self.minimizeDFA = False
         self.debug = False
         self.weightEdges = True
         self.mergeSimilarClusters = False
-        self.considerOneMessageAsConstant = False
-        self.nativeReverXStage1 = False
-        self.fastReverXStage1 = True
-        self.performReverXMinimization = False
+        self.considerOneMessageAsConstant = True
+        self.nativeReverXStage1 = True
+        self.fastReverXStage1 = False
+        self.performReverXMinimization = True
         self.collapseFinals = True
-        self.pruneBelowLinkScore = 2
+        self.pruneBelowLinkScore = 1
         self.pruneDFAOutliers = False
         self.highlightOutlier = True
         self.flowsMustBeStrictlyAlternating = True
-        self.performReverXStage2 = False
-        self.buildDFAViaRegEx = True
+        self.performReverXStage2 = True
+        self.buildDFAViaRegEx = False
         self.checkConsistencyOnMerge = False
-        self.lastMessageIsDirectlyFinal = True
+        self.lastMessageIsDirectlyFinal = False
         self.strictMergeOfOutgoingEdges = True
         self.testFile = "/Users/daubsi/Dropbox/ftp_big"
+        self.numOfTestEntries = 1000
         # Used for NW alignment in Discoverer
         self.matchScore = 1
         self.mismatchScore = 1

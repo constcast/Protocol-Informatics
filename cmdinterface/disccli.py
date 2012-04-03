@@ -91,7 +91,6 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             # 
             #===================================================================
             # Perform discoverer for both parts
-            print "-----------------Client2Server-----------------------"
             self.go(self.env['sequences'])
             
             #self.go(self.env['sequences_client2server'], Message.directionClient2Server)
@@ -148,7 +147,9 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             #import cPickle
             #anothersm = cPickle.loads(pickled)
             #anothersm.dump("/Users/daubsi/Dropbox/anotherdump")
+            self.do_dump_state("")
             self.createXMLOutput()
+            
             
         else:
             # Perform discoverer only for client pat
@@ -193,6 +194,40 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
 
     def do_createXMLOutput(self, string):
         self.createXMLOutput()
+    
+    def do_load_testdata(self, args=""):
+        if len(args)!=0:
+            tok = args.split()
+            fileName = tok[0]
+            element = int(tok[1])
+            
+        fileName = self.config.testFile
+        import common
+        import cmdinterface
+        
+            
+        client2server_file = "{0}_client".format(fileName)
+        server2client_file = "{0}_server".format(fileName)
+        
+        print "Loading {0} entries from test data from {1}".format(self.config.numOfTestEntries,client2server_file) 
+        sequences_client2server = sequences = common.input.Bro(client2server_file, self.config.numOfTestEntries).getConnections()
+        print "Loading {0} entries from test data from {1}".format(self.config.numOfTestEntries, server2client_file)
+        sequences_server2client = sequences = common.input.Bro(server2client_file, self.config.numOfTestEntries).getConnections()
+        sequences = [(sequences_client2server, Message.directionClient2Server),(sequences_server2client, Message.directionServer2Client)] # Keep it compatible with existing code TODO        
+        
+        print "Loaded {0} test sequences from input files".format(len(sequences[0][0])+len(sequences[1][0]))
+        setup = discoverer.setup.Setup(sequences, self.config)
+        testcluster = setup.get_cluster_collection()
+        testflows = self.combineflows(testcluster)
+        
+        self.linkmessages(testflows)
+        
+        self.env['testflows']=testflows
+        
+        if self.env.has_key('sm'):
+            self.env['sm'].setConfig(self.config)
+            self.env['sm'].setTestFlows(testflows)
+        
         
     def do_statemachine_accepts(self, args=""):
         # Tries to load the input and returns whether the statemachine accepts this input
@@ -228,33 +263,17 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         import common
         import cmdinterface
         
-        if len(args)!=0:
-            tok = args.split()
-            fileName = tok[0]
-            element = int(tok[1])
-            
-        fileName = self.config.testFile
-            
-            
-        client2server_file = "{0}_client".format(fileName)
-        server2client_file = "{0}_server".format(fileName)
         
-        print "Loading test data from {0}".format(client2server_file) 
-        sequences_client2server = sequences = common.input.Bro(client2server_file, self.config.maxMessages).getConnections()
-        print "Loading test data from {0}".format(server2client_file)
-        sequences_server2client = sequences = common.input.Bro(server2client_file, self.config.maxMessages).getConnections()
-        sequences = [(sequences_client2server, Message.directionClient2Server),(sequences_server2client, Message.directionServer2Client)] # Keep it compatible with existing code TODO        
-        
-        print "Loaded {0} test sequences from input files".format(len(sequences[0][0])+len(sequences[1][0]))
-        setup = discoverer.setup.Setup(sequences, self.config)
-        testcluster = setup.get_cluster_collection()
-        testflows = self.combineflows(testcluster)
-        self.env['testflows']=testflows
-        
-        self.linkmessages(testflows)
 #        discoverer.formatinference.perform_format_inference_for_cluster_collection(testcluster, self.config)
         #testflow = testflows[testflows.keys()[element]]
+        if not self.env.has_key('testflows'):
+            self.do_load_testdata(args)
         
+        if not self.env.has_key('testflows'):
+            print "ERROR: Loading test data failed!"
+            return
+        
+        testflows = self.env['testflows']
         # Test all flows
         failedelements = []
         success = 0
@@ -270,7 +289,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         self.env['sm'].setTestFlows(testflows)
         for elem in testflows.keys():
             print "{0} flows left to test".format(test2go)
-            res = self.do_statemachine_accepts_flow(elem)
+            res = self.statemachine_accepts_flow(elem)
             test2go -= 1
             
             if res['testSuccessful']==True:
@@ -307,6 +326,9 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
                     print "{0}".format(elem)
         
     def do_statemachine_accepts_flow(self, flow):
+        self.statemachine_accepts_flow(flow)
+        
+    def statemachine_accepts_flow(self, flow):
         if not self.env.has_key('testflows'):
             print "Test flows not loaded yet!"
             return dict({"testSuccessful": False, "isInTestFlows": False, "hasMoreThanOneMessage": False, "has_no_gaps": False, "is_alternating": False, "did_all_transitions": False, "finished_in_final": False})
