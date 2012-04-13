@@ -192,6 +192,7 @@ class CommandLineInterface(cmd.Cmd):
                     server2client_file += ".{0}".format(ext)
                 sequences_client2server = self.load_sequences(formatType, client2server_file)
                 sequences_server2client = self.load_sequences(formatType, server2client_file)
+                    
                 sequences = [(sequences_client2server, Message.directionClient2Server),(sequences_server2client, Message.directionServer2Client)] # Keep it compatible with existing code TODO        
         
         if sequences != None:
@@ -205,15 +206,15 @@ class CommandLineInterface(cmd.Cmd):
             
     def load_sequences(self, formatType, filename):
         try:
-            print "Attempting to read %i flows from file \"%s\" as \"%s\" file" % (self.config.maxMessages, filename, formatType)
+            print "Attempting to read %i flows from file \"%s\" as \"%s\" file" % (self.config.maxFlows, filename, formatType)
             # we expect a file and a format string
             import common
             if formatType == "pcap":
-                sequences = common.input.Pcap(filename, self.config.maxMessages, self.config.ethOffset).getConnections()
+                sequences = common.input.Pcap(filename, self.config.maxFlows, self.config.ethOffset).getConnections()
             elif formatType == "bro":
-                sequences = common.input.Bro(filename, self.config.maxMessages).getConnections()
+                sequences = common.input.Bro(filename, self.config.maxFlows).getConnections()
             elif formatType == "ascii":
-                sequences = common.input.ASCII(filename, self.config.maxMessages).getConnections()
+                sequences = common.input.ASCII(filename, self.config.maxFlows).getConnections()
             elif formatType == "config":
                 try:
                     newConfig = common.config.loadConfig(filename)

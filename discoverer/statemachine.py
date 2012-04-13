@@ -6,11 +6,18 @@ Created on 20.02.2012
 
 import copy
 import uuid
+import common
+import types
 from xml.sax.saxutils import escape
 from cStringIO import StringIO
 from collections import Counter
      
 
+# Helpder function for transition.__cmp__
+def __repl_dotstar(self,mo):
+    repltxt = int(mo.group(2))*"00" # Replace our matching group with n times e.g. 00 byte (anything except 20)
+    return repltxt
+    
 class State(object):
     typeIncomingClient2ServerMsg = 'IncomingClient2ServerMsg'
     typeIncomingServer2ClientMsg = 'IncomingServer2ClientMsg'
@@ -38,7 +45,7 @@ class State(object):
         return self.__name == other.__name and self.__stateType == other.__stateType
     
     def getXMLRepresentation(self):
-        t_list = self.__statemachine.get_transitions_from(self)
+        t_list = self.__statemachine.getTransitionsFrom(self)
         print '<state name="{0}" internalName="{1}" type="{2}" numOfTransitionsFrom="{3}">'.format(self.getName(), self.getInternalName(), self.getType(), len(t_list))
         if (len(t_list)>0):
             print '<referencedTransitions>'
@@ -139,8 +146,25 @@ class Transition(object):
         try:
             import re
             p = re.compile(this_regex)
+            # What we do here, is converting our "target" regex to a WORD of the language where this
+            # regex matches to!
             other_regex = other_regex[1:-1] # Remove the ^ and $ meta characters from matching regex
             other_regex = other_regex.replace("(?:20)+","20") # Remove regex meta characters
+            # Create word pattern out of our match anything regex
+            # What do we do here?
+            # This here could be a substring in our regex
+            # "(?:[0-9a-f]{2}){6,8}(?:20)+0d0a"
+            # What we need to do is to replace "(?:[0-9a-f]{2}){6,8}" with an INSTANCE of what this
+            # regex is matching to, in this case 6-8 e.g. 00 bytes
+            # We use two regex to FIND this regex.
+            # These regex are built in such way, that one group returns EVERYTHING (the outermost ())
+            # and the other one resp. two groups match the amount of repetitions, so either {x} or {x,y}
+            
+            find_fixed_dotstar = "(\(\?:\[0\-9a\-f\]\{2\}\)\{([1-9][0-9]*)\})"
+            other_regex = re.sub(find_fixed_dotstar, __repl_dotstar, other_regex)
+            find_variable_dotstar = "(\(\?:\[0\-9a\-f\]\{2\}\)\{([1-9][0-9]*),([1-9][0-9]*)\})"
+            other_regex = re.sub(find_variable_dotstar, __repl_dotstar, other_regex)
+            
             res = p.match(other_regex) 
         except Exception:
             pass
@@ -148,7 +172,7 @@ class Transition(object):
             # this_regex can match other_regex --> this_regex is more generic
             return -1
         return 1
-
+        
     def __repr__(self):
         return "({0},{1},{2},{3},{4},{5})".format(self.__src, self.__hash, self.__dest, self.__direction, self.__counter, self.__msg)
      
@@ -235,7 +259,7 @@ class Statemachine(object):
         if len(messages)==1:
             self.log("Flow {0} has only 1 message. Skipping flow".format(flowID))
             return dict({"testSuccessful":False, "isInTestFlows": True, "hasMoreThanOneMessage": False, "has_no_gaps": False, "is_alternating": False, "did_all_transitios": False, "finished_in_final":  False})    
-        returntuple = self.flow_is_valid(self.__testflows,flowID)
+        returntuple = common.flow_is_valid(self.__testflows,flowID, self.__config)
         if returntuple[0]==False or returntuple[1] == False:
             print "Flow is not valid"
             if returntuple[0]==False:
@@ -245,14 +269,14 @@ class Statemachine(object):
                               
         if printSteps or ((not printSteps) and self.__config.debug):
             for key, value in testflow.items() :
-                print "{0} - {1}".format(key, value)
-            print
-            print "Startstate: {0}".format(self.__start)
-            print "Finals: {0}".format(",".join(str(x) for x in self.__finals))
-            print
+                self.log("{0} - {1}".format(key, value))
+            self.log("")
+            self.log("Startstate: {0}".format(self.__start))
+            self.log("Finals: {0}".format(",".join(str(x) for x in self.__finals)))
+            self.log("")
         for key, value in testflow.items() :
             f = value[0]
-            stateTransitions = self.get_transitions_from(curState)
+            stateTransitions = self.getTransitionsFrom(curState)
             # Sort stateTransitions such that pure variable transistions come last
             #===================================================================
             # idx = 0
@@ -270,6 +294,8 @@ class Statemachine(object):
             #         
             # 
             #===================================================================
+            
+            # Disable output
             self.log("Current state: {0}".format(curState), printSteps)
             self.log("Possible transitions: ", printSteps)
             for t in stateTransitions:
@@ -283,12 +309,12 @@ class Statemachine(object):
             regexList = []
             for t in stateTransitions:
                 r = t.getRegEx()
-                #self.log("Testing regex visual: {0}".format(t.getRegExVisual()), printSteps)
-                #self.log("Testing regex:        {0}".format(t.getRegEx()), printSteps)
+                self.log("Testing regex visual: {0}".format(t.getRegExVisual()), printSteps)
+                self.log("Testing regex:        {0}".format(t.getRegEx()), printSteps)
                 res = None
                 try:
                     p = re.compile(r)
-                    res = p.match(payload)
+                    res = p.match(payload) # Match might freeze the code
                 except Exception as ae:
                     pass
                 if res:
@@ -325,7 +351,7 @@ class Statemachine(object):
             tryAgain = True
             while tryAgain:
                 tryAgain = False
-                stateTransitions = self.get_transitions_from(curState)
+                stateTransitions = self.getTransitionsFrom(curState)
                 for t in stateTransitions:
                         if t.getHash()=="{{epsilon}}" and (curState not in self.__finals):
                             tryAgain = True
@@ -356,14 +382,7 @@ class Statemachine(object):
         #    nextMsg = nextMsg.getNextInFlow()
         #=======================================================================
         
-    def has_gaps(self,numbers, gap_size):
-        # Based on http://stackoverflow.com/questions/4375310/finding-data-gaps-with-bit-masking
-        adjacent_differences = [(y - x) for (x, y) in zip(numbers[:-1], numbers[1:])]
-        for elem in adjacent_differences:
-            if elem>1:
-                return True
-        return False
-    
+     
     def findTransitionBySrc(self, curState, hash):
         # First try to find exact matches
         #for t in self.__transitions:
@@ -398,17 +417,7 @@ class Statemachine(object):
                 if t.getHash()==hash: return t
         return None
     
-    def is_alternating(self, flows, flow):
-        messages = flows[flow]
-        direction = ""
-        msg_keys = sorted(messages.keys())
-        for msg_key in msg_keys:
-            direction2 = messages[msg_key][1]
-            if direction==direction2: # Current message has same direction as message before
-                return False
-            direction = direction2
-        return True
-    
+     
     def addExistingTransition(self, t):
         self.addTransition(t.getSource(), t.getHash(), t.getDestination(), t.getDirection(), t.getMessage(), t.getRegEx(), t.getRegExVisual(), t.getCluster())
 
@@ -465,18 +474,6 @@ class Statemachine(object):
         self.addTransition("s56","QUIT","s57","client","QUIT")
         self.reverx_merge()
         
-    def flow_is_valid(self, flows, flow):
-        messages = flows[flow]
-        message_indices = messages.keys()
-        
-        if self.has_gaps(message_indices,1):
-            print "ERROR: Flow {0} has gaps in sequences numberings. Skipping flow".format(flow)
-            return tuple([False, False]) # return that it has failed has_gaps and is_alternating
-        else:
-            if self.__config.flowsMustBeStrictlyAlternating and not self.is_alternating(flows,flow):
-                print "ERROR: Flow {0} is not strictly alternating between client and server. Skippng flow".format(flow)
-                return tuple([True, False]) # return that it has passed has_gaps but failed is_alternating
-        return tuple([True, True]) # return that is has passed has_gaps and is_alternating
     
     def log(self, msg, printDebug=False):
         if self.__config.debug or printDebug:
@@ -536,7 +533,7 @@ class Statemachine(object):
             if len(messages)==1:
                 self.log("Flow {0} has only 1 message. Skipping flow".format(flow))
                 continue
-            (has_no_gaps, is_alternating) = self.flow_is_valid(self.__sequences,flow)
+            (has_no_gaps, is_alternating) = common.flow_is_valid(self.__sequences,flow, self.__config)
             if not (has_no_gaps and is_alternating):                                                          
                 error += 1
                 continue
@@ -892,8 +889,8 @@ class Statemachine(object):
                                         # With these additions, all tests are passed but the DFA is not minimal
                                     
                                     if self.__config.strictMergeOfOutgoingEdges:
-                                        p_t_list = self.get_transitions_from(p)
-                                        q_t_list = self.get_transitions_from(q)
+                                        p_t_list = self.getTransitionsFrom(p)
+                                        q_t_list = self.getTransitionsFrom(q)
                                         p_set = set()
                                         q_set = set()
                                         p_set.add(i.getHash() for i in p_t_list)
@@ -932,7 +929,7 @@ class Statemachine(object):
         # for s in self.__states[:]:
         #    if s not in self.__states:
         #        continue
-        #    l_from = self.get_transitions_from(s)
+        #    l_from = self.getTransitionsFrom(s)
         #    h_cnt = dict()
         #    for trans in l_from:
         #        if trans not in self.__transitions:
@@ -1319,7 +1316,7 @@ class Statemachine(object):
                 for h in l_incoming_hashs:
                     incoming_set.add(h.getHash())
                 if len(incoming_set)>1: 
-                    l_outgoing_hashs = self.get_transitions_from(s)
+                    l_outgoing_hashs = self.getTransitionsFrom(s)
                     outgoing_set = set()
                     for h in l_outgoing_hashs:
                         outgoing_set.add(h.getHash())
@@ -1362,7 +1359,7 @@ class Statemachine(object):
                         return True
         return False
    
-    def get_transitions_from(self, p):
+    def getTransitionsFrom(self, p):
         l = []
         #for t in self.__transitions:
         #    if t.getSource()==p:
@@ -1373,7 +1370,7 @@ class Statemachine(object):
         return l
     
     def getTransitionHashsFrom(self, p):
-        l = self.get_transitions_from(p)
+        l = self.getTransitionsFrom(p)
         l2 = []
         for i in l:
             l2.append(i.getHash())
@@ -1578,7 +1575,7 @@ class Statemachine(object):
     def buildUnionTransitionSet(self):
         t_full_set = set()
         for src_key in self.__transitions_from.keys():
-            src_set = self.get_transitions_from(src_key)
+            src_set = self.getTransitionsFrom(src_key)
             t_full_set.update(src_set)
         for dest_key in self.__transitions_into.keys():
             dest_set = self.getTransitionsInto(dest_key)
@@ -1641,7 +1638,81 @@ class Statemachine(object):
             sys.stdout = old_stdout
             import os            
             print "Finished. 'dot' file written to file {}, file size {:.1f} KB".format(file,os.path.getsize(file)/1024.0)               
+    def dumpPeachXML(self):
+        """
+        Dumps the generated statemachine in peach format
+        """
+             
+        import sys
+        old_stdout = sys.stdout
+        #handle = open(filename,"w")
+        #print "Writing to {0}".format(filename)
+        handle = StringIO()
+        #sys.stdout = handle
+        
+        print '<?xml version="1.0" encoding="utf-8"?>'
+        print '<Peach xmlns="http://phed.org/2008/Peach" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'
+        print '\txsi:schemaLocation="http://phed.org/2008/Peach ../../../../../peach/peach.xsd" version="1.0">'
+        print '<Include ns="default" src="file:defaults.xml" />'
+        
+        # Build datamodel out of cluster formats
+        union_t = self.buildUnionTransitionSet()
+        processed_cluster = set()
+        for u in union_t:
+            c = u.getCluster()
+            if c==None: # Handles epsilon transitions without an associated cluster 
+                continue
+            if c.getInternalName() in processed_cluster:
+                continue
+            print c.getPeachRepresentation()
+            
+            processed_cluster.add(c.getInternalName())
+        # Example for choosing an outgoing value
+        #print '<DataModel name="example">'
+        #print '<Number value="0">'
+        #print '<Transformer class="xxx" />'
+        #print '</Number>'
+        #print '</DataModel>' 
+        print '<StateModel name="ProtocolStatemachine" initialState="{0}">'.format(self.__start.getName())
+        
+        for s in self.__states:
+            
+            #print '<DataModel name="{0}_dm">'.format(s.getName())
+            #print '\t<String name="choice" />'
+            #print '</DataModel>'
+            #print '<Choice name="{0}_outgoing_transitions">'.format(s.getName())
+            #for t in self.getTransitionsFrom(s):
+            #    print '\t<Block name="{0}_{1}>"'.format(s.getName(), t.getHash())
+            #    print '\t\t<String name="{0}_{1}" value="{2}"'.format(s.getName(), t.getHash(), t.getRegExVisual())
+            #    print '\t</Block>'
+            #print '</Choice>'
 
+            if s in self.__finals:
+                continue
+            transcnt = 0
+            for t in self.getTransitionsFrom(s):
+                c = t.getCluster()
+                if c!=None:
+                    transcnt += 1
+            if transcnt!=0:
+                print '\t<State name="{0}">'.format(s.getName())
+                for t in self.getTransitionsFrom(s):
+                    c = t.getCluster()
+                    if c==None: # Handles epsilon transitions without an associated cluster 
+                        continue
+                    
+                    print '\t\t<Action name="{0}_action" type="output">'.format(uuid.uuid1())
+                    print '\t\t\t<DataModel ref="{0}_dm" />'.format(c.getInternalName())
+                    print '\t\t</Action>'
+                print '\t</State>'
+        print '</StateModel>'
+        print '</Peach>'
+        
+        body = handle.getvalue()
+        handle.close
+        sys.stdout = old_stdout
+        return body
+        
     def getXMLRepresentation(self):
         """
         Dumps the generated graph to stdout or a .dot file
@@ -1677,7 +1748,7 @@ class Statemachine(object):
         for idx, s in enumerate(self.__states):
             s.getXMLRepresentation()
             #===================================================================
-            # t_list = self.get_transitions_from(s)
+            # t_list = self.getTransitionsFrom(s)
             # total = 0
             # numOfTrans = len(t_list)
             # for t in t_list:

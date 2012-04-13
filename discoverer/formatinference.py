@@ -174,6 +174,8 @@ class VariableNumberStatistics(VariableStatistics):
             return 0 
     def getVariance(self):
         # http://de.wikipedia.org/wiki/Korrigierte_Stichprobenvarianz#Berechnung_ohne_vorherige_Mittelwertbildung
+        if self.samples<2:
+            return 0
         return 1.0/(self.samples-1)*(self.__sumPowerTwo - (1.0/self.samples)*(self.__sumPowerOne*self.__sumPowerOne))
     def getMedian(self):
         theValues = sorted(self.getValues())

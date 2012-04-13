@@ -19,7 +19,7 @@ class Configuration:
         self.format = "bro"
         self.weight = float(1.0)
         self.graph = False
-        self.maxMessages = 50
+        self.maxFlows = 50
         self.ethOffset = 14
         self.messageDelimiter = None
         self.fieldDelimiter = None
@@ -34,6 +34,7 @@ class Configuration:
         self.minWordLength = 3        
         self.maxMessagePrefix = 2048
         self.minimumClusterSize = 5
+        self.minDistinctFDValues = 3
         self.maxDistinctFDValues = 35
         self.requireTotalLengthChangeForLengthField = False
         self.dumpFile = "/Users/daubsi/Dropbox"
@@ -60,6 +61,8 @@ class Configuration:
         self.strictMergeOfOutgoingEdges = True
         self.testFile = "/Users/daubsi/Dropbox/ftp_big"
         self.numOfTestEntries = 1000
+        self.sessionIDOnlyWithBinary = True
+        self.sessionIDOnlyWithClustersWithMoreThanOneMessage = True
         # Used for NW alignment in Discoverer
         self.matchScore = 1
         self.mismatchScore = 1

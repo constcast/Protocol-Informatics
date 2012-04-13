@@ -6,6 +6,9 @@ from message import Message
 from peekable import peekable
 from formatinference import VariableTextStatistics
 from formatinference import VariableNumberStatistics
+from xml.sax.saxutils import escape
+from cStringIO import StringIO
+
 class Cluster(dict):
     """
     This class represents a cluster of messages.
@@ -76,10 +79,19 @@ class Cluster(dict):
         idx = 0
         iterator = peekable(self.get('format_inference'))
         content_msg = self.get_messages()[0]
+        # Using only the first message COULD be a problem:
+        # In cases where we have trailing whitespaces in one of the messages but not in the first one,
+        # The regex will not include these and the regex will not be valid for this message. As a result this
+        # message won't be parsed correctly in statemachine_accepts. See below for a workaround
         while not iterator.isLast():
             item = iterator.next()
             tokType = self.get('representation')[idx]
-            if tokType!=Message.typeDirection:
+            if tokType==Message.typeDirection:
+                # Add a \s* before the first text token
+                if not iterator.isLast():
+                    if self.get('representation')[idx+1]==Message.typeText:
+                        regexstr += "(?:20)*"                      
+            else:
                 token = content_msg.get_tokenAt(idx)
                 startsAt = token.get_startsAt()
                 length = token.get_length()
@@ -94,25 +106,64 @@ class Cluster(dict):
                     s = "".join([str(elem) for elem in payload])
                     regexstr += s
                        
-                    #===========================================================
-                    # if self.get('representation')[idx]==Message.typeText:
-                    #     #regexstr += item.getConstValue()
-                    # else:
-                    #    val = hex(item.getConstValue())[2:]
-                    #    if len(val)==1:
-                    #        val = "0{0}".format(val)
-                    #    regexstr += "\\x{0}".format(val)
-                    #===========================================================
                 elif isinstance(item,formatinference.Variable):
-                    #regexstr += "*?" # Non greedy match
-                    regexstr += ".*" # Non greedy match
-                
-                if not iterator.isLast():
-                    nextStart = content_msg.get_tokenAt(idx+1).get_startsAt()
-                    if nextStart!=startsAt+length:
-                    #if nextOne.get_startsAt()!=startsAt+length+1:
-                        regexstr += "(?:20)+"
+                    #regexstr += "*?" # Non greedy match - will lead to lock ups
+                    #regexstr += ".*" # Non greedy match - will lead to lock ups
+                    #regexstr += "((?!20).)+" # Negative lookup for whitespace - does not read bytewise - will abort also on X20Xaabb200a0d
+                    
+                    # New approach:
+                    # Do not use .* but try to be more explicit: [0-9a-f]{2} reads multiple hex values. The trailing {...} value determines how often
+                    # these are observed in a cluster (based on the VariableText/NumberStatistics
+                    
+                    stats = self.getVariableStatistics()[idx]
+                    min = 1
+                    max = 1
+                    if stats != None:
+                        if isinstance(stats,formatinference.VariableTextStatistics):
+                            min = len(stats.getShortest())
+                            max = len(stats.getLongest())
+                        else:
+                            s = str(stats.getMin())
+                            min = len(s)
+                            s = str(stats.getMax())
+                            max = len(s)
+                        if min == max:
+                            regexstr += "(?:[0-9a-f]{2}){" + str(min) + "}"
+                        else:
+                            regexstr += "(?:[0-9a-f]{2}){" + str(min) +","+ str(max) +"}"
+                    else:
+                        regexstr += "(?:[0-9a-f]{2})+"
+                            
                 #===============================================================
+                # if not iterator.isLast():
+                #                     
+                #    gotGap = False                       
+                #    nextStart = content_msg.get_tokenAt(idx+1).get_startsAt()
+                #    if nextStart!=startsAt+length:
+                #    #if nextOne.get_startsAt()!=startsAt+length+1:
+                #        regexstr += "(?:20)+"
+                #        gotGap = True
+                #    
+                #    # Added 20120409 to compensate for trailing WS tokens
+                #    if not gotGap:
+                #===============================================================
+                # Add (?:20)* token at the beginning and end of text/binary tokens
+                # This copes for the problem that Hello_World_ and Hello_World evaluate to the same format, but should have other regexes
+                curType = content_msg.get_tokenAt(idx).get_tokenType()
+                if iterator.isLast():
+                    if curType==Message.typeText:
+                        regexstr += "(?:20)*"
+                else:
+                    curType = content_msg.get_tokenAt(idx).get_tokenType()
+                    nextType = content_msg.get_tokenAt(idx+1).get_tokenType()
+                    if (curType==Message.typeBinary and nextType==Message.typeText) or ( 
+                        curType==Message.typeText and nextType==Message.typeBinary):
+                        regexstr += "(?:20)*"
+                    elif curType==Message.typeText and nextType==Message.typeText:
+                        regexstr += "(?:20)+"
+                            
+                #===============================================================
+                #       
                 # if tokType == Message.typeText:
                 #    # peek ahead if next is also text
                 #    # Add separator for tokenseparator (nothing by bin-bin, bin-text, text-bin but whitespace when text-text
@@ -123,12 +174,113 @@ class Cluster(dict):
                 #        if nextType == Message.typeText:
                 #            #regexstr += "((20)|(08)|(0a)|(0d))?" # Add whitespace token separator
                 #            regexstr += "(?:20)+" # Add whitespace token separator                
-                #            
+                #           
                 #===============================================================
             idx += 1
         regexstr += "$"
         return regexstr 
+    
+    def getPeachRepresentation(self):
+        import sys
+        old_stdout = sys.stdout
+        handle = StringIO()
+        sys.stdout = handle
+        messages =  self.get_messages()  
+        formats = self.get_formats()
+        var_stats = self.getVariableStatistics()
         
+        repl_dict = dict()
+        
+        repl_dict["\""]="&quot;"
+        repl_dict["\'"]="&apos;"
+        
+        print '<DataModel name="{0}_dm">'.format(self.getInternalName())
+        for idx, format in enumerate(formats):
+            category, formatType, semantics = format
+            if isinstance(formatType, formatinference.Constant):
+                if category==Message.typeBinary:
+                    print '<Number value="{0}" size="8" token="true" />'.format(escape(str(formatType.getConstValue()), repl_dict))
+                else:
+                    print '<String value="{0}" token="true" nullTerminated="False" />'.format(escape(str(formatType.getConstValue()), repl_dict))
+            elif isinstance(formatType, formatinference.Variable):
+                elem = var_stats[idx]
+                if isinstance(elem,formatinference.VariableNumberStatistics):
+                    print '<Number name="{0}_{1}" size="8" />'.format(self.getInternalName(), idx)
+                elif isinstance(elem,formatinference.VariableTextStatistics):
+                    print '<String name="{0}_{1}" nullTerminated="False" />'.format(self.getInternalName(), idx)
+        print '</DataModel>'
+        body = handle.getvalue()
+        handle.close()         
+        sys.stdout = old_stdout
+        return body
+        
+    def getXMLRepresentation(self):
+        import sys
+        old_stdout = sys.stdout
+        handle = StringIO()
+        sys.stdout = handle
+        messages =  self.get_messages()  
+        formats = self.get_formats()
+        var_stats = self.getVariableStatistics()
+        
+        print '<cluster internalName="{0}" numOfMessages="{1}">'.format(self.getInternalName(), len(messages))
+        print '<regex>{0}</regex>'.format(escape(self.getRegEx()))
+        print '<visualRegex>{0}</visualRegex>'.format(escape(self.getRegExVisual()))
+
+        print '<messageFormat hash="{0}" numOfFormats="{1}">'.format(self.getFormatHash(), len(formats))
+        for idx, format in enumerate(formats):
+            category, formatType, semantics = format
+                
+            print '\t<messageFormatElement index="{0}" category="{1}">'.format(idx, category)
+            if isinstance(formatType, formatinference.Constant):
+                print '\t\t<format type="constant">'
+                print '\t\t\t<value>{0}</value>'.format(escape(str(formatType.getConstValue())))
+                print '\t\t</format>'
+            elif isinstance(formatType, formatinference.Variable):
+                print '\t\t<format type="variable" />'
+                elem = var_stats[idx]
+                if isinstance(elem,formatinference.VariableNumberStatistics):
+                    print '<variableStatistic type="NumberStatistic">'
+                    print '\t<minimum>{0}</minimum>'.format(elem.getMin())
+                    print '\t<maxmimum>{0}</maximum>'.format(elem.getMax())
+                    print '\t<mean>{0}</mean>'.format(elem.getMean())
+                    print '\t<variance>{0}</variance>'.format(elem.getVariance())
+                    print '\t<numOfDistinctSamples>{0}</numOfDistinctSamples>'.format(elem.numberOfDistinctSamples())
+                    print '\t<top3list>'
+                    for item,amount in elem.getTop3():
+                        print '\t\t<top3listitem>'
+                        print '\t\t\t<value>{0}</value>'.format(item)
+                        print '\t\t\t<amount>{0}</amount>'.format(amount)
+                        print '\t\t</top3listitem>'
+                    print '\t</top3list>'
+                    print '</variableStatistic>'
+                elif isinstance(elem,formatinference.VariableTextStatistics):
+                    print '<variableStatistic type="TextStatistic">'
+                    print '\t<shortestText>{0}</shortestText>'.format(escape(elem.getShortest()))
+                    print '\t<longestText>{0}</longestText>'.format(escape(elem.getLongest()))
+                    print '\t<numOfDistinctSamples>{0}</numOfDistinctSamples>'.format(elem.numberOfDistinctSamples())
+                    print '\t<top3list>'
+                    for item,amount in elem.getTop3():
+                        print '\t\t<top3listitem>'
+                        print '\t\t\t<value>{0}</value>'.format(escape(item))
+                        print '\t\t\t<amount>{0}</amount>'.format(amount)
+                        print '\t\t</top3listitem>'
+                    print '\t</top3list>'
+                    print '</variableStatistic>'
+            if (len(semantics)>0):
+                print '\t\t<semantics length="{0}">'.format(len(semantics))
+                for s in semantics:
+                    print '\t\t\t<semantic>{0}</semantic>'.format(s)
+                print '\t\t</semantics>'
+            print '\t</messageFormatElement>'
+            
+        print '</messageFormat>'
+        
+        print '</cluster>'
+        body = handle.getvalue()
+        handle.close()         
+        sys.stdout = old_stdout
+        return body
     def getRegExVisual(self):
         regexstr = "^"
         idx = 0
@@ -136,7 +288,12 @@ class Cluster(dict):
         while not iterator.isLast():
             item = iterator.next()
             tokType = self.get('representation')[idx]
-            if tokType!=Message.typeDirection:
+            if tokType==Message.typeDirection:
+                # Add a \s* before the first text token
+                if not iterator.isLast():
+                    if self.get('representation')[idx+1]==Message.typeText:
+                        regexstr += "\s*"
+            else:            
                 if isinstance(item,formatinference.Constant):
                     #if isinstance(item.getConstValue(),str):
                     if self.get('representation')[idx]==Message.typeText:
@@ -149,15 +306,29 @@ class Cluster(dict):
                 elif isinstance(item,formatinference.Variable):
                     #regexstr += "*?" # Non greedy match
                     regexstr += ".*" # Non greedy match
-                if tokType == Message.typeText:
-                    # peek ahead if next is also text
-                    # Add separator for tokenseparator (nothing by bin-bin, bin-text, text-bin but whitespace when text-text
-                    # text-text is separated by \s (whitespace)
-                    nextOne = iterator.peek()
-                    if nextOne!=peekable.sentinel:
-                        nextType = self.get('representation')[idx+1]
-                        if nextType == Message.typeText:
-                            regexstr += "\s" # Add whitespace token separator                
+                #===============================================================
+                # if tokType == Message.typeText:
+                #    # peek ahead if next is also text
+                #    # Add separator for tokenseparator (nothing by bin-bin, bin-text, text-bin but whitespace when text-text
+                #    # text-text is separated by \s (whitespace)
+                #    nextOne = iterator.peek()
+                #    if nextOne!=peekable.sentinel:
+                #        nextType = self.get('representation')[idx+1]
+                #        if nextType == Message.typeText:
+                #            regexstr += "\s" # Add whitespace token separator                
+                #===============================================================
+                
+                curType = self.get('representation')[idx]
+                if iterator.isLast():
+                    if curType==Message.typeText:
+                        regexstr += "\s*"
+                else:
+                    nextType = self.get('representation')[idx+1]
+                    if (curType==Message.typeBinary and nextType==Message.typeText) or ( 
+                        curType==Message.typeText and nextType==Message.typeBinary):
+                        regexstr += "\s*"
+                    elif curType==Message.typeText and nextType==Message.typeText:
+                        regexstr += "\s+"
             idx += 1
         regexstr += "$"
         return regexstr 

@@ -21,13 +21,13 @@ class Input:
 
     """Implementation of base input class"""
 
-    def __init__(self, filename, maxMessages):
+    def __init__(self, filename, maxFlows):
         """Import specified filename"""
 
         self.set = set()
         self.index = 0
-        self.maxMessages = maxMessages
-        self.readMessages = 0
+        self.maxFlows = maxFlows
+        self.readFlows = 0
 
     def getConnections(self):
         raise Exception("getConnections not implemented ...")
@@ -59,12 +59,12 @@ class Pcap(Input):
         if hdr.getlen() <= 0:
             return
 
-        # only store as much as self.maxMessages messages
+        # only store as much as self.maxFlows messages
         # we cannot restrict the calls to handler to 50 packets since
         # we only consider UNIQ payloads as messages. we therefore
         # need to count 50 messages in this handler
-        if self.maxMessages != 0 and self.readMessages >= self.maxMessages:
-#            raise Exception("Extracted %d messages from PCAP file. Stopped reading file as configured" % (self.maxMessages))
+        if self.maxFlows != 0 and self.readFlows >= self.maxFlows:
+#            raise Exception("Extracted %d messages from PCAP file. Stopped reading file as configured" % (self.maxFlows))
             return 
 
         # Increment packet counter
@@ -112,10 +112,10 @@ class Pcap(Input):
 #         if len(self.set) == l and self.onlyUniq:
 #             return
 
-        self.readMessages += 1
+        self.readFlows += 1
 
 
-        self.connection.addSequence(sequences.Sequence(seq, "", self.readMessages))
+        self.connection.addSequence(sequences.Sequence(seq, "", self.readFlows))
 
     def getConnections(self):
         ret = dict()
@@ -145,7 +145,7 @@ class ASCII(Input):
             if not line:
                 break
 
-            if self.maxMessages != 0 and self.readMessages > self.maxMessages:
+            if self.maxFlows != 0 and self.readFlows > self.maxFlows:
                 # we already have enough messages. stop reading
                 break
 
@@ -155,9 +155,9 @@ class ASCII(Input):
 #             if len(self.set) == l and self.onlyUniq:
 #                 continue
             
-            self.readMessages += 1
+            self.readFlows += 1
 
-            self.connection.addSequence(sequences.Sequence(line, "", self.readMessages))
+            self.connection.addSequence(sequences.Sequence(line, "", self.readFlows))
 
     def getConnections(self):
         return [ self.connection ]
@@ -184,11 +184,16 @@ class Bro(Input):
         if len(data) != contentLength:
             raise Exception("Error while parsing input file. Message:\n\n%s\n\nReal length %d does not match ContentLength %s" % (data, len(data), contentLength))
 
-        #self.readMessages += 1
+        #self.readFlows += 1
 
+        # Check, do we still have room?
         if not connectionID in self.connections:
+            # Bail out to fix "read only first line for new flow" bug
+            if self.readFlows>=self.maxFlows and self.maxFlows != 0:
+                self.readFlows+=1
+                return
             self.connections[connectionID] = sequences.FlowInfo(connectionID)
-            self.readMessages += 1 # Count flows instead of single messages
+            self.readFlows += 1 # Count flows instead of single messages
             
         # transform hex-encoding into byte sequences
         seq = []
@@ -204,12 +209,58 @@ class Bro(Input):
     def getConnections(self):
         return self.connections
 
+#===============================================================================
+# 
+#    def __init__(self, filename, maxFlows):
+# #     	self.messageDelimiter = messageDelimiter
+# # 	self.fieldDelimiter = fieldDelimiter
+#        self.connections = dict()
+#        Input.__init__(self, filename, maxFlows)
+# 
+#        self.blockseparator = "******************************************"
+# 
+#        sequence = ""
+#        connectionID = ""
+#        messageNumber = 0
+#        flowMessageNumber = 0
+#        contentLength = 0
+#        content = ""
+# 
+#        fd = open(filename, "r")
+#        for line in fd:
+#            if self.maxFlows != 0 and self.readFlows > self.maxFlows - 1:
+#                # already consumed maxFlows. stop reading more messages
+#                return
+# 
+#            if line.startswith(self.blockseparator):
+#                # found a new block. push the old one
+#                self.consumeMessageBlock(content, connectionID, messageNumber, flowMessageNumber, contentLength)
+#                if connectionID == "zRF1otvQJQ5":
+#                    print "Current Flow: {2} MsgNumber: {0}, flowMessageNumber: {1}".format(messageNumber, flowMessageNumber, self.readFlows)
+#                
+#                # parse next block header
+#                regexstring = '\*+ (\w+) ([0-9]+) ([0-9]+) ([0-9]+) (.*)'
+#                m = re.match(regexstring, line)
+#                if m: 
+#                    connectionID = m.group(1)
+#                    messageNumber = int(m.group(2))
+#                    flowMessageNumber = int(m.group(3))
+#                    contentLength = int(m.group(4))
+#                    content = m.group(5)
+#                else:
+#                    errorstring =  "Format missmatch in file. Expected a new message, got: " + line
+#                    raise Exception(errorstring)
+#            else:
+#                content.append(line)
+# 
+#        # try to assign last message block to last message
+#        self.consumeMessageBlock(content, connectionID, messageNumber, flowMessageNumber, contentLength)
+#===============================================================================
 
-    def __init__(self, filename, maxMessages):
-#     	self.messageDelimiter = messageDelimiter
-# 	self.fieldDelimiter = fieldDelimiter
+
+    def __init__(self, filename, maxFlows):
         self.connections = dict()
-        Input.__init__(self, filename, maxMessages)
+        Input.__init__(self, filename, maxFlows)
 
         self.blockseparator = "******************************************"
 
@@ -222,15 +273,10 @@ class Bro(Input):
 
         fd = open(filename, "r")
         for line in fd:
-            if self.maxMessages != 0 and self.readMessages > self.maxMessages - 1:
-                # already consumed maxMessages. stop reading more messages
+            if self.maxFlows != 0 and self.readFlows > self.maxFlows:
+                # already consumed maxFlows. stop reading more messages
                 return
-
             if line.startswith(self.blockseparator):
-                # found a new block. push the old one
-                self.consumeMessageBlock(content, connectionID, messageNumber, flowMessageNumber, contentLength)
-
-                # parse next block header
                 regexstring = '\*+ (\w+) ([0-9]+) ([0-9]+) ([0-9]+) (.*)'
                 m = re.match(regexstring, line)
                 if m: 
@@ -242,9 +288,9 @@ class Bro(Input):
                 else:
                     errorstring =  "Format missmatch in file. Expected a new message, got: " + line
                     raise Exception(errorstring)
+                
+                # Consume the line, create a new flow set if necessary
+                self.consumeMessageBlock(content, connectionID, messageNumber, flowMessageNumber, contentLength)
             else:
-                content.append(line)
-
-        # try to assign last message block to last message
-        self.consumeMessageBlock(content, connectionID, messageNumber, flowMessageNumber, contentLength)
+                raise Exception("Line did not start with block separator")
 

@@ -2,6 +2,7 @@ import common
 from peekable import peekable
 from tokenrepresentation import TokenRepresentation
 from message import Message
+import uuid
 
 def perform_semantic_inference(cluster_collection, config):
     """
@@ -26,10 +27,10 @@ def perform_semantic_inference(cluster_collection, config):
             while not iterator.isLast():
             #for tokenRepresentation in tokenlist:
                 tokenRepresentation = iterator.next()
-                # TODO: do we need to keep semantics which involve multiple cluster? e.g. cookie?
-                if "cookie" in tokenRepresentation.get_semantics():    
+                # TODO: do we need to keep semantics which involve multiple cluster? e.g. sessionids?
+                if "sessionid" in tokenRepresentation.get_semantics():    
                     tokenRepresentation.set_semantics([]) # Clear existing semantics from previous run
-                    tokenRepresentation.add_semantic("cookie") # Just cookie?
+                    tokenRepresentation.add_semantic("sessionid") # Just sessionid?
                 else:
                     tokenRepresentation.set_semantics([]) # Clear existing semantics from previous run
                     
@@ -119,13 +120,11 @@ def perform_semantic_inference(cluster_collection, config):
                         c.add_semantic_for_token(idx,"lengthfield")
             idx += 1
         
-        # Try to identify cookie fields
-        #raise Exception('Not yet fully implemented. Cookie is always false and IndexOutOfBounds')
-        
+        # Try to identify sessionid fields
         
         reference_message = messages[0]
         nextInFlow = reference_message.getNextInFlow()
-        if nextInFlow != None:
+        if nextInFlow != None and not (len(messages)==1 and config.sessionIDOnlyWithClustersWithMoreThanOneMessage):
             tokenlist = reference_message.get_tokenlist()
             next_tokenlist = nextInFlow.get_tokenlist()
             ref_idx = 0
@@ -148,13 +147,14 @@ def perform_semantic_inference(cluster_collection, config):
                     # Retrieve next token type
                     nextTokType = next_tokenRepresentation.get_tokenType()
                     # If it is not a binary we don't see it as a cookie
-                    if nextTokType!=Message.typeBinary:
-                        next_idx += 1
-                        continue
+                    if config.sessionIDOnlyWithBinary:
+                        if nextTokType!=Message.typeBinary:
+                            next_idx += 1
+                            continue
                     next_cluster = nextInFlow.getCluster()
                     # Get format of comparating message
                     comp_fmt = next_cluster.get_format(next_idx)
-                    # If it is const, it cannot be a cookie
+                    # If it is const, it cannot be a sessonid
                     if comp_fmt[1]==Message.typeConst:
                         next_idx += 1
                         continue
@@ -187,11 +187,14 @@ def perform_semantic_inference(cluster_collection, config):
                                     isCookie = False
                         if isCookie:
                             # Set cookie semantic in this message and the other
+                            sessionid = uuid.uuid1()
                             for message in messages: # Set for every message and the cluster itself
-                                message.get_tokenlist()[ref_idx].add_semantic("cookie")
+                                #message.get_tokenlist()[ref_idx].add_semantic("sessionid_{0}".format(sessionid))
+                                message.get_tokenlist()[ref_idx].add_semantic("sessionid")
                                 nextMsg = message.getNextInFlow()
-                                nextMsg.get_tokenlist()[next_idx].add_semantic("cookie")
-                            c.add_semantic_for_token(ref_idx,"cookie")
+                                #nextMsg.get_tokenlist()[next_idx].add_semantic("sessionid_{0}".format(sessionid))
+                                nextMsg.get_tokenlist()[next_idx].add_semantic("sessionid")
+                            c.add_semantic_for_token(ref_idx,"sessionid")
                     next_idx += 1
                 ref_idx += 1
                 

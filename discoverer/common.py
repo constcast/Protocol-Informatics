@@ -35,4 +35,40 @@ def hash(data):
     # if list....
     d = ''.join(["%s" % el for el in data])    
     return hashlib.md5(d).hexdigest()
+
+
+def flow_is_valid(flows, flow, config):
+        messages = flows[flow]
+        message_indices = messages.keys()
+        
+        if len(messages)==1: return tuple([True,True]) # Return explicit "everything's ok" for single message flows
+        
+        if has_gaps(message_indices,1):
+            print "ERROR: Flow {0} has gaps in sequences numberings. Skipping flow".format(flow)
+            return tuple([False, False]) # return that it has failed has_gaps and is_alternating
+        else:
+            if config.flowsMustBeStrictlyAlternating and not is_alternating(flows,flow,config):
+                print "ERROR: Flow {0} is not strictly alternating between client and server. Skippng flow".format(flow)
+                return tuple([True, False]) # return that it has passed has_gaps but failed is_alternating
+        return tuple([True, True]) # return that is has passed has_gaps and is_alternating
     
+def has_gaps(numbers, gap_size):
+        # Based on http://stackoverflow.com/questions/4375310/finding-data-gaps-with-bit-masking
+        adjacent_differences = [(y - x) for (x, y) in zip(numbers[:-1], numbers[1:])]
+        for elem in adjacent_differences:
+            if elem>1:
+                return True
+        return False
+
+def is_alternating(flows, flow, config):
+        if config.flowsMustBeStrictlyAlternating: return True
+        messages = flows[flow]
+        direction = ""
+        msg_keys = sorted(messages.keys())
+        for msg_key in msg_keys:
+            direction2 = messages[msg_key][1]
+            if direction==direction2: # Current message has same direction as message before
+                return False
+            direction = direction2
+        return True
+          

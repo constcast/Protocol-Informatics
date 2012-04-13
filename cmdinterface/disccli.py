@@ -4,11 +4,13 @@
 
 import cmd, sys, os
 import discoverer
+import discoverer.common
 import cli
 from discoverer.message import Message
 import time
 import collections
 import discoverer.statemachine
+import discoverer.splitter
 
 class DiscovererCommandLineInterface(cli.CommandLineInterface):
     def __init__(self, env, config):
@@ -24,6 +26,19 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
 
     def do_quit(self, string):
         return True
+    
+    def do_split(self, inargs=""):
+        if inargs=="":
+            print "Usage: split <filename> <numOfFlows>"
+            return
+        args = inargs.split()
+        if len(args!=2):
+            print "Usage: split <filename> <numOfFlows>"
+            return
+        filename = args[0]
+        chunksize = args[1]
+        s = discoverer.splitter.Splitter(filename)
+        s.split(chunksize)
         
     def setup(self, sequences): #, direction):        
         print "Performing initial message analysis and clustering"
@@ -91,6 +106,9 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             # 
             #===================================================================
             # Perform discoverer for both parts
+            
+                
+            
             self.go(self.env['sequences'])
             
             #self.go(self.env['sequences_client2server'], Message.directionClient2Server)
@@ -123,7 +141,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             sm = discoverer.statemachine.Statemachine(self.env['messageFlows'], self.config)
             self.env['sm'] = sm
             start = time.time()
-              
+            print "Building statemachine"
             sm.build()
             duration = time.time()-start
             print "Statemachine building took {:.3f} seconds".format(duration)
@@ -149,7 +167,10 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             #anothersm.dump("/Users/daubsi/Dropbox/anotherdump")
             self.do_dump_state("")
             self.createXMLOutput()
+            self.createPeachOutput()
             
+            self.do_statemachine_accepts("")
+            self.do_testsuite("")
             
         else:
             # Perform discoverer only for client pat
@@ -168,6 +189,23 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
     def do_dump_sm_dot(self, string):
         self.dump_sm_dot()
         
+    def createPeachOutput(self):
+        import os
+        path = os.path.normpath(self.config.dumpFile)
+        file = os.path.basename(self.config.inputFile)
+        (filename,ext) = os.path.splitext(file)
+        storePath = "{0}{1}{2}_peach.xml".format(path,os.sep,filename)
+        import sys
+        import codecs
+        old_stdout = sys.stdout
+        handle = codecs.open(storePath,"w", "utf-8-sig")
+        sys.stdout = handle
+        print self.env['sm'].dumpPeachXML()
+        handle.close()         
+        sys.stdout = old_stdout
+        import os            
+        print "Finished Peach output. File size %0.1f KB" % (os.path.getsize(storePath)/1024.0)         
+
     def createXMLOutput(self):
         import os
         path = os.path.normpath(self.config.dumpFile)
@@ -228,6 +266,17 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             self.env['sm'].setConfig(self.config)
             self.env['sm'].setTestFlows(testflows)
         
+    
+    def do_clear(self, string):
+        self.env['sequences']=None
+    
+    def do_testsuite(self, args):
+        for suffix in range(0,2):
+            print "Testing the {0}er batch".format(suffix)
+            self.config.testFile = "/Users/daubsi/Dropbox/ftp_big_splits_2000_{0}".format(suffix)
+            self.do_load_testdata("")
+            self.do_statemachine_accepts("")
+            
         
     def do_statemachine_accepts(self, args=""):
         # Tries to load the input and returns whether the statemachine accepts this input
@@ -266,13 +315,15 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         
 #        discoverer.formatinference.perform_format_inference_for_cluster_collection(testcluster, self.config)
         #testflow = testflows[testflows.keys()[element]]
-        if not self.env.has_key('testflows'):
+        if not self.env.has_key('testflows') or len(self.env['testflows']) == 0:
             self.do_load_testdata(args)
         
         if not self.env.has_key('testflows'):
             print "ERROR: Loading test data failed!"
             return
-        
+        if not self.env.has_key('sm'):
+            print "ERROR: Statemachine not yet built"
+            return
         testflows = self.env['testflows']
         # Test all flows
         failedelements = []
@@ -287,11 +338,15 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         test2go = len(testflows.keys())
         self.env['sm'].setConfig(self.config)
         self.env['sm'].setTestFlows(testflows)
+        # Make room ;-)
+        self.env['sequences']=None
+        
         for elem in testflows.keys():
-            print "{0} flows left to test".format(test2go)
-            res = self.statemachine_accepts_flow(elem)
+            print "{0} flows left to test ({1} failed so far)".format(test2go, failures)
+            res = self.statemachine_accepts_flow(elem, printSteps=False)
             test2go -= 1
             
+            del testflows[elem] # Delete tested flow to make room
             if res['testSuccessful']==True:
                 success += 1
             else:
@@ -307,6 +362,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
                 elif not res['finished_in_final']: 
                     not_ended_in_final += 1
                     failedelements.append(elem)
+                    
         print "Finished"
         print "Testresults"
         print "==========="
@@ -324,11 +380,54 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
                 print "Failed test flows (only tested flows):"
                 for elem in failedelements:
                     print "{0}".format(elem)
+        # Dump results to file
+        import os            
+        
+        path = os.path.normpath(self.config.dumpFile)
+        file = os.path.basename(self.config.testFile)
+        (filename,ext) = os.path.splitext(file)
+        storePath = "{0}{1}{2}_testresults.txt".format(path,os.sep,filename)            
+        import sys
+        old_stdout = sys.stdout
+        handle = open(storePath,"w")
+        sys.stdout = handle
+        print "Testresults"
+        print "==========="
+        print "Number of flows: {0}, Success: {1}, Failures: {2}".format(success+failures, success, failures)
+        if failures>0:
+            print "Test flowID not in test flows: {0}".format(not_in_testflows)
+            print "Flow had only one message: {0}".format(only_one_msg)
+            print "Flow had gaps: {0}".format(has_gaps)
+            print "Flow was not alternating: {0}".format(not_alternating)
+            print "Flow rejected prematurely: {0}".format(not_all_transitioned)
+            print "Flow did not end in final state: {0}".format(not_ended_in_final)
+            print
+            
+            if len(failedelements)>0:
+                print "Failed test flows (only tested flows):"
+                for elem in failedelements:
+                    print "{0}".format(elem)
+        
+        
+                print "Rerunning failed tests and logging output"
+                self.do_load_testdata(args)
+                for elem in failedelements:
+                    print 100*"+"
+                    print "Failed flow: {0}".format(elem)
+                    self.statemachine_accepts_flow(elem, printSteps=True)
+                    print 100*"+"
+                    
+        
+        handle.close()         
+        sys.stdout = old_stdout
+        print "Finished. Test results written to file {}, file size {:.1f} KB".format(storePath,os.path.getsize(storePath)/1024.0)               
+
+    
         
     def do_statemachine_accepts_flow(self, flow):
-        self.statemachine_accepts_flow(flow)
+        self.statemachine_accepts_flow(flow, printSteps=True)
         
-    def statemachine_accepts_flow(self, flow):
+    def statemachine_accepts_flow(self, flow, printSteps=True):
         if not self.env.has_key('testflows'):
             print "Test flows not loaded yet!"
             return dict({"testSuccessful": False, "isInTestFlows": False, "hasMoreThanOneMessage": False, "has_no_gaps": False, "is_alternating": False, "did_all_transitions": False, "finished_in_final": False})
@@ -337,14 +436,15 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             return dict({"testSuccessful": False, "isInTestFlows": False, "hasMoreThanOneMessage": False, "has_no_gaps": False, "is_alternating": False, "did_all_transitions": False, "finished_in_final": False})
                
         flowitems = self.env['testflows'][flow]
-        return self.env['sm'].accepts_flow(flowitems,flow, printSteps=True)
+        return self.env['sm'].accepts_flow(flowitems,flow, printSteps)
     
     def do_dump_transitions(self,str):
         if self.env.has_key('sm'):
             self.env['sm'].dumpTransitions()
         else:
             print "No statemachine built, cannot dump transitions"
-        
+    
+    
     def combineflows(self, cluster_collection):
         #if not self.env.has_key('messageFlows'):
         #    self.env['messageFlows'] = {}
@@ -358,6 +458,60 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
                 # subflow[message.getFlowSequenceNumber()] = (message, flowDirection)
         return tmp_flows
     
+    def do_split_loaded(self, args):
+        chunksize = 0
+        if args=="":
+            chunksize = 2000
+        else: 
+            chunksize = int(args)
+        if not self.env.has_key('testflows'):
+            print "Error: No testflows laoded"
+        testflows = self.env['testflows']
+        
+        nr = 0
+        outfilename = "/Users/daubsi/Dropbox/ftp_big"
+        fdoutclient = open("{0}_{1}_{2}_client".format(outfilename,chunksize, nr), "w")
+        fdoutserver = open("{0}_{1}_{2}_server".format(outfilename,chunksize, nr), "w")
+        
+        linecnt = 0
+        blockseparator = "******************************************"
+        print "Opened output file {0}_{1}_{2}".format(outfilename, chunksize, nr)
+        flowcnt = 0
+        for flow in testflows:
+            (has_no_gaps, is_alternating) = discoverer.common.flow_is_valid(testflows, flow, self.config)
+            if not (has_no_gaps and is_alternating):                                                          
+                continue    
+            
+            messages = testflows[flow]
+            c_out = 1
+            s_out = 1
+            totalcnt = 1
+            for m_key in sorted(messages.keys()):
+                msg = messages[m_key]
+                if msg[1]=="server2client":
+                    fdoutserver.write("{0} {1} {2} {3} {4} {5}\n".format(blockseparator, flow, c_out, totalcnt, msg[0].get_length()*2, msg[0].get_payload_as_string())) 
+                    c_out += 1
+                else:
+                    fdoutclient.write("{0} {1} {2} {3} {4} {5}\n".format(blockseparator, flow, s_out, totalcnt, msg[0].get_length()*2, msg[0].get_payload_as_string())) 
+                    s_out += 1
+                totalcnt += 1
+            flowcnt += 1
+            if flowcnt>=chunksize:
+                fdoutclient.close()
+                fdoutserver.close()
+                nr += 1
+                fdoutclient = open("{0}_{1}_{2}_client".format(outfilename,chunksize, nr), "w")
+                fdoutserver = open("{0}_{1}_{2}_server".format(outfilename,chunksize, nr), "w")
+                flowcnt = 0
+                #print "{0} lines read and {1} chunksize flows read. Creating new output file {2}_{1}_{3}".format(linecnt, chunksize,self.infilename, nr)
+                #linecnt = 0
+                #fdout = open("{0}_{1}_{2}".format(self.infilename,chunksize, nr), "w")
+                #inset.clear()
+        fdoutclient.close()
+        fdoutserver.close()
+            
+        
+        
     def do_listflowIDs(self,str):
         self.listflowIDs()
         
@@ -448,7 +602,9 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         handle.close()
                     
     def go(self, sequences):
-        
+        if self.env['sequences']==None:
+            print "FATAL: No sequences loaded!"
+            return
         import discoverer.statistics
         discoverer.statistics.reset_statistics()
         print "Performing discoverer algorithm"
@@ -495,7 +651,10 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         #self.print_clusterCollectionInfo()
         start = time.time()
         print "Merging..."
-        self.env['cluster_collection'].mergeClustersWithSameFormat()
+        
+        while self.env['cluster_collection'].mergeClustersWithSameFormat():
+            pass
+        
         #self.env['cluster_collection'].mergeClustersWithSameFormat(self.config)
         #self.env['cluster_collection'].mergeClustersWithSameFormat(self.config)
         #self.env['cluster_collection'].mergeClustersWithSameFormat(self.config)

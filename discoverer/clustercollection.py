@@ -84,13 +84,13 @@ class ClusterCollection():
         # tempCollection will contain all the merged clusters and the unmergable cluster left in the end
         
         if len(self.__cluster)==1:
-            return # We cannot merge a single cluster
+            return False # We cannot merge a single cluster
         
         config = self.__config
         
         if not config.mergeSimilarClusters:
             print "Cluster merging disabled via configuration"
-            return
+            return False
         
         copiedCollection = self.__cluster[:]  
         ori_len = len(copiedCollection)
@@ -196,8 +196,10 @@ class ClusterCollection():
         self.add_clusters(tempCollection.get_all_cluster())
         if ori_len == len(self.__cluster):
             print "No mergable clusters within collection identified"
+            return False
         else:
             print ("Cluster collection shrunk from {0} to {1} by merging".format(ori_len, len(self.__cluster)))
+            return True
     
     def get_random_cluster(self):             
         return random.choice(self.__cluster)
@@ -314,65 +316,7 @@ class ClusterCollection():
         print '<clusterCollection numberOfCluster="{0}">'.format(len(self.get_all_cluster()))
         
         for c in self.__cluster:
-            messages =  c.get_messages()  
-            formats = c.get_formats()
-            var_stats = c.getVariableStatistics()
-            
-            print '<cluster internalName="{0}" numOfMessages="{1}">'.format(c.getInternalName(), len(messages))
-            print '<regex>{0}</regex>'.format(escape(c.getRegEx()))
-            print '<visualRegex>{0}</visualRegex>'.format(escape(c.getRegExVisual()))
-
-            print '<messageFormat hash="{0}" numOfFormats="{1}">'.format(c.getFormatHash(), len(formats))
-            for idx, format in enumerate(formats):
-                category, formatType, semantics = format
-                    
-                print '\t<messageFormatElement index="{0}" category="{1}">'.format(idx, category)
-                if isinstance(formatType, formatinference.Constant):
-                    print '\t\t<format type="constant">'
-                    print '\t\t\t<value>{0}</value>'.format(escape(str(formatType.getConstValue())))
-                    print '\t\t</format>'
-                elif isinstance(formatType, formatinference.Variable):
-                    print '\t\t<format type="variable" />'
-                    elem = var_stats[idx]
-                    if isinstance(elem,formatinference.VariableNumberStatistics):
-                        print '<variableStatistic type="NumberStatistic">'
-                        print '\t<minimum>{0}</minimum>'.format(elem.getMin())
-                        print '\t<maxmimum>{0}</maximum>'.format(elem.getMax())
-                        print '\t<mean>{0}</mean>'.format(elem.getMean())
-                        print '\t<variance>{0}</variance>'.format(elem.getVariance())
-                        print '\t<numOfDistinctSamples>{0}</numOfDistinctSamples>'.format(elem.numberOfDistinctSamples())
-                        print '\t<top3list>'
-                        for item,amount in elem.getTop3():
-                            print '\t\t<top3listitem>'
-                            print '\t\t\t<value>{0}</value>'.format(item)
-                            print '\t\t\t<amount>{0}</amount>'.format(amount)
-                            print '\t\t</top3listitem>'
-                        print '\t</top3list>'
-                        print '</variableStatistic>'
-                    elif isinstance(elem,formatinference.VariableTextStatistics):
-                        print '<variableStatistic type="TextStatistic">'
-                        print '\t<shortestText>{0}</shortestText>'.format(escape(elem.getShortest()))
-                        print '\t<longestText>{0}</longestText>'.format(escape(elem.getLongest()))
-                        print '\t<numOfDistinctSamples>{0}</numOfDistinctSamples>'.format(elem.numberOfDistinctSamples())
-                        print '\t<top3list>'
-                        for item,amount in elem.getTop3():
-                            print '\t\t<top3listitem>'
-                            print '\t\t\t<value>{0}</value>'.format(escape(item))
-                            print '\t\t\t<amount>{0}</amount>'.format(amount)
-                            print '\t\t</top3listitem>'
-                        print '\t</top3list>'
-                        print '</variableStatistic>'
-                if (len(semantics)>0):
-                    print '\t\t<semantics length="{0}">'.format(len(semantics))
-                    for s in semantics:
-                        print '\t\t\t<semantic>{0}</semantic>'.format(s)
-                    print '\t\t</semantics>'
-                print '\t</messageFormatElement>'
-                
-            print '</messageFormat>'
-            
-            print '</cluster>'
-
+            print c.getXMLRepresentation()
 
         print '</clusterCollection>'
         body = handle.getvalue()

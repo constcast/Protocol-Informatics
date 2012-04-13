@@ -19,6 +19,8 @@ class Setup:
         
         for directionTuple in flowBasedSequences:
                 flowDirection = directionTuple[1]
+                #print directionTuple[0]['zRF1otvQJQ5']
+                    
                 for seqs in directionTuple[0]:
                     flowInfo = directionTuple[0][seqs]
                     for seq in flowInfo.sequences:

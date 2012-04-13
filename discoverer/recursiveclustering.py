@@ -47,7 +47,8 @@ def perform_recursive_clustering(cluster_collection, startAt):
             for message in cluster.get_messages():
                 l.append(message.get_tokenAt(startAt).get_token())
             numOfDistinctValuesForToken = len(set(l))
-            if 1 < numOfDistinctValuesForToken <= config.maxDistinctFDValues:
+            
+            if config.minDistinctFDValues < numOfDistinctValuesForToken <= config.maxDistinctFDValues:
                 # FD candidate found
                 # Check number of potential clusters
                 sumUp = Counter(l)
@@ -75,9 +76,10 @@ def perform_recursive_clustering(cluster_collection, startAt):
                     # Perform format inference on new cluster collection
                     formatinference.perform_format_inference_for_cluster_collection(newCollection, config)
                     semanticinference.perform_semantic_inference(newCollection, config)
-                    # Merge clusters with same format
                     
-                    newCollection.mergeClustersWithSameFormat()
+                    # Merge clusters with same format
+                    while newCollection.mergeClustersWithSameFormat():
+                        pass
                     
                     # Perform needle wunsch
                     # Edit 20120120 - not here
