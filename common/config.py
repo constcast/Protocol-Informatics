@@ -63,6 +63,10 @@ class Configuration:
         self.numOfTestEntries = 1000
         self.sessionIDOnlyWithBinary = True
         self.sessionIDOnlyWithClustersWithMoreThanOneMessage = True
+        self.printMessagesOfCluster = False
+        self.constantsAreCaseSensitive = True
+        self.allowAdjacentFDs = True
+        self.allowAdjacentTextFDs = False
         # Used for NW alignment in Discoverer
         self.matchScore = 1
         self.mismatchScore = 1

@@ -2,12 +2,14 @@ import tokenrepresentation
 import common
 import formatinference
 import uuid
+import string
 from message import Message
 from peekable import peekable
 from formatinference import VariableTextStatistics
 from formatinference import VariableNumberStatistics
 from xml.sax.saxutils import escape
 from cStringIO import StringIO
+import Globals
 
 class Cluster(dict):
     """
@@ -20,9 +22,20 @@ class Cluster(dict):
     A filtering function that only returns with a specific value at token position X can be called
     via get_messages_with_value_at()
     """
-    def __init__(self, representation):
+    def __init__(self, representation, origin):
         self.update({'messages':[], 'representation':representation, 'format_inference':[], 'semantics':{}, 'variable_statistics': []})        
         self.__internalname = uuid.uuid1()
+        self.__origin = origin
+        self.__splitpoint = "n/a"
+        
+    def getOrigin(self):
+        return self.__origin
+    
+    def getSplitpoint(self):
+        return self.__splitpoint
+    
+    def setSplitpoint(self, splitpoint):
+        self.__splitpoint = str(splitpoint)
         
     def getInternalName(self):
         return self.__internalname
@@ -75,6 +88,11 @@ class Cluster(dict):
             idx += 1
         return numOfConst>0       
     def getRegEx(self):
+        if Globals.getProtocolClassification()==Globals.protocolText:
+            # When we are text, only use visual regex
+            return self.getRegExVisual()
+        
+        
         regexstr = "^"
         idx = 0
         iterator = peekable(self.get('format_inference'))
@@ -292,20 +310,48 @@ class Cluster(dict):
                 # Add a \s* before the first text token
                 if not iterator.isLast():
                     if self.get('representation')[idx+1]==Message.typeText:
-                        regexstr += "\s*"
+                        regexstr += "[\\t| ]*"
             else:            
                 if isinstance(item,formatinference.Constant):
                     #if isinstance(item.getConstValue(),str):
                     if self.get('representation')[idx]==Message.typeText:
-                        regexstr += item.getConstValue()
+                        val = item.getConstValue()
+                        val = string.replace(val, "(", "\(")
+                        val = string.replace(val, ")", "\)")
+                        val = string.replace(val, ".", "\.")
+                        val = string.replace(val, "{", "\{")
+                        val = string.replace(val, "}", "\}")
+                        val = string.replace(val, "]", "\]")
+                        val = string.replace(val, "[", "\[")
+                        val = string.replace(val, "*", "\*")
+                        
+                        
+                        regexstr += val
                     else:
                         val = hex(item.getConstValue())[2:]
                         if len(val)==1:
                             val = "0{0}".format(val)
                         regexstr += "\\x{0}".format(val)
                 elif isinstance(item,formatinference.Variable):
-                    #regexstr += "*?" # Non greedy match
-                    regexstr += ".*" # Non greedy match
+                    stats = self.getVariableStatistics()[idx]
+                    min = 1
+                    max = 1
+                    if stats != None:
+                        if isinstance(stats,formatinference.VariableTextStatistics):
+                            min = len(stats.getShortest())
+                            max = len(stats.getLongest())
+                        else:
+                            s = str(stats.getMin())
+                            min = len(s)
+                            s = str(stats.getMax())
+                            max = len(s)
+                        if min == max:
+                            regexstr += ".{" + str(min) + "}"
+                        else:
+                            regexstr += ".{" + str(min) +","+ str(max) +"}"
+                    else:
+                        regexstr += ".+"
+                     
                 #===============================================================
                 # if tokType == Message.typeText:
                 #    # peek ahead if next is also text
@@ -321,14 +367,14 @@ class Cluster(dict):
                 curType = self.get('representation')[idx]
                 if iterator.isLast():
                     if curType==Message.typeText:
-                        regexstr += "\s*"
+                        regexstr += "[\\t| ]*"
                 else:
                     nextType = self.get('representation')[idx+1]
                     if (curType==Message.typeBinary and nextType==Message.typeText) or ( 
                         curType==Message.typeText and nextType==Message.typeBinary):
-                        regexstr += "\s*"
+                        regexstr += "[\\t| ]*"
                     elif curType==Message.typeText and nextType==Message.typeText:
-                        regexstr += "\s+"
+                        regexstr += "[\\t| ]+"
             idx += 1
         regexstr += "$"
         return regexstr 
@@ -342,7 +388,8 @@ class Cluster(dict):
         if not self.get('semantics').has_key(idx):
             return False
         try:
-            return 0<=self.get('semantics')[idx].index(semantic)
+            return semantic in (self.get('semantics')[idx])
+            # Only worked for listsreturn 0<=self.get('semantics')[idx].index(semantic)
         except:
             return False
     def set_semantics(self, semantics):

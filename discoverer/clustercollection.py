@@ -3,6 +3,7 @@ from cluster import Cluster
 import random
 import discoverer
 import curses
+import re
 import formatinference
 from message import Message
 from xml.sax.saxutils import escape
@@ -177,14 +178,15 @@ class ClusterCollection():
                 idx_inner += 1     
             # End of for each clusterloop
             
-            newCluster = Cluster(cluster1.get_representation())
+            newCluster = Cluster(cluster1.get_representation(), "mergeDestination")
             newCluster.set_semantics(cluster1.get_semantics())             
             newCluster.add_messages(cluster1.get_messages())
-            
+            splitpoint = ""
             for cluster in mergeCandidates:                    
                 newCluster.add_messages(cluster.get_messages())
                 copiedCollection.remove(cluster)
-            
+                splitpoint = "{0}, {1}".format(splitpoint, cluster.getSplitpoint())
+            newCluster.setSplitpoint(splitpoint)
             discoverer.formatinference.perform_format_inference_for_cluster(newCluster,config)    
             # TODO: Build up new semantic information in newCluster
             copiedCollection.remove(cluster1)               
@@ -208,7 +210,7 @@ class ClusterCollection():
         rep = message.get_tokenrepresentation()
         c = self.get_cluster(rep)
         if c==None:
-            c = Cluster(rep)
+            c = Cluster(rep, "initial")
             self.__cluster.append(c)
         c.add_messages([message])
         #c.get_messages().append(message)
@@ -329,113 +331,149 @@ class ClusterCollection():
         Prints the inferred formats for a cluster in a human readable way
         If file is set, output will be written to a file instead of stdout
         """
-        if not file == "":            
-            import sys
-            old_stdout = sys.stdout
-            handle = open(file,"w")
-            sys.stdout = handle
-            print "Dump of 'Discoverer' analysis"
-            print "Current config:"
-            self.__config.print_config()
-        print "{0} cluster(s) have been generated".format(len(cluster))
-        
-        print "Statistics: {0}".format(discoverer.statistics.stats)        
-        print "Protocol is classified as: {0}".format(discoverer.statistics.get_classification())
-        
-        totalNumOfNoConstCluster = 0
-        for c in cluster:
+        try:
+            if not file == "":            
+                import sys
+                old_stdout = sys.stdout
+                handle = open(file,"w")
+                sys.stdout = handle
+                print "Dump of 'Discoverer' analysis"
+                print "Current config:"
+                self.__config.print_config()
+            print "{0} cluster(s) have been generated".format(len(cluster))
+            
+            print "Statistics: {0}".format(discoverer.statistics.stats)        
+            print "Protocol is classified as: {0}".format(discoverer.statistics.get_classification())
+            
+            totalNumOfNoConstCluster = []
+            msgsInCluster = dict()
+            clusterWithNumOfToken = dict()
+            for c in cluster:
+                    
+                messages =  c.get_messages()
                 
-            messages =  c.get_messages()  
-            formats = c.get_formats()
-            print "*"*50
-            print "Cluster information: {0} entries".format(len(messages))
-            print "Internal name: {0}".format(c.getInternalName())
-            print "Format inferred ({0} token):\t{1}".format(len(formats),formats)
-            print "Variable stats:"
-            var_stats = c.getVariableStatistics()
-            for idx, elem in enumerate(var_stats):
-                if isinstance(elem,formatinference.VariableNumberStatistics):
-                    print "Index {0}, Numeric: Min: {1}, Max: {2}, Mean: {3}, Variance: {4}, Distinct: {5}, Top3: {6}".format(idx, elem.getMin(), elem.getMax(), elem.getMean(), elem.getVariance(), elem.numberOfDistinctSamples(), ", ".join("'" + str(idx)+"' ("+str(item) +")" for idx,item in elem.getTop3()))
-                elif isinstance(elem,formatinference.VariableTextStatistics):
-                    print "Index {0}, Text: Shortest: '{1}', Longest: '{2}', Distinct: {3}, Top3: {4}".format(idx, elem.getShortest(), elem.getLongest(), elem.numberOfDistinctSamples(), ", ".join("'" + str(idx)+"' ("+str(item)+")" for idx,item in elem.getTop3()))
-            print "Messageformat hash:\t\t{0}".format(c.getFormatHash())
-            print "RegEx\t\t\t\t\t{0}".format(c.getRegEx())
-            print "RegExVisual:\t\t\t{0}".format(c.getRegExVisual())
-            # print "Token fmt: {0}".fmt(c.get_representation())s            
-            #for message in messages:
-            #    print message
-            idx = 0
-            numOfConst = 0
-            for fmt in formats:
-                print "Token {0}:".format(idx) ,
-                if "FD" in fmt[2]:
-                    rawValues = c.get_all_values_for_token(idx)
-                    sumUp = Counter(rawValues)
-                    values = ""
-                    for key in sumUp.keys():
-                        #if sumUp.get(key)>1:
-                        newstr = "'{0}' ({1}), ".format(key, sumUp.get(key))
-                        values += newstr
-                    print "FD, {0} values: {1}".format(len(sumUp), values[:-2])
-                elif "lengthfield" in fmt[2]:
-                    rawValues = c.get_all_values_for_token(idx)
-                    sumUp = Counter(rawValues)
-                    values = ""
-                    for key in sumUp.keys():
-                        #if sumUp.get(key)>1:
-                        newstr = "'{0}' ({1}), ".format(key, sumUp.get(key))
-                        values += newstr
-                    print "Length field, {0} values: {1}".format(len(sumUp), values[:-2])
-                else:
-                    if fmt[1].getType()==Message.typeConst: # format is "const (xyz)"
-                        value = messages[0].get_tokenAt(idx).get_token()
-                        if fmt[0]=='binary':
-                            print "const binary token, value 0x{:02x}".format(value),
-                            if not fmt[2]==[]:
-                                print "({})".format(",".join(fmt[2]))
-                            else:
-                                print ""
-                        else:
-                            print "const {} token, value '{}'".format(fmt[0],value)  
-                        
-                        # Count token as contributing to const if it is no EOL and no direction token
-                        if value!=0x0a and value!=0x0d and fmt[0]!=Message.typeDirection:
-                            numOfConst += 1
-                        
-                    else: # variable
+                len_msgs = len(messages)
+                if not msgsInCluster.has_key(len_msgs):
+                    msgsInCluster[len_msgs] = 0
+                msgsInCluster[len_msgs] += 1  
+                formats = c.get_formats()
+                numOfToken = len(formats)-1
+                if not clusterWithNumOfToken.has_key(numOfToken):
+                    clusterWithNumOfToken[numOfToken]=0
+                clusterWithNumOfToken[numOfToken]+=1
+                
+                print "*"*50
+                print "Cluster information: {0} entries".format(len(messages))
+                print "Internal name: {0}".format(c.getInternalName())
+                print "Origin: {0}".format(c.getOrigin())
+                print "Splitpoint: {0}".format(c.getSplitpoint())
+                print "Format inferred ({0} token):\t{1}".format(len(formats),formats)
+                print "Variable stats:"
+                var_stats = c.getVariableStatistics()
+                for idx, elem in enumerate(var_stats):
+                    if isinstance(elem,formatinference.VariableNumberStatistics):
+                        print "Index {0}, Numeric: Min: {1}, Max: {2}, Mean: {3}, Variance: {4}, Distinct: {5}, Top3: {6}".format(idx, elem.getMin(), elem.getMax(), elem.getMean(), elem.getVariance(), elem.numberOfDistinctSamples(), ", ".join("'" + str(idx)+"' ("+str(item) +")" for idx,item in elem.getTop3()))
+                    elif isinstance(elem,formatinference.VariableTextStatistics):
+                        print "Index {0}, Text: Shortest: '{1}', Longest: '{2}', Distinct: {3}, Top3: {4}".format(idx, elem.getShortest(), elem.getLongest(), elem.numberOfDistinctSamples(), ", ".join("'" + str(idx)+"' ("+str(item)+")" for idx,item in elem.getTop3()))
+                print "Messageformat hash:\t\t{0}".format(c.getFormatHash())
+                print "RegEx\t\t\t\t\t{0}".format(c.getRegEx())
+                print "RegExVisual:\t\t\t{0}".format(c.getRegExVisual())
+                # print "Token fmt: {0}".fmt(c.get_representation())s            
+                #for message in messages:
+                #    print message
+                idx = 0
+                numOfConst = 0
+                for fmt in formats:
+                    print "Token {0}:".format(idx) ,
+                    if "FD" in fmt[2]:
                         rawValues = c.get_all_values_for_token(idx)
                         sumUp = Counter(rawValues)
                         values = ""
-                        keys = sumUp.keys()
-                        for i in range(0,min(5,len(keys))):
-                            key = keys[i]
-                            if fmt[0]=='binary':
-                                newstr = "0x{:02x} ({}), ".format(key, sumUp.get(key))
-                            else:
-                                newstr = "'{0}' ({1}), ".format(key, sumUp.get(key))
-                                
+                        for key in sumUp.keys():
+                            #if sumUp.get(key)>1:
+                            newstr = "'{0}' ({1}), ".format(key, sumUp.get(key))
                             values += newstr
-                        if len(values)>0:
-                            values += "..."
-                        if fmt[0]=='binary':
-                            print "variable binary token, values {}".format(values),
-                            if not fmt[2]==[]:
-                                print "({})".format(",".join(fmt[2]))
+                        print "FD, {0} values: {1}".format(len(sumUp), values[:-2])
+                    elif "lengthfield" in fmt[2]:
+                        rawValues = c.get_all_values_for_token(idx)
+                        sumUp = Counter(rawValues)
+                        values = ""
+                        for key in sumUp.keys():
+                            #if sumUp.get(key)>1:
+                            newstr = "'{0}' ({1}), ".format(key, sumUp.get(key))
+                            values += newstr
+                        print "Length field, {0} values: {1}".format(len(sumUp), values[:-2])
+                    else:
+                        if fmt[1].getType()==Message.typeConst: # format is "const (xyz)"
+                            value = messages[0].get_tokenAt(idx).get_token()
+                            if fmt[0]=='binary':
+                                print "const binary token, value 0x{:02x}".format(value),
+                                if not fmt[2]==[]:
+                                    print "({})".format(",".join(fmt[2]))
+                                else:
+                                    print ""
                             else:
-                                print ""
-                        else:
-                            print "variable text token, values: {0}".format(values)
-                        
-                idx += 1
-            if numOfConst == 0:
-                # We've got a variable only cluster
-                totalNumOfNoConstCluster += 1
-    
-        print
-        print "Cluster without a single const token (excl. EOL): {0}".format(totalNumOfNoConstCluster)
-                                                                            
-        if not file=="":
-            handle.close()         
-            sys.stdout = old_stdout
-            import os            
-            print "Finished. File size %0.1f KB" % (os.path.getsize(file)/1024.0)               
+                                print "const {} token, value '{}'".format(fmt[0],value)  
+                            
+                            # Count token as contributing to const if it is no EOL and no direction token
+                            if value!=0x0a and value!=0x0d and fmt[0]!=Message.typeDirection:
+                                numOfConst += 1
+                            
+                        else: # variable
+                            rawValues = c.get_all_values_for_token(idx)
+                            sumUp = Counter(rawValues)
+                            values = ""
+                            keys = sumUp.keys()
+                            for i in range(0,min(5,len(keys))):
+                                key = keys[i]
+                                if fmt[0]=='binary':
+                                    newstr = "0x{:02x} ({}), ".format(key, sumUp.get(key))
+                                else:
+                                    newstr = "'{0}' ({1}), ".format(key, sumUp.get(key))
+                                    
+                                values += newstr
+                            if len(values)>0:
+                                values += "..."
+                            if fmt[0]=='binary':
+                                print "variable binary token, values {}".format(values),
+                                if not fmt[2]==[]:
+                                    print "({})".format(",".join(fmt[2]))
+                                else:
+                                    print ""
+                            else:
+                                print "variable text token, values: {0}".format(values)
+                            
+                    idx += 1
+                if numOfConst == 0:
+                    # We've got a variable only cluster
+                    totalNumOfNoConstCluster.append(c.getInternalName())
+                    print ">>> CLUSTER IS VARIABLE ONLY <<<"
+                if self.__config.printMessagesOfCluster:
+                    if len(messages)>1:
+                        print "Messages of cluster ({0} messages):".format(len(messages))
+                        for idx, m in enumerate(messages):
+                            print_msg = m.get_message()
+                            print_msg = re.sub("\x0d", "\\x0d", print_msg)
+                            print_msg = re.sub("\x0a", "\\x0a", print_msg)
+                            print "{0}: {1}".format(idx,print_msg) 
+                            
+        
+            print
+            print "Cluster without a single const token (excl. EOL): {0}".format(len(totalNumOfNoConstCluster))
+            print "Problematic cluster: \n{0}".format(",\n".join(totalNumOfNoConstCluster))
+            print "Cluster message statistics:"
+            print "NumOfMessages\tAmount of clusters"
+            for k in sorted(msgsInCluster.keys()):
+                print "{0}\t{1}".format(k, msgsInCluster[k])
+            
+            print "Num of token\tNum of clusters: "
+            for k in sorted(clusterWithNumOfToken.keys()):
+                print "{0}\t{1}".format(k, clusterWithNumOfToken[k])
+                                                          
+            if not file=="":
+                handle.close()         
+                sys.stdout = old_stdout
+                import os            
+                print "Finished. File size %0.1f KB" % (os.path.getsize(file)/1024.0)     
+        except:
+            print >> sys.stderr, "Some error occured: ", sys.exc_info()           

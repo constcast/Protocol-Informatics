@@ -7,17 +7,16 @@ Created on 20.02.2012
 import copy
 import uuid
 import common
-import types
+import re
+            
+import traceback
 from xml.sax.saxutils import escape
 from cStringIO import StringIO
 from collections import Counter
-     
+import Globals
 
-# Helpder function for transition.__cmp__
-def __repl_dotstar(self,mo):
-    repltxt = int(mo.group(2))*"00" # Replace our matching group with n times e.g. 00 byte (anything except 20)
-    return repltxt
-    
+
+  
 class State(object):
     typeIncomingClient2ServerMsg = 'IncomingClient2ServerMsg'
     typeIncomingServer2ClientMsg = 'IncomingServer2ClientMsg'
@@ -86,13 +85,20 @@ class Transition(object):
         return self.__cluster
     
     def getRegExVisual(self):
-        return self.__regexvisual
-    
+        if self.__cluster!=None:
+            return self.__cluster.getRegExVisual()
+        else:
+            return self.__regexvisual
+        
     def setRegExVisual(self, regexvisual):
         self.__regexvisual = regexvisual
+        
     def getRegEx(self):
-        return self.__regex
-    
+        if self.__cluster!=None:
+            return self.__cluster.getRegEx()
+        else:
+            return self.__regex
+        
     def setRegEx(self, r):
         self.__regex = r
         
@@ -132,6 +138,19 @@ class Transition(object):
         if self.__src == other.getSource() and self.__hash == other.getHash() and self.__dest == other.getDestination() and self.__direction == other.getDirection():
             return True
         return False
+        
+        # Helper function for transition.__cmp__
+    def repl_dotstar(self,mo):
+        repltxt = int(mo.group(2))*"00" # Replace our matching group with n times e.g. 00 byte (anything except 20)
+        return repltxt
+    
+    def repl_dotstar_text(self,mo):
+        repltxt = int(mo.group(2))*"X" # Replace our matching group with n times e.g. "X (anything except \s)
+        return repltxt
+    
+    def repl_control_characters_text(self,mo):
+        repltxt = chr(int(mo.group(1),16))
+        return repltxt
     
     def __cmp__(self,other):
         # Return -1 if self<other
@@ -144,30 +163,59 @@ class Transition(object):
         
         res = False
         try:
-            import re
             p = re.compile(this_regex)
             # What we do here, is converting our "target" regex to a WORD of the language where this
             # regex matches to!
-            other_regex = other_regex[1:-1] # Remove the ^ and $ meta characters from matching regex
-            other_regex = other_regex.replace("(?:20)+","20") # Remove regex meta characters
-            # Create word pattern out of our match anything regex
-            # What do we do here?
-            # This here could be a substring in our regex
-            # "(?:[0-9a-f]{2}){6,8}(?:20)+0d0a"
-            # What we need to do is to replace "(?:[0-9a-f]{2}){6,8}" with an INSTANCE of what this
-            # regex is matching to, in this case 6-8 e.g. 00 bytes
-            # We use two regex to FIND this regex.
-            # These regex are built in such way, that one group returns EVERYTHING (the outermost ())
-            # and the other one resp. two groups match the amount of repetitions, so either {x} or {x,y}
             
-            find_fixed_dotstar = "(\(\?:\[0\-9a\-f\]\{2\}\)\{([1-9][0-9]*)\})"
-            other_regex = re.sub(find_fixed_dotstar, __repl_dotstar, other_regex)
-            find_variable_dotstar = "(\(\?:\[0\-9a\-f\]\{2\}\)\{([1-9][0-9]*),([1-9][0-9]*)\})"
-            other_regex = re.sub(find_variable_dotstar, __repl_dotstar, other_regex)
-            
+            other_regex = other_regex[1:-1] # Remove the ^ and $ meta characters from matching regex    
+            if Globals.getProtocolClassification()==Globals.protocolBinary:
+                other_regex = other_regex.replace("(?:20)+","20") # Remove regex meta characters
+                other_regex = other_regex.replace("(?:20)*","") # Remove regex meta characters
+                
+                # Create word pattern out of our match anything regex
+                # What do we do here?
+                # This here could be a substring in our regex
+                # "(?:[0-9a-f]{2}){6,8}(?:20)+0d0a"
+                # What we need to do is to replace "(?:[0-9a-f]{2}){6,8}" with an INSTANCE of what this
+                # regex is matching to, in this case 6-8 e.g. 00 bytes
+                # We use two regex to FIND this regex.
+                # These regex are built in such way, that one group returns EVERYTHING (the outermost ())
+                # and the other one resp. two groups match the amount of repetitions, so either {x} or {x,y}
+                
+                find_fixed_dotstar = "(\(\?:\[0\-9a\-f\]\{2\}\)\{([1-9][0-9]*)\})"
+                other_regex = re.sub(find_fixed_dotstar, self.repl_dotstar, other_regex)
+                find_variable_dotstar = "(\(\?:\[0\-9a\-f\]\{2\}\)\{([1-9][0-9]*),([1-9][0-9]*)\})"
+                other_regex = re.sub(find_variable_dotstar, self.repl_dotstar, other_regex)
+            else:
+                other_regex = other_regex.replace("[\\t| ]+"," ") # Remove regex meta characters
+                other_regex = other_regex.replace("[\\t| ]*","") # Remove regex meta characters
+                
+                # Undo additional maskings
+                other_regex = other_regex.replace("\(", "(")
+                other_regex = other_regex.replace("\)", ")")
+                other_regex = other_regex.replace("\{", "{")
+                other_regex = other_regex.replace("\}", "}")
+                other_regex = other_regex.replace("\[", "[")
+                other_regex = other_regex.replace("\]", "]")
+                other_regex = other_regex.replace("\.", ".")
+                other_regex = other_regex.replace("\*", "*")
+                #find_fixed_dotstar = "(\(\?:\[0\-9a\-f\]\{2\}\)\{([1-9][0-9]*)\})"
+                find_fixed_dotstar = "(\.\{([1-9][0-9]*)\})"
+                other_regex = re.sub(find_fixed_dotstar, self.repl_dotstar_text, other_regex)
+                
+                find_variable_dotstar = "(\.\{([1-9][0-9]*),([1-9][0-9]*)\})"
+                other_regex = re.sub(find_variable_dotstar, self.repl_dotstar_text, other_regex)
+                
+                # Replace control characters
+                replace_control_characters = "\\\\x(..)"
+                other_regex = re.sub(replace_control_characters, self.repl_control_characters_text, other_regex)
+                
+                print "This: {0}".format(this_regex)
+                print "Other: {0}".format(other_regex)
             res = p.match(other_regex) 
         except Exception:
             pass
+            #print "Exception: {0}".format(traceback.print_exc())
         if res:
             # this_regex can match other_regex --> this_regex is more generic
             return -1
@@ -302,18 +350,30 @@ class Statemachine(object):
                 self.log("Destination: {0}, hash: {1}, visual regex: {2}, regex: {3}, message: {4}".format(t.getDestination(), t.getHash(), t.getRegExVisual(), t.getRegEx(), t.getMessage()), printSteps)
             self.log("Current input:", printSteps)
             self.log("Msg: {0}".format(f.get_message()), printSteps)
-            payload = f.get_payload_as_string()
-            self.log("Payload: {0}".format(payload), printSteps)
+            if Globals.getProtocolClassification()==Globals.protocolBinary:
+                payload = f.get_payload_as_string()
+            else:
+                payload = f.get_message()
+            if Globals.getProtocolClassification()==Globals.protocolBinary:
+                self.log("Payload: {0}".format(payload), printSteps)
             gotOne = False
             
             regexList = []
             for t in stateTransitions:
                 r = t.getRegEx()
-                self.log("Testing regex visual: {0}".format(t.getRegExVisual()), printSteps)
-                self.log("Testing regex:        {0}".format(t.getRegEx()), printSteps)
+                print_msg = t.getRegExVisual()
+                print_msg = re.sub("\x0d", "\\x0d", print_msg)
+                print_msg = re.sub("\x0a", "\\x0a", print_msg)
+                
+                self.log("Testing regex visual: {0}".format(print_msg), printSteps)
+                if Globals.getProtocolClassification()!=Globals.protocolText:
+                    self.log("Testing regex:        {0}".format(t.getRegEx()), printSteps)
                 res = None
                 try:
-                    p = re.compile(r)
+                    if Globals.getProtocolClassification()==Globals.protocolText:
+                        p = re.compile(r, re.IGNORECASE)
+                    else:
+                        p = re.compile(r)
                     res = p.match(payload) # Match might freeze the code
                 except Exception as ae:
                     pass
@@ -335,7 +395,7 @@ class Statemachine(object):
                 elif len(regexList)>1:
                     self.log("Found multiple matching transitions: {0} transitions found".format(len(regexList)), printSteps)
                     for t in regexList:
-                        print "\t{0}".format(t)
+                        self.log("\t{0}".format(t))
                     # Try to find the best one of these transitions, put the most generic to the back of the list
                     regexList.sort(reverse=True)
                     self.log("Using {0}".format(regexList[0]))
@@ -1598,7 +1658,7 @@ class Statemachine(object):
         outtab = ' '
         trantab = string.maketrans(intab,outtab)
         
-        print "digraph G {"
+        print "digraph ProtocolStatemachine {"
         # Add final node definitions
         for s in self.__finals:
             print '{0} [shape=circle,peripheries=2];'.format(s)
@@ -1609,6 +1669,9 @@ class Statemachine(object):
         for t in t_full_set:
             
             s = "'{0}'".format(t.getMessage()[:25].translate(trantab))
+            
+            s = re.sub("\x0d", "", s)
+            s = re.sub("\x0a", "", s)
             if len(t.getMessage())>25:
                 s+="..."
             s+=" ({0})".format(t.getCounter())

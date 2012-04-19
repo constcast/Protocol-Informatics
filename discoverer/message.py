@@ -90,7 +90,7 @@ class Message:
     
     def __convertPayload(self):
         for i in self.__payload:
-            if isprint(chr(i)):
+            if isprint(chr(i)) or i<32:
                 self.__message += chr(i)
             else:
                 self.__message += '.'

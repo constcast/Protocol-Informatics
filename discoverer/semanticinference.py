@@ -28,11 +28,12 @@ def perform_semantic_inference(cluster_collection, config):
             #for tokenRepresentation in tokenlist:
                 tokenRepresentation = iterator.next()
                 # TODO: do we need to keep semantics which involve multiple cluster? e.g. sessionids?
-                if "sessionid" in tokenRepresentation.get_semantics():    
-                    tokenRepresentation.set_semantics([]) # Clear existing semantics from previous run
-                    tokenRepresentation.add_semantic("sessionid") # Just sessionid?
-                else:
-                    tokenRepresentation.set_semantics([]) # Clear existing semantics from previous run
+                previous_semantics = tokenRepresentation.get_semantics()
+                tokenRepresentation.set_semantics([]) # Clear existing semantics from previous run
+                if "sessionid" in previous_semantics:    
+                    tokenRepresentation.add_semantic("sessionid")
+                if "FD" in previous_semantics:
+                    tokenRepresentation.add_semantic("FD")
                     
                 token = tokenRepresentation.get_token()
                 # Check whether it is numeric

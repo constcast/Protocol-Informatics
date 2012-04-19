@@ -135,7 +135,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             #    print
             #===================================================================
                 
-            
+            self.do_dumpresult("")
             # Build statemachine
             
             sm = discoverer.statemachine.Statemachine(self.env['messageFlows'], self.config)
@@ -159,7 +159,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             
             
             #sm.dumpStructure(storePath)
-            self.do_dumpresult("")
+            
             
             #pickled = sm.pickle()
             #import cPickle
@@ -170,7 +170,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             self.createPeachOutput()
             
             self.do_statemachine_accepts("")
-            self.do_testsuite("")
+            #self.do_testsuite("")
             
         else:
             # Perform discoverer only for client pat
@@ -661,7 +661,14 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         elapsed = (time.time() - start)
         print "Merging took {:.3f} seconds".format(elapsed)
         print "Finished"
-
+        
+        # Perform one last format inference and semantic inference
+        oldvalue = self.config.considerOneMessageAsConstant
+        self.config.considerOneMessageAsConstant = True
+        self.do_format_inference("")
+        self.config.considerOneMessageAsConstant = oldvalue
+        self.do_semantic_inference("")
+        
         if self.config.debug:                
             self.env['cluster_collection'].print_clusterCollectionInfo()
             
@@ -709,6 +716,9 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             print "No cluster loaded yet"
             return
         self.env['cluster_collection'].print_clusterCollectionInfo()
+    
+              
+    
     def do_dumpresult(self, string):
         if self.config.loadClientAndServerParts == True:
             # Dump 2 collections to two files

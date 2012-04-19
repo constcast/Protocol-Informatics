@@ -1,3 +1,5 @@
+import Globals
+
 stats = {"printable":0, "binary":0, "startsWithText":0, "numMessages":0}
 
 def update_statistics(num_printable, num_binary, startsWithText):
@@ -14,9 +16,9 @@ def get_classification():
     identified as "text" and at least 90% of all messages begin with a text token
     """
     if stats["printable"]>2*stats["binary"] and stats["startsWithText"]>=0.9*stats["numMessages"]:
-        return "text"
+        return Globals.protocolText
     else:
-        return "binary"
+        return Globals.protocolBinary
         
 def reset_statistics():
     stats = {"printable":0, "binary":0, "startsWithText":0, "numMessages":0}

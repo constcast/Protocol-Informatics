@@ -1,4 +1,5 @@
 from message import Message
+import string
 import sys
 
 def perform_format_inference_for_cluster(c, config):        
@@ -29,10 +30,15 @@ def perform_format_inference_for_cluster(c, config):
                 for message in messages:
                     tl = message.get_tokenlist()
                     currentRepresentation = tl[tokenIndex]
-                    if not tokenRepresentation.get_token()==currentRepresentation.get_token():
-                        constant = False
-                        break
-            
+                    if config.constantsAreCaseSensitive:
+                        if not tokenRepresentation.get_token()==currentRepresentation.get_token():
+                            constant = False
+                            break                                                                  
+                    else:    
+                        if not string.upper(tokenRepresentation.get_token())==string.upper(currentRepresentation.get_token()):                                                                  
+                            constant = False
+                            break
+
         if constant:
             result.append(Constant(tokenRepresentation.get_token()))
             #result.append("const")
