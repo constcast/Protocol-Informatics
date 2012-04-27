@@ -720,6 +720,8 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
               
     
     def do_dumpresult(self, string):
+        if not self.env.has_key('cluster_collection'): return
+        
         if self.config.loadClientAndServerParts == True:
             # Dump 2 collections to two files
             path = os.path.normpath(self.config.dumpFile)

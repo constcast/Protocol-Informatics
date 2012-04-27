@@ -460,7 +460,7 @@ class ClusterCollection():
         
             print
             print "Cluster without a single const token (excl. EOL): {0}".format(len(totalNumOfNoConstCluster))
-            print "Problematic cluster: \n{0}".format(",\n".join(totalNumOfNoConstCluster))
+            print "Problematic cluster: \n{0}".format(",\n".join(str(a) for a in totalNumOfNoConstCluster))
             print "Cluster message statistics:"
             print "NumOfMessages\tAmount of clusters"
             for k in sorted(msgsInCluster.keys()):
