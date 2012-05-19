@@ -30,8 +30,13 @@ def perform_semantic_inference(cluster_collection, config):
                 # TODO: do we need to keep semantics which involve multiple cluster? e.g. sessionids?
                 previous_semantics = tokenRepresentation.get_semantics()
                 tokenRepresentation.set_semantics([]) # Clear existing semantics from previous run
-                if "sessionid" in previous_semantics:    
-                    tokenRepresentation.add_semantic("sessionid")
+                for s in previous_semantics:
+                    if s.startswith("sessionid"):
+                        tokenRepresentation.add_semantic(s)
+                        break
+                
+                #if "sessionid" in previous_semantics:    
+                #    tokenRepresentation.add_semantic("sessionid")
                 if "FD" in previous_semantics:
                     tokenRepresentation.add_semantic("FD")
                     
@@ -190,12 +195,13 @@ def perform_semantic_inference(cluster_collection, config):
                             # Set cookie semantic in this message and the other
                             sessionid = uuid.uuid1()
                             for message in messages: # Set for every message and the cluster itself
-                                #message.get_tokenlist()[ref_idx].add_semantic("sessionid_{0}".format(sessionid))
-                                message.get_tokenlist()[ref_idx].add_semantic("sessionid")
+                                message.get_tokenlist()[ref_idx].add_semantic("sessionid_{0}".format(sessionid))
+                                #message.get_tokenlist()[ref_idx].add_semantic("sessionid")
                                 nextMsg = message.getNextInFlow()
-                                #nextMsg.get_tokenlist()[next_idx].add_semantic("sessionid_{0}".format(sessionid))
-                                nextMsg.get_tokenlist()[next_idx].add_semantic("sessionid")
-                            c.add_semantic_for_token(ref_idx,"sessionid")
+                                nextMsg.get_tokenlist()[next_idx].add_semantic("sessionid_{0}".format(sessionid))
+                                #nextMsg.get_tokenlist()[next_idx].add_semantic("sessionid")
+                            #c.add_semantic_for_token(ref_idx,"sessionid")
+                            c.add_semantic_for_token(ref_idx,"sessionid_{0}".format(sessionid))
                     next_idx += 1
                 ref_idx += 1
                 
@@ -231,6 +237,11 @@ def pushUpToCluster(cluster_collection, config):
                         if cmpsemantic==semantic:
                             foundSemantic = True
                             break
+                        # Special handling for sessionids
+                        if semantic.startswith("sessionid"):
+                            if cmpsemantic.startswith("sessionid"):
+                                foundSemantic = True
+                                break
                     if not foundSemantic:
                         break
                 

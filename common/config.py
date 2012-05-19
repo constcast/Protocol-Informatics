@@ -67,6 +67,7 @@ class Configuration:
         self.constantsAreCaseSensitive = True
         self.allowAdjacentFDs = True
         self.allowAdjacentTextFDs = False
+        self.autoCreateXML = False
         # Used for NW alignment in Discoverer
         self.matchScore = 1
         self.mismatchScore = 1

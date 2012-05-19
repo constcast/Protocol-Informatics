@@ -38,7 +38,8 @@ class Message:
     def __repr__ (self): 
         return 'Msg: "%s" %s' % (self.__message, self.__tokenlist)
      
-    def __init__(self, payload, connident, mnumber, flowmnumber, msgDirection, config):
+    def __init__(self, payload, connident, mnumber, flowmnumber, msgDirection, config, performFullAnalysis=True):
+        self.__config = config
         if len(payload)>config.maxMessagePrefix:
             # Strip payload to maxMessagePreif
             self.__payload = payload[0:config.maxMessagePrefix]
@@ -49,10 +50,11 @@ class Message:
         self.__flowmsgnumber = flowmnumber
         self.__message = ""
         self.__messageDirection = msgDirection
-        self.__config = config
         self.__tokenlist = []
-        self.__analyze()
         self.__convertPayload()
+        
+        if performFullAnalysis:
+            self.__analyze()
         self.__payloadhash = common.hash(self.__payload)
         self.__cluster = None
         self.__nextInFlow = None

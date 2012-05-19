@@ -361,6 +361,7 @@ class Statemachine(object):
             regexList = []
             for t in stateTransitions:
                 r = t.getRegEx()
+                # Replace characters only for printing to console
                 print_msg = t.getRegExVisual()
                 print_msg = re.sub("\x0d", "\\x0d", print_msg)
                 print_msg = re.sub("\x0a", "\\x0a", print_msg)

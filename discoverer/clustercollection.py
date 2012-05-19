@@ -326,6 +326,14 @@ class ClusterCollection():
         sys.stdout = old_stdout
         return body
     
+    def updateClusterRegEx(self):
+        for c in self.__cluster:
+            c.updateRegEx()
+    
+    def flushMessagesInCluster(self):
+        for c in self.__cluster:
+            c.flushMessages()
+           
     def print_clusterInfo(self, cluster, file=""):
         """
         Prints the inferred formats for a cluster in a human readable way
@@ -362,6 +370,7 @@ class ClusterCollection():
                     clusterWithNumOfToken[numOfToken]=0
                 clusterWithNumOfToken[numOfToken]+=1
                 
+                c.updateRegEx()
                 print "*"*50
                 print "Cluster information: {0} entries".format(len(messages))
                 print "Internal name: {0}".format(c.getInternalName())

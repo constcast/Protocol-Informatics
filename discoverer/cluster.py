@@ -27,6 +27,8 @@ class Cluster(dict):
         self.__internalname = uuid.uuid1()
         self.__origin = origin
         self.__splitpoint = "n/a"
+        self.__regExVisual = ""
+        self.__regEx = ""
         
     def getOrigin(self):
         return self.__origin
@@ -86,8 +88,14 @@ class Cluster(dict):
                 if value!=0x0a and value!=0x0d and fmt[0]!=Message.typeDirection:
                     numOfConst += 1
             idx += 1
-        return numOfConst>0       
+        return numOfConst>0
+    
     def getRegEx(self):
+        if self.__regEx == "":
+            self.__regEx = self.calc_regEx()
+        return self.__regEx
+           
+    def calc_regEx(self):
         if Globals.getProtocolClassification()==Globals.protocolText:
             # When we are text, only use visual regex
             return self.getRegExVisual()
@@ -140,13 +148,20 @@ class Cluster(dict):
                         if isinstance(stats,formatinference.VariableTextStatistics):
                             min = len(stats.getShortest())
                             max = len(stats.getLongest())
-                        else:
-                            s = str(stats.getMin())
-                            min = len(s)
-                            s = str(stats.getMax())
-                            max = len(s)
+                        else: # This is VariableBinaryStatistics
+                            # Binary length is always 1 because we only look at one byte values
+                            # min/max length is invalid here
+                            ##s = str(stats.getMin())
+                            ##min = len(s)
+                            ##s = str(stats.getMax())
+                            ##max = len(s)
+                            min = length
+                            max = length
+                            
                         if min == max:
-                            regexstr += "(?:[0-9a-f]{2}){" + str(min) + "}"
+                            regexstr += "(?:[0-9a-f]{2})"
+                            if min>1:
+                                regexstr += "{" + str(min) + "}"
                         else:
                             regexstr += "(?:[0-9a-f]{2}){" + str(min) +","+ str(max) +"}"
                     else:
@@ -231,7 +246,12 @@ class Cluster(dict):
         handle.close()         
         sys.stdout = old_stdout
         return body
-        
+    # Force recalculation
+    def updateRegEx(self):
+        self.__regEx = ""
+        self.__regExVisual = ""
+        self.getRegEx()
+        self.getRegExVisual() 
     def getXMLRepresentation(self):
         import sys
         old_stdout = sys.stdout
@@ -240,6 +260,8 @@ class Cluster(dict):
         messages =  self.get_messages()  
         formats = self.get_formats()
         var_stats = self.getVariableStatistics()
+        
+        self.updateRegEx()
         
         print '<cluster internalName="{0}" numOfMessages="{1}">'.format(self.getInternalName(), len(messages))
         print '<regex>{0}</regex>'.format(escape(self.getRegEx()))
@@ -299,7 +321,17 @@ class Cluster(dict):
         handle.close()         
         sys.stdout = old_stdout
         return body
+    
+    def flushMessages(self):
+        self["messages"] = []
+        
+        
     def getRegExVisual(self):
+        if self.__regExVisual == "":
+            self.__regExVisual = self.calc_regExVisual()
+        return self.__regExVisual
+    
+    def calc_regExVisual(self):
         regexstr = "^"
         idx = 0
         iterator = peekable(self.get('format_inference'))
@@ -340,11 +372,15 @@ class Cluster(dict):
                         if isinstance(stats,formatinference.VariableTextStatistics):
                             min = len(stats.getShortest())
                             max = len(stats.getLongest())
-                        else:
-                            s = str(stats.getMin())
-                            min = len(s)
-                            s = str(stats.getMax())
-                            max = len(s)
+                        else: # We"re VariableBinaryStatistics
+                            # min/max is always 1
+                            
+                            #s = str(stats.getMin())
+                            #min = len(s)
+                            #s = str(stats.getMax())
+                            #max = len(s)
+                            min = 1
+                            max = 1
                         if min == max:
                             regexstr += ".{" + str(min) + "}"
                         else:

@@ -11,12 +11,16 @@ import time
 import collections
 import discoverer.statemachine
 import discoverer.splitter
+import resource
 
 class DiscovererCommandLineInterface(cli.CommandLineInterface):
     def __init__(self, env, config):
         cmd.Cmd.__init__(self)
         self.env = env
+        # Just for backing it up into the state
+        self.env['config'] = config
         self.config = config
+        self.__profile = dict()
 
     def do_EOF(self, string):
         return True
@@ -137,14 +141,22 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
                 
             self.do_dumpresult("")
             # Build statemachine
-            
+            print "Forcing regex rebuild"
+            self.env['cluster_collection'].updateClusterRegEx()
+            print "Flushing all messages in all clusters"
+            self.env['cluster_collection'].flushMessagesInCluster()
             sm = discoverer.statemachine.Statemachine(self.env['messageFlows'], self.config)
             self.env['sm'] = sm
             start = time.time()
             print "Building statemachine"
+            print "Memory usage w/o statemachine: {0}".format(self.getMemoryUsage())
+            self.profile("BeforeBuildStatemachine")
             sm.build()
             duration = time.time()-start
             print "Statemachine building took {:.3f} seconds".format(duration)
+            print "Memory usage with statemachine: {0}".format(self.getMemoryUsage())
+            self.profile("AfterBuildStatemachine")
+            
             path = os.path.normpath(self.config.dumpFile)
             file = os.path.basename(self.config.inputFile)
             (filename,ext) = os.path.splitext(file)
@@ -166,8 +178,13 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             #anothersm = cPickle.loads(pickled)
             #anothersm.dump("/Users/daubsi/Dropbox/anotherdump")
             self.do_dump_state("")
-            self.createXMLOutput()
-            self.createPeachOutput()
+            if self.config.autoCreateXML:
+                print "Memory usage before creating XML: {0}".format(self.getMemoryUsage())
+                self.profile("BeforeBuildXML")            
+                self.createXMLOutput()
+                self.createPeachOutput()
+                print "Memory usage after creating XML: {0}".format(self.getMemoryUsage())
+                self.profile("AfterBuildXML")
             
             self.do_statemachine_accepts("")
             #self.do_testsuite("")
@@ -204,7 +221,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         handle.close()         
         sys.stdout = old_stdout
         import os            
-        print "Finished Peach output. File size %0.1f KB" % (os.path.getsize(storePath)/1024.0)         
+        print "Finished Peach output. File size {0}".format(self.convert_bytes(os.path.getsize(storePath)))         
 
     def createXMLOutput(self):
         import os
@@ -228,7 +245,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         handle.close()         
         sys.stdout = old_stdout
         import os            
-        print "Finished XML output. File size %0.1f KB" % (os.path.getsize(storePath)/1024.0)         
+        print "Finished XML output. File size {0}".format(self.convert_bytes(os.path.getsize(storePath)))         
 
     def do_createXMLOutput(self, string):
         self.createXMLOutput()
@@ -246,7 +263,8 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             
         client2server_file = "{0}_client".format(fileName)
         server2client_file = "{0}_server".format(fileName)
-        
+        print "Memory usage before loading testdata: {0}".format(self.getMemoryUsage())
+        self.profile("BeforeLoadingTestdata")
         print "Loading {0} entries from test data from {1}".format(self.config.numOfTestEntries,client2server_file) 
         sequences_client2server = sequences = common.input.Bro(client2server_file, self.config.numOfTestEntries).getConnections()
         print "Loading {0} entries from test data from {1}".format(self.config.numOfTestEntries, server2client_file)
@@ -254,19 +272,30 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         sequences = [(sequences_client2server, Message.directionClient2Server),(sequences_server2client, Message.directionServer2Client)] # Keep it compatible with existing code TODO        
         
         print "Loaded {0} test sequences from input files".format(len(sequences[0][0])+len(sequences[1][0]))
-        setup = discoverer.setup.Setup(sequences, self.config)
+        print "Memory usage after loading testdata: {0}".format(self.getMemoryUsage())
+        self.profile("AfterLoadingTestdata")    
+        # Create quick setup    
+        setup = discoverer.setup.Setup(sequences, self.config, performFullAnalysis=False)
+        print "Memory usage after preparing testsequences: {0}".format(self.getMemoryUsage())
+        self.profile("AfterPreparingTestdata")    
         testcluster = setup.get_cluster_collection()
         testflows = self.combineflows(testcluster)
+        print "Memory usage after combining testsequences: {0}".format(self.getMemoryUsage())
+        self.profile("AfterCombiningTestdata")    
         
         self.linkmessages(testflows)
-        
+        print "Memory usage after linking testsequences: {0}".format(self.getMemoryUsage())
+        self.profile("AfterLinkingTestdata")
         self.env['testflows']=testflows
         
         if self.env.has_key('sm'):
             self.env['sm'].setConfig(self.config)
             self.env['sm'].setTestFlows(testflows)
-        
     
+    def getMemoryUsage(self):
+        memusage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss    
+        return self.convert_bytes(memusage)
+        
     def do_clear(self, string):
         self.env['sequences']=None
     
@@ -340,7 +369,8 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         self.env['sm'].setTestFlows(testflows)
         # Make room ;-)
         self.env['sequences']=None
-        
+        print "Memory usage before test: {0}".format(self.getMemoryUsage())
+        self.profile("BeforeStartingTest")
         for elem in testflows.keys():
             print "{0} flows left to test ({1} failed so far)".format(test2go, failures)
             res = self.statemachine_accepts_flow(elem, printSteps=False)
@@ -364,9 +394,12 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
                     failedelements.append(elem)
                     
         print "Finished"
+        print "Memory usage after statemachine test: {0}".format(self.getMemoryUsage())
+        self.profile("AfterEndTests")
         print "Testresults"
         print "==========="
         print "Number of flows: {0}, Success: {1}, Failures: {2}".format(success+failures, success, failures)
+        self.printProfile()
         if failures>0:
             print "Test flowID not in test flows: {0}".format(not_in_testflows)
             print "Flow had only one message: {0}".format(only_one_msg)
@@ -394,6 +427,8 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         print "Testresults"
         print "==========="
         print "Number of flows: {0}, Success: {1}, Failures: {2}".format(success+failures, success, failures)
+        self.printProfile()
+            
         if failures>0:
             print "Test flowID not in test flows: {0}".format(not_in_testflows)
             print "Flow had only one message: {0}".format(only_one_msg)
@@ -402,6 +437,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             print "Flow rejected prematurely: {0}".format(not_all_transitioned)
             print "Flow did not end in final state: {0}".format(not_ended_in_final)
             print
+            
             
             if len(failedelements)>0:
                 print "Failed test flows (only tested flows):"
@@ -420,9 +456,37 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         
         handle.close()         
         sys.stdout = old_stdout
-        print "Finished. Test results written to file {}, file size {:.1f} KB".format(storePath,os.path.getsize(storePath)/1024.0)               
-
+        print "Finished. Test results written to file {0}, file size {1}".format(storePath,self.convert_bytes(os.path.getsize(storePath)))               
     
+    def profile(self, testpoint):
+        self.__profile[testpoint] = self.getMemoryUsage()
+        
+    def printProfile(self):
+        
+        for key in self.__profile.keys():
+            print "Testpoint: {0}, Memory consumption: {1}".format(key, self.profile[key])
+            
+    def convert_bytes(self,bytes):
+        '''
+        Source: http://www.5dollarwhitebox.org/drupal/node/84
+        '''
+        bytes = float(bytes)
+        if bytes >= 1099511627776:
+            terabytes = bytes / 1099511627776
+            size = '%.2f TB' % terabytes
+        elif bytes >= 1073741824:
+            gigabytes = bytes / 1073741824
+            size = '%.2f GB' % gigabytes
+        elif bytes >= 1048576:
+            megabytes = bytes / 1048576
+            size = '%.2f MB' % megabytes
+        elif bytes >= 1024:
+            kilobytes = bytes / 1024
+            size = '%.2f KB' % kilobytes
+        else:
+            size = '%.2fb' % bytes
+        return size
+
         
     def do_statemachine_accepts_flow(self, flow):
         self.statemachine_accepts_flow(flow, printSteps=True)
@@ -469,7 +533,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         testflows = self.env['testflows']
         
         nr = 0
-        outfilename = "/Users/daubsi/Dropbox/ftp_big"
+        outfilename = self.config.testFile
         fdoutclient = open("{0}_{1}_{2}_client".format(outfilename,chunksize, nr), "w")
         fdoutserver = open("{0}_{1}_{2}_server".format(outfilename,chunksize, nr), "w")
         
@@ -479,7 +543,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         flowcnt = 0
         for flow in testflows:
             (has_no_gaps, is_alternating) = discoverer.common.flow_is_valid(testflows, flow, self.config)
-            if not (has_no_gaps and is_alternating):                                                          
+            if not (has_no_gaps and is_alternating) or len(testflows[flow])==1:                                                          
                 continue    
             
             messages = testflows[flow]
@@ -502,6 +566,8 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
                 nr += 1
                 fdoutclient = open("{0}_{1}_{2}_client".format(outfilename,chunksize, nr), "w")
                 fdoutserver = open("{0}_{1}_{2}_server".format(outfilename,chunksize, nr), "w")
+                print "Opened output file {0}_{1}_{2}".format(outfilename, chunksize, nr)
+        
                 flowcnt = 0
                 #print "{0} lines read and {1} chunksize flows read. Creating new output file {2}_{1}_{3}".format(linecnt, chunksize,self.infilename, nr)
                 #linecnt = 0
@@ -558,6 +624,9 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
                 nextMsg = nextMsg.getNextInFlow()
         
     def linkmessages(self, messageFlows):
+        maxFlowLength = 0
+        minFlowLength = sys.maxint
+        
         print "Linking messages within flow"
         for flow in messageFlows:
             messages = messageFlows[flow]
@@ -571,7 +640,12 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             #for msg_id, message in messages.items():
             lastMsg = None
             (msg_id, message) = iterator.next()
+            flowLength = len(message)
             message = message[0]
+            if flowLength>maxFlowLength:
+                maxFlowLength = flowLength
+            if flowLength<minFlowLength:
+                minFlowLength = flowLength
             while not iterator.isLast():
                 if lastMsg != None:
                     lastMsg.setNextInFlow(message)
@@ -587,6 +661,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             
             if self.config.debug:
                 self.printflow(flow)
+        print "Linked flows. Min flow length: {0}, max flow length: {1}".format(minFlowLength, maxFlowLength)
                  
     def do_dump_state(self, str):
         import cPickle
@@ -599,6 +674,8 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         import cPickle
         handle = open("/Users/daubsi/Dropbox/disc_state","rb")
         self.env = cPickle.load(handle)
+        # Update config with settings from backup
+        self.config = self.env['config']
         handle.close()
                     
     def go(self, sequences):
@@ -709,7 +786,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         if file!="":
             handle.close()         
             sys.stdout = old_stdout           
-            print "Finished. File size %0.1f KB" % (os.path.getsize(storePath)/1024.0)
+            print "Finished. File size {0}".format(self.convert_bytes(os.path.getsize(storePath)))
             
     def do_print_clusterinfo(self, string):
         if not self.env.has_key('cluster_collection'):
