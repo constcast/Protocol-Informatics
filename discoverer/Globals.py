@@ -17,4 +17,9 @@ def getProtocolClassification():
         __protocolType = statistics.get_classification()
     return __protocolType
 
+def isBinary():
+    return getProtocolClassification()==protocolBinary
+
+def isText():
+    return getProtocolClassification()==protocolText
 

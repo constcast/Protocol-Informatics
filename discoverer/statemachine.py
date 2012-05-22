@@ -167,6 +167,9 @@ class Transition(object):
     def getHash(self):
         return self.__hash
     
+    def setHash(self, hash):
+        self.__hash = hash
+    
     def getDestination(self):
         return self.__dest
     
@@ -444,13 +447,14 @@ class Statemachine(object):
                 print_msg = t.getRegExVisual()
                 print_msg = re.sub("\x0d", "\\x0d", print_msg)
                 print_msg = re.sub("\x0a", "\\x0a", print_msg)
+                print_msg = re.sub("\x08", "\\x08", print_msg)
                 
                 self.log("Testing regex visual: {0}".format(print_msg), printSteps)
                 if Globals.getProtocolClassification()!=Globals.protocolText:
                     self.log("Testing regex:        {0}".format(t.getRegEx()), printSteps)
                 res = None
                 try:
-                    if Globals.getProtocolClassification()==Globals.protocolText:
+                    if Globals.isText():
                         p = re.compile(r, re.IGNORECASE)
                     else:
                         p = re.compile(r)
@@ -692,7 +696,7 @@ class Statemachine(object):
                     
                     # Build statemachine alternatively
                     if self.__config.buildDFAViaRegEx:
-                        hash = cluster.getRegEx()
+                        hash = cluster.getRegEx() # Will internally return visual or normal regex, depending on the protocol classification
                     else:
                         hash = cluster.getFormatHash()
                     regexp = message[0].getCluster().getRegEx()
@@ -734,16 +738,52 @@ class Statemachine(object):
                                 continue
                         else: # This transition does not yet exist, add new transition with new state    
                             #newstate = "s{0}".format(self.__nextstate)
-                            stateType = self.determineStateType(message[1])
-                            newstate = State("s{0}".format(self.__nextstate), stateType, self)
-                            self.__states.append(newstate)
-                            self.addTransition(curstate,hash,newstate, message[1], message[0].get_message(), regexp, regexpvisual, cluster)
-                            self.__nextstate += 1
-                            self.log("Created new state in transition ({0},{1},{2},{3},1,{4})".format(curstate,hash,newstate, message[1], message[0].get_message()))
-                            curstate = newstate
+                            
+                            if self.__config.buildDFAViaRegEx:    
+                                trans = self.getTransitionsFrom(curstate)
+                                # Check if any of the existing regexes/transitions already covers the new regex
+                                # In this case do not add a new transition
+                                msg = message[0]
+                                foundExistingTrans = False
+                                for t in trans:
+                                    if Globals.isBinary():
+                                        content = msg.get_payload_as_string()
+                                        res = re.match(t.getHash(), content)
+                                        if res:
+                                            # We've found an existing which covers our current message,
+                                            # --> There is no need to add a new transition
+                                            foundExistingTrans = True
+                                            break;
+                                    else:
+                                        content = msg.getMessage()
+                                        content = re.sub("\x0d", "\\x0d", content)
+                                        content = re.sub("\x0a", "\\x0a", content)
+                                        content = re.sub("\x08", "\\x08", content)
+                                        res = re.match(t.getHash(), content, re.IGNORECASE)
+                                        if res:
+                                            # We've found an existing which covers our current message,
+                                            # --> There is no need to add a new transition
+                                            foundExistingTrans = True
+                                            break;
+                                if not foundExistingTrans:
+                                    # Now also test, if our new regex generalizes an existing transition.
+                                    # Then we could replace that regex with the data of our new node.
+                                    for t in trans:
+                                        if Globals.isBinary():
+                                            pass
+                                        else:
+                                            pass
+                                        if not foundExistingTrans:
+                                            curstate = self.addStateFromMessage(message, hash, curstate)
+                                            
+                            else:
+                                curstate = self.addStateFromMessage(message, hash, curstate)
+                                
+
+                                
                             if msg_key == msg_keys[-1]: # Is this the last?
                                 if self.__config.lastMessageIsDirectlyFinal:
-                                        self.__finals.add(newstate)
+                                        self.__finals.add(curstate)
                                 else:
                                     # 20120326: Solution for many rejected acceptance tests
                                     # Finals must be a separate state
@@ -773,13 +813,69 @@ class Statemachine(object):
                             continue
                         else:
                             #newstate = "s{0}".format(self.__nextstate)
-                            stateType = self.determineStateType(message[1])
-                            newstate = State("s{0}".format(self.__nextstate), stateType, self)
-                            self.__states.append(newstate)
-                            self.addTransition(curstate,hash,newstate, message[1], message[0].get_message(), regexp, regexpvisual, cluster)
-                            self.__nextstate += 1
-                            self.log("Created new state in transition ({0},{1},{2},{3},1,{4})".format(curstate,hash,newstate, message[1], message[0].get_message()))
-                            curstate = newstate
+                            
+                            
+                            if self.__config.buildDFAViaRegEx: 
+                                trans = self.getTransitionsFrom(curstate)   
+                                # Check if any of the existing regexes/transitions already covers the new regex
+                                # In this case do not add a new transition
+                                msg = message[0]
+                                foundExistingTrans = False
+                                for t in trans:
+                                    if Globals.isBinary():
+                                        content = msg.get_payload_as_string()
+                                        res = re.match(t.getHash(), content)
+                                        if res:
+                                            # We've found an existing which covers our current message,
+                                            # --> There is no need to add a new transition
+                                            foundExistingTrans = True
+                                            newstate = t.getDestination()
+                                            break;
+                                    else:
+                                        content = msg.getMessage()
+                                        content = re.sub("\x0d", "\\x0d", content)
+                                        content = re.sub("\x0a", "\\x0a", content)
+                                        content = re.sub("\x08", "\\x08", content)
+                                        res = re.match(t.getHash(), content, re.IGNORECASE)
+                                        if res:
+                                            # We've found an existing which covers our current message,
+                                            # --> There is no need to add a new transition
+                                            foundExistingTrans = True
+                                            newstate = t.getDestination()
+                                            break;
+                                if not foundExistingTrans:
+                                    # Now also test, if our new regex generalizes an existing transition.
+                                    # Then we could replace that regex with the data of our new node.
+                                    #===========================================
+                                    # for t in trans:
+                                    #    # Don't we have to differentiate between binary and text?
+                                    #    t_list = [t.getHash, hash]
+                                    #    t_list.sort(reverse=True)
+                                    #    if t_list[0]==hash: # We're more generic! Use ours, replace details
+                                    #                        # of existing transition
+                                    #        t.setRegEx(msg.getCluster().getRegEx())
+                                    #        t.setRegExVisual(msg.getCluster().getRegExVisual())
+                                    #        t.setHash(msg.getCluster().getRegEx())
+                                    #        foundExistingTrans = True
+                                    #        newstate = t.getDestination()
+                                    #        break
+                                    #===========================================
+                                    
+                                    if not foundExistingTrans:
+                                        curstate = self.addStateFromMessage(message, hash, curstate)
+                            else:
+                                curstate = self.addStateFromMessage(message, hash, curstate)
+                                
+                                #stateType = self.determineStateType(message[1])
+                                #newstate = State("s{0}".format(self.__nextstate), stateType, self)
+                                #self.__states.append(newstate)
+                                #self.addTransition(curstate,hash,newstate, message[1], message[0].get_message(), regexp, regexpvisual, cluster)
+                                #self.__nextstate += 1
+                                #self.log("Created new state in transition ({0},{1},{2},{3},1,{4})".format(curstate,hash,newstate, message[1], message[0].get_message()))
+                                #curstate = newstate
+                                
+                            
+                            
                             if msg_key == msg_keys[-1]: # Is this the last
                                 if self.__config.lastMessageIsDirectlyFinal:
                                     self.__finals.add(newstate)
@@ -839,6 +935,22 @@ class Statemachine(object):
     #        print c
     # 
     #===========================================================================
+    def addStateFromMessage(self,message, hash, curstate):
+        stateType = self.determineStateType(message[1])
+        newstate = State("s{0}".format(self.__nextstate), stateType, self)
+        regexp = message[0].getCluster().getRegEx()
+        regexpvisual = message[0].getCluster().getRegExVisual()
+        cluster = message[0].getCluster()
+        
+        self.__states.append(newstate)
+        self.addTransition(curstate,hash,newstate, message[1], message[0].get_message(), regexp, regexpvisual, cluster)
+        self.__nextstate += 1
+        self.log("Created new state in transition ({0},{1},{2},{3},1,{4})".format(curstate,hash,newstate, message[1], message[0].get_message()))
+        return newstate
+            
+                                
+    
+    
     def determineStateType(self, clusterType):
         if clusterType=='server2client':
             stateType = State.typeIncomingServer2ClientMsg
