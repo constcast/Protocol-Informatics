@@ -333,7 +333,11 @@ class ClusterCollection():
     def flushMessagesInCluster(self):
         for c in self.__cluster:
             c.flushMessages()
-           
+        
+    def performSanityCheckForRegEx(self):
+        for c in self.__cluster:
+            c.performSanityCheckForRegEx()
+            
     def print_clusterInfo(self, cluster, file=""):
         """
         Prints the inferred formats for a cluster in a human readable way

@@ -30,13 +30,15 @@ def perform_semantic_inference(cluster_collection, config):
                 # TODO: do we need to keep semantics which involve multiple cluster? e.g. sessionids?
                 previous_semantics = tokenRepresentation.get_semantics()
                 tokenRepresentation.set_semantics([]) # Clear existing semantics from previous run
-                for s in previous_semantics:
-                    if s.startswith("sessionid"):
-                        tokenRepresentation.add_semantic(s)
-                        break
+                #for s in previous_semantics:
+                #    if s.startswith("sessionid"):
+                #        tokenRepresentation.add_semantic(s)
+                #        break
                 
-                #if "sessionid" in previous_semantics:    
-                #    tokenRepresentation.add_semantic("sessionid")
+                if "sessionid" in previous_semantics:
+                    # Check if we have at least 2 messages and we are not of type Const
+                    if len(messages)>1 and c.get_format(idx)!=Message.typeConst:  
+                        tokenRepresentation.add_semantic("sessionid")
                 if "FD" in previous_semantics:
                     tokenRepresentation.add_semantic("FD")
                     
@@ -188,6 +190,14 @@ def perform_semantic_inference(cluster_collection, config):
                                     # Therefore this cannot be a cookie
                                     isCookie = False
                                     continue
+                                # Make sure the comparing token is also not constant
+                                cmp_cmp_fmt = cmp_cmp_msg.getCluster().get_format(next_idx)
+                                # If it is const, it cannot be a sessonid
+                                if cmp_cmp_fmt==Message.typeConst:
+                                    isCookie = False
+                                    continue
+                                
+                                # Finally compare the values
                                 cmp_cmp_val = cmp_cmp_tok_list[next_idx].get_token()
                                 if (cmp_ref_val != cmp_cmp_val) or ((cmp_ref_val == cmp_cmp_val) and (cmp_ref_val == ref_val)):
                                     isCookie = False
@@ -195,13 +205,13 @@ def perform_semantic_inference(cluster_collection, config):
                             # Set cookie semantic in this message and the other
                             sessionid = uuid.uuid1()
                             for message in messages: # Set for every message and the cluster itself
-                                message.get_tokenlist()[ref_idx].add_semantic("sessionid_{0}".format(sessionid))
-                                #message.get_tokenlist()[ref_idx].add_semantic("sessionid")
+                                #message.get_tokenlist()[ref_idx].add_semantic("sessionid_{0}".format(sessionid))
+                                message.get_tokenlist()[ref_idx].add_semantic("sessionid")
                                 nextMsg = message.getNextInFlow()
-                                nextMsg.get_tokenlist()[next_idx].add_semantic("sessionid_{0}".format(sessionid))
-                                #nextMsg.get_tokenlist()[next_idx].add_semantic("sessionid")
-                            #c.add_semantic_for_token(ref_idx,"sessionid")
-                            c.add_semantic_for_token(ref_idx,"sessionid_{0}".format(sessionid))
+                                #nextMsg.get_tokenlist()[next_idx].add_semantic("sessionid_{0}".format(sessionid))
+                                nextMsg.get_tokenlist()[next_idx].add_semantic("sessionid")
+                            c.add_semantic_for_token(ref_idx,"sessionid")
+                            #c.add_semantic_for_token(ref_idx,"sessionid_{0}".format(sessionid))
                     next_idx += 1
                 ref_idx += 1
                 
@@ -235,13 +245,17 @@ def pushUpToCluster(cluster_collection, config):
                     foundSemantic = False
                     for cmpsemantic in cmpsemantics:
                         if cmpsemantic==semantic:
+                            # If we have only one message we disallow sessionids
+                            if semantic == "sessionid" and len(messages)==1:
+                                foundSemantic = False
+                                break
                             foundSemantic = True
                             break
                         # Special handling for sessionids
-                        if semantic.startswith("sessionid"):
-                            if cmpsemantic.startswith("sessionid"):
-                                foundSemantic = True
-                                break
+                        #if semantic.startswith("sessionid"):
+                        #    if cmpsemantic.startswith("sessionid"):
+                        #        foundSemantic = True
+                        #        break
                     if not foundSemantic:
                         break
                 

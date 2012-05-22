@@ -14,8 +14,64 @@ from xml.sax.saxutils import escape
 from cStringIO import StringIO
 from collections import Counter
 import Globals
+import random
 
+class TransitionChooser(object):
+    def choose(self, tlist):
+        pass
+    
+class RandomWeightedChooser(TransitionChooser):
+    def __init__(self):
+        random.seed()
+    
+    def choose(self, tlist):
+        total = 0
+        for t in tlist:
+            total += t.getCounter()
+        
+        rand_val = random.random()
+        
+        walktot = 0.0
+        # Example
+        # t1 = 0.25
+        # t2 = 0.5
+        # t3 = 0.25
+        # randval = 0.66
+        # Every randval is equally distributed.
+        # How to find t? Compare the accumulated value of the prop with randval.
+        # If old value + current prob >= rand_val, we've got our hit
+        for t in tlist:
+            t_prob = t.getCounter()/float(total)
+            if walktot+t_prob>=rand_val:
+                return t
+            walktot+=t_prob
 
+class EqualProbChooser(TransitionChooser):
+    def __init__(self): 
+        random.seed()
+    
+    def choose(self, tlist):
+        rand_val = random.random()
+        numOfTrans = len(tlist)
+        if numOfTrans == 0:
+            return None
+        if numOfTrans == 1:
+            return tlist[0]
+
+        equalprob = 1/float(numOfTrans)
+        walktot = 0.0
+        for t in tlist:
+            if walktot+equalprob >= rand_val:
+                return t
+            walktot+=equalprob
+            
+class MostSpecialFirstChooser(TransitionChooser):
+    def choose(self, tlist):
+        if len(tlist)==0:
+            return None
+        return tlist[0]
+        
+        
   
 class State(object):
     typeIncomingClient2ServerMsg = 'IncomingClient2ServerMsg'
@@ -186,6 +242,10 @@ class Transition(object):
                 other_regex = re.sub(find_fixed_dotstar, self.repl_dotstar, other_regex)
                 find_variable_dotstar = "(\(\?:\[0\-9a\-f\]\{2\}\)\{([1-9][0-9]*),([1-9][0-9]*)\})"
                 other_regex = re.sub(find_variable_dotstar, self.repl_dotstar, other_regex)
+                # Replace the remaining token where there is only one instance
+                find_fixed_one_dotstar = "\(\?:\[0\-9a\-f\]\{2\}\)"
+                other_regex = re.sub(find_fixed_one_dotstar, "00", other_regex)
+                
             else:
                 other_regex = other_regex.replace("[\\t| ]+"," ") # Remove regex meta characters
                 other_regex = other_regex.replace("[\\t| ]*","") # Remove regex meta characters
@@ -267,7 +327,11 @@ class Statemachine(object):
         self.__nextstate = 1
         self.__config = config
         self.__alphabet = set()
-    
+        if Globals.getProtocolClassification()==Globals.protocolBinary:
+            self.multipleChoiceChooser = RandomWeightedChooser()
+        else:
+            self.multipleChoiceChooser = MostSpecialFirstChooser()
+        
     def setConfig(self,config):
         self.__config=config
     def setTestFlows(self, testflows):
@@ -296,24 +360,25 @@ class Statemachine(object):
         #       has_no_gaps, is_alternating, did_all_transitions, finished_in_final)
         # tuple is assembled in the various checks
         
+        
         if flowID != "":
             print "Flow {0} under test:".format(flowID)
         if self.__testflows == None:
             print "ERROR: Testflows not yet set in statemachine"
-            return dict({"testSuccessful": False, "isInTestFlows": False, "hasMoreThanOneMessage": False, "has_no_gaps": False, "is_alternating": False, "did_all_transitions": False, "finished_in_final": False})
+            return dict({"testSuccessful": False, "isInTestFlows": False, "hasMoreThanOneMessage": False, "has_no_gaps": False, "is_alternating": False, "did_all_transitions": False, "finished_in_final": False, "gotMultipleChoice": False})
         
         messages = self.__testflows[flowID]
         # If the flow is considered invalid by itself, return True (as if there was no error in parsing)
         if len(messages)==1:
             self.log("Flow {0} has only 1 message. Skipping flow".format(flowID))
-            return dict({"testSuccessful":False, "isInTestFlows": True, "hasMoreThanOneMessage": False, "has_no_gaps": False, "is_alternating": False, "did_all_transitios": False, "finished_in_final":  False})    
+            return dict({"testSuccessful":False, "isInTestFlows": True, "hasMoreThanOneMessage": False, "has_no_gaps": False, "is_alternating": False, "did_all_transitios": False, "finished_in_final":  False, "gotMultipleChoice": False})    
         returntuple = common.flow_is_valid(self.__testflows,flowID, self.__config)
         if returntuple[0]==False or returntuple[1] == False:
             print "Flow is not valid"
             if returntuple[0]==False:
-                return dict({"testSuccessful": False, "isInTestFlows": True, "hasMoreThanOneMessage": True, "has_no_gaps": False, "is_alternating": False, "did_all_transitions": False, "finished_in_final": False})    
+                return dict({"testSuccessful": False, "isInTestFlows": True, "hasMoreThanOneMessage": True, "has_no_gaps": False, "is_alternating": False, "did_all_transitions": False, "finished_in_final": False, "gotMultipleChoice": False})    
             else:
-                return dict({"testSuccessful": False, "isInTestFlows": True, "hasMoreThanOneMessage": True, "has_no_gaps": True, "is_alternating": False, "did_all_transitions": False, "finished_in_final": False})
+                return dict({"testSuccessful": False, "isInTestFlows": True, "hasMoreThanOneMessage": True, "has_no_gaps": True, "is_alternating": False, "did_all_transitions": False, "finished_in_final": False, "gotMultipleChoice" : False})
                               
         if printSteps or ((not printSteps) and self.__config.debug):
             for key, value in testflow.items() :
@@ -322,6 +387,9 @@ class Statemachine(object):
             self.log("Startstate: {0}".format(self.__start))
             self.log("Finals: {0}".format(",".join(str(x) for x in self.__finals)))
             self.log("")
+        
+        gotMultipleChoice = False
+            
         for key, value in testflow.items() :
             f = value[0]
             stateTransitions = self.getTransitionsFrom(curState)
@@ -345,9 +413,20 @@ class Statemachine(object):
             
             # Disable output
             self.log("Current state: {0}".format(curState), printSteps)
+            
             self.log("Possible transitions: ", printSteps)
             for t in stateTransitions:
-                self.log("Destination: {0}, hash: {1}, visual regex: {2}, regex: {3}, message: {4}".format(t.getDestination(), t.getHash(), t.getRegExVisual(), t.getRegEx(), t.getMessage()), printSteps)
+                print_msg = t.getMessage()
+                print_msg = re.sub("\x0d", "\\x0d", print_msg)
+                print_msg = re.sub("\x0a", "\\x0a", print_msg)
+                
+                if Globals.getProtocolClassification()==Globals.protocolBinary:
+                    self.log("Destination: {0}, regex: {1}, message: {2}".format(t.getDestination(), t.getRegEx(), print_msg, printSteps))
+                else:
+                    print_rev = t.getRegExVisual()
+                    print_rev = re.sub("\x0d", "\\x0d", print_rev)
+                    print_rev = re.sub("\x0a", "\\x0a", print_rev)
+                    self.log("Destination: {0}, visual regex: {1}, message: {2}".format(t.getDestination(), print_rev, print_msg, printSteps))
             self.log("Current input:", printSteps)
             self.log("Msg: {0}".format(f.get_message()), printSteps)
             if Globals.getProtocolClassification()==Globals.protocolBinary:
@@ -399,8 +478,11 @@ class Statemachine(object):
                         self.log("\t{0}".format(t))
                     # Try to find the best one of these transitions, put the most generic to the back of the list
                     regexList.sort(reverse=True)
-                    self.log("Using {0}".format(regexList[0]))
-                    curState = regexList[0].getDestination()
+                    
+                    chosenOne = self.multipleChoiceChooser.choose(regexList)
+                    self.log("Using {0}".format(chosenOne))
+                    gotMultipleChoice = True
+                    curState = chosenOne.getDestination()
                 
             else:
                 self.log("ERROR: Did not find any matching transition", printSteps)
@@ -421,7 +503,7 @@ class Statemachine(object):
                         
         if failed:
             self.log("ERROR: Flow not accepted by statemachine", printSteps)
-            return dict({"testSuccessful": False, "isInTestFlows": True, "hasMoreThanOneMessage": True, "has_no_gaps": True, "is_alternating": True, "did_all_transitions": False, "finished_in_final": False})
+            return dict({"testSuccessful": False, "isInTestFlows": True, "hasMoreThanOneMessage": True, "has_no_gaps": True, "is_alternating": True, "did_all_transitions": False, "finished_in_final": False, "gotMultipleChoice": gotMultipleChoice})
         else:
             if curState in self.__finals:
                 self.log("SUCCESS: Statemachine did reach acceptance state", printSteps)
@@ -429,7 +511,7 @@ class Statemachine(object):
         
             else:
                 self.log("ERROR: Statemachine did not halt in acceptance state", printSteps)
-                return dict({"testSuccessful": False, "isInTestFlows": True, "hasMoreThanOneMessage": True, "has_no_gaps": True, "is_alternating": True, "did_all_transitions": True, "finished_in_final": False})
+                return dict({"testSuccessful": False, "isInTestFlows": True, "hasMoreThanOneMessage": True, "has_no_gaps": True, "is_alternating": True, "did_all_transitions": True, "finished_in_final": False, "gotMultipleChoice": gotMultipleChoice})
                              
         
         
@@ -1324,12 +1406,10 @@ class Statemachine(object):
         if self.__start == p:
             self.__start = q
         
-        # TODO: Use hashmap for master iteration
         for t in copy.copy(self.buildUnionTransitionSet()):
             # Redirect target states
             
             if t.getSource()==p or t.getDestination()==p:
-                # TODO: Need to differentiate between source and dest when using hashmap!
                 self.removeTransition(t)
                 #self.__transitions.remove(t)
                 
@@ -1668,13 +1748,17 @@ class Statemachine(object):
         t_full_set = self.buildUnionTransitionSet()
                 
         for t in t_full_set:
+            if Globals.getProtocolClassification()==Globals.protocolText:
+                s = "'{0}'".format(t.getMessage()[:25].translate(trantab))
             
-            s = "'{0}'".format(t.getMessage()[:25].translate(trantab))
-            
-            s = re.sub("\x0d", "", s)
-            s = re.sub("\x0a", "", s)
-            if len(t.getMessage())>25:
-                s+="..."
+                s = re.sub("\x0d", "", s)
+                s = re.sub("\x0a", "", s)
+                if len(t.getMessage())>25:
+                    s+="..."
+            else:
+                s = "'{0}'".format(t.getRegEx()[:25].translate(trantab))
+                if len(t.getRegEx())>25:
+                    s+="..."
             s+=" ({0})".format(t.getCounter())
             s+="\\n{0}".format(t.getHash())
             

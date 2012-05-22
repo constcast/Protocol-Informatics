@@ -92,7 +92,7 @@ class Message:
     
     def __convertPayload(self):
         for i in self.__payload:
-            if isprint(chr(i)) or i<32:
+            if isprint(chr(i)) or i in (0x0d,0x0a,0x20,0x08):
                 self.__message += chr(i)
             else:
                 self.__message += '.'
@@ -264,6 +264,7 @@ class Message:
         tokenList = []
         for item in textSegment:
             tokenList.append(TokenRepresentation(Message.typeBinary, ord(item), startsAt + offset, 1))
+            offset += 1
         return tokenList
     
     def tokenizeTextSegment(self, textSegment, startsAt):

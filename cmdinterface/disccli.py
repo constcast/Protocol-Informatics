@@ -12,6 +12,8 @@ import collections
 import discoverer.statemachine
 import discoverer.splitter
 import resource
+   
+            
 
 class DiscovererCommandLineInterface(cli.CommandLineInterface):
     def __init__(self, env, config):
@@ -20,7 +22,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         # Just for backing it up into the state
         self.env['config'] = config
         self.config = config
-        self.__profile = dict()
+        self.__profile = collections.OrderedDict()
 
     def do_EOF(self, string):
         return True
@@ -143,8 +145,10 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             # Build statemachine
             print "Forcing regex rebuild"
             self.env['cluster_collection'].updateClusterRegEx()
+            print "Performing sanity check over regexes"
+            self.env['cluster_collection'].performSanityCheckForRegEx()
             print "Flushing all messages in all clusters"
-            self.env['cluster_collection'].flushMessagesInCluster()
+            #self.env['cluster_collection'].flushMessagesInCluster()
             sm = discoverer.statemachine.Statemachine(self.env['messageFlows'], self.config)
             self.env['sm'] = sm
             start = time.time()
@@ -364,7 +368,9 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         not_alternating = 0
         not_all_transitioned = 0
         not_ended_in_final = 0
+        gotMultipleChoice = 0
         test2go = len(testflows.keys())
+        totalflows = test2go
         self.env['sm'].setConfig(self.config)
         self.env['sm'].setTestFlows(testflows)
         # Make room ;-)
@@ -372,7 +378,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         print "Memory usage before test: {0}".format(self.getMemoryUsage())
         self.profile("BeforeStartingTest")
         for elem in testflows.keys():
-            print "{0} flows left to test ({1} failed so far)".format(test2go, failures)
+            print "{0} flows left to test ({1} failed so far, failrate {2} %)".format(test2go, failures, (1.0*failures/totalflows)*100)
             res = self.statemachine_accepts_flow(elem, printSteps=False)
             test2go -= 1
             
@@ -388,9 +394,13 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
                 elif not res['is_alternating']: not_alternating += 1
                 elif not res['did_all_transitions' ]: 
                     not_all_transitioned += 1
+                    if res['gotMultipleChoice']:
+                        gotMultipleChoice += 1
                     failedelements.append(elem)
                 elif not res['finished_in_final']: 
                     not_ended_in_final += 1
+                    if res['gotMultipleChoice']:
+                        gotMultipleChoice += 1
                     failedelements.append(elem)
                     
         print "Finished"
@@ -407,6 +417,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             print "Flow was not alternating: {0}".format(not_alternating)
             print "Flow rejected prematurely: {0}".format(not_all_transitioned)
             print "Flow did not end in final state: {0}".format(not_ended_in_final)
+            print "Encountered into multiple choice when failed: {0}".format(gotMultipleChoice)
             print
             
             if len(failedelements)>0:
@@ -436,6 +447,8 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             print "Flow was not alternating: {0}".format(not_alternating)
             print "Flow rejected prematurely: {0}".format(not_all_transitioned)
             print "Flow did not end in final state: {0}".format(not_ended_in_final)
+            print "Encountered into multiple choice when failed: {0}".format(gotMultipleChoice)
+            
             print
             
             
@@ -464,7 +477,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
     def printProfile(self):
         
         for key in self.__profile.keys():
-            print "Testpoint: {0}, Memory consumption: {1}".format(key, self.profile[key])
+            print "Testpoint: {0}, Memory consumption: {1}".format(key, self.__profile[key])
             
     def convert_bytes(self,bytes):
         '''

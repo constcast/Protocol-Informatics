@@ -10,6 +10,7 @@ from formatinference import VariableNumberStatistics
 from xml.sax.saxutils import escape
 from cStringIO import StringIO
 import Globals
+import re
 
 class Cluster(dict):
     """
@@ -91,6 +92,8 @@ class Cluster(dict):
         return numOfConst>0
     
     def getRegEx(self):
+        #return self.calc_regEx()
+    
         if self.__regEx == "":
             self.__regEx = self.calc_regEx()
         return self.__regEx
@@ -159,6 +162,8 @@ class Cluster(dict):
                             max = length
                             
                         if min == max:
+                            #regexstr += "(?:[0-9a-f]{2}){" + str(min) + "}"
+                        
                             regexstr += "(?:[0-9a-f]{2})"
                             if min>1:
                                 regexstr += "{" + str(min) + "}"
@@ -213,6 +218,28 @@ class Cluster(dict):
         regexstr += "$"
         return regexstr 
     
+    def performSanityCheckForRegEx(self):
+        testmsg = self['messages'][0]
+        if Globals.getProtocolClassification()==Globals.protocolBinary:
+            regex_str = self.getRegEx()
+            res = re.match(regex_str, testmsg.get_payload_as_string())
+            if res==None:
+                print "Error: calculated regex did not match it's payload"
+                print "Payload: {0}".format(testmsg.get_payload_as_string())
+                print "RegEx:   {0}".format(regex_str)
+                self.calc_regEx()
+                raise Exception("RegEx did not match to payload")
+        if Globals.getProtocolClassification()==Globals.protocolText:    
+            regex_str = self.getRegExVisual()
+            res = re.match(regex_str, testmsg.get_message())
+            if res==None:
+                print "Error: calculated visual regex did not match it's message"
+                print "Message:      {0}".format(testmsg.get_message())
+                print "Visual regEx: {0}".format(regex_str)
+                self.calc_regExVisual()
+                raise Exception("RegExVisual did not match to messages")
+              
+                              
     def getPeachRepresentation(self):
         import sys
         old_stdout = sys.stdout
@@ -250,8 +277,8 @@ class Cluster(dict):
     def updateRegEx(self):
         self.__regEx = ""
         self.__regExVisual = ""
-        self.getRegEx()
-        self.getRegExVisual() 
+        self.getRegExVisual()
+        self.getRegEx() 
     def getXMLRepresentation(self):
         import sys
         old_stdout = sys.stdout
@@ -324,9 +351,10 @@ class Cluster(dict):
     
     def flushMessages(self):
         self["messages"] = []
-        
+        #pass
         
     def getRegExVisual(self):
+        #return self.calc_regExVisual()
         if self.__regExVisual == "":
             self.__regExVisual = self.calc_regExVisual()
         return self.__regExVisual
@@ -382,7 +410,9 @@ class Cluster(dict):
                             min = 1
                             max = 1
                         if min == max:
-                            regexstr += ".{" + str(min) + "}"
+                            regexstr += "."
+                            if min>1:
+                                regexstr += "{" + str(min) + "}"
                         else:
                             regexstr += ".{" + str(min) +","+ str(max) +"}"
                     else:
