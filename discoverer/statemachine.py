@@ -227,7 +227,7 @@ class Transition(object):
             # regex matches to!
             
             other_regex = other_regex[1:-1] # Remove the ^ and $ meta characters from matching regex    
-            if Globals.getProtocolClassification()==Globals.protocolBinary:
+            if Globals.isBinary():
                 other_regex = other_regex.replace("(?:20)+","20") # Remove regex meta characters
                 other_regex = other_regex.replace("(?:20)*","") # Remove regex meta characters
                 
@@ -330,7 +330,7 @@ class Statemachine(object):
         self.__nextstate = 1
         self.__config = config
         self.__alphabet = set()
-        if Globals.getProtocolClassification()==Globals.protocolBinary:
+        if Globals.isBinary():
             self.multipleChoiceChooser = RandomWeightedChooser()
         else:
             self.multipleChoiceChooser = MostSpecialFirstChooser()
@@ -423,7 +423,7 @@ class Statemachine(object):
                 print_msg = re.sub("\x0d", "\\x0d", print_msg)
                 print_msg = re.sub("\x0a", "\\x0a", print_msg)
                 
-                if Globals.getProtocolClassification()==Globals.protocolBinary:
+                if Globals.isBinary():
                     self.log("Destination: {0}, regex: {1}, message: {2}".format(t.getDestination(), t.getRegEx(), print_msg, printSteps))
                 else:
                     print_rev = t.getRegExVisual()
@@ -432,11 +432,11 @@ class Statemachine(object):
                     self.log("Destination: {0}, visual regex: {1}, message: {2}".format(t.getDestination(), print_rev, print_msg, printSteps))
             self.log("Current input:", printSteps)
             self.log("Msg: {0}".format(f.get_message()), printSteps)
-            if Globals.getProtocolClassification()==Globals.protocolBinary:
+            if Globals.isBinary:
                 payload = f.get_payload_as_string()
             else:
                 payload = f.get_message()
-            if Globals.getProtocolClassification()==Globals.protocolBinary:
+            if Globals.isBinary:
                 self.log("Payload: {0}".format(payload), printSteps)
             gotOne = False
             
@@ -450,7 +450,7 @@ class Statemachine(object):
                 print_msg = re.sub("\x08", "\\x08", print_msg)
                 
                 self.log("Testing regex visual: {0}".format(print_msg), printSteps)
-                if Globals.getProtocolClassification()!=Globals.protocolText:
+                if Globals.isText():
                     self.log("Testing regex:        {0}".format(t.getRegEx()), printSteps)
                 res = None
                 try:
@@ -1860,7 +1860,7 @@ class Statemachine(object):
         t_full_set = self.buildUnionTransitionSet()
                 
         for t in t_full_set:
-            if Globals.getProtocolClassification()==Globals.protocolText:
+            if Globals.isText:
                 s = "'{0}'".format(t.getMessage()[:25].translate(trantab))
             
                 s = re.sub("\x0d", "", s)
@@ -1872,7 +1872,7 @@ class Statemachine(object):
                 if len(t.getRegEx())>25:
                     s+="..."
             s+=" ({0})".format(t.getCounter())
-            s+="\\n{0}".format(t.getHash())
+            #s+="\\n{0}".format(t.getHash())
             
             if t.getDirection()==message.Message.directionClient2Server:
                 color="red"

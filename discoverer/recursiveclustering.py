@@ -84,7 +84,7 @@ def perform_recursive_clustering(cluster_collection, startAt):
                     newCollection = ClusterCollection(config)
                     for key in sumUp.keys():
                             messagesWithValue = cluster.get_messages_with_value_at(startAt,key)
-                            newCluster = Cluster(messagesWithValue[0].get_tokenrepresentation(), "recursion")
+                            newCluster = Cluster(messagesWithValue[0].get_tokenrepresentation(), "recursion", config)
                             newCluster.setSplitpoint("{0}".format(startAt))
                             newCluster.add_messages(messagesWithValue)                            
                             newCluster.add_semantic_for_token(startAt, "FD")

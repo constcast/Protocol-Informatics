@@ -23,13 +23,14 @@ class Cluster(dict):
     A filtering function that only returns with a specific value at token position X can be called
     via get_messages_with_value_at()
     """
-    def __init__(self, representation, origin):
+    def __init__(self, representation, origin, config):
         self.update({'messages':[], 'representation':representation, 'format_inference':[], 'semantics':{}, 'variable_statistics': []})        
         self.__internalname = uuid.uuid1()
         self.__origin = origin
         self.__splitpoint = "n/a"
         self.__regExVisual = ""
         self.__regEx = ""
+        self.__config = config
         
     def getOrigin(self):
         return self.__origin
@@ -215,7 +216,8 @@ class Cluster(dict):
                 #           
                 #===============================================================
             idx += 1
-        regexstr += "$"
+        if not self.__config.calculateMaxMessageLength or self.__config.danglingRegEx:
+            regexstr += "$"
         return regexstr 
     
     def performSanityCheckForRegEx(self):
@@ -442,7 +444,8 @@ class Cluster(dict):
                     elif curType==Message.typeText and nextType==Message.typeText:
                         regexstr += "[\\t| ]+"
             idx += 1
-        regexstr += "$"
+        if not self.__config.calculateMaxMessageLength or self.__config.danglingRegEx:
+            regexstr += "$"
         return regexstr 
                 
                         

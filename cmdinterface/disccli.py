@@ -12,7 +12,7 @@ import collections
 import discoverer.statemachine
 import discoverer.splitter
 import resource
-   
+import discoverer.formattree   
             
 
 class DiscovererCommandLineInterface(cli.CommandLineInterface):
@@ -23,6 +23,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         self.env['config'] = config
         self.config = config
         self.__profile = collections.OrderedDict()
+        self.__nextstate = 1
 
     def do_EOF(self, string):
         return True
@@ -113,8 +114,13 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             #===================================================================
             # Perform discoverer for both parts
             
-                
+            # Check if we want to constrain our maximum length based on configured confidence intervals
+            if self.config.calculateMaxMessageLength:
+                maxPrefix = discoverer.setup.calcMaxMessageLengthConfidenceInterval(self.env['sequences'], 1-self.config.maxMessageLengthConfidenceInterval)
+                self.config.maxMessagePrefix = maxPrefix
+                print "Calculated maximum message prefix based on confidence interval of {0}: {1}".format(self.config.maxMessageLengthConfidenceInterval, maxPrefix)
             
+            print "Using maximum message prefix for training data: {0}".format(self.config.maxMessagePrefix)
             self.go(self.env['sequences'])
             
             #self.go(self.env['sequences_client2server'], Message.directionClient2Server)
@@ -839,5 +845,63 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         
     def do_discoverer(self, string):
         print "We are already in Discoverer mode!"
+    
+    
+    def do_dump_format_tree(self, string):
+        print "Dumping tree"
+        tree = self.env['ft'].dump()
+        handle = open("/Users/daubsi/Dropbox/format_tree_dot","w")
+        handle.write(tree)
+        handle.close()
+        print "Finished"
+        
+        
+    def do_build_format_tree(self, string):
+        if not self.env.has_key('cluster_collection'): return
+        
+        ft = discoverer.formattree.FormatTree()
+        self.env['ft'] = ft
+        root = ft.getRoot()
+        for c in self.env['cluster_collection'].get_all_cluster():
+            root.addContainedCluster(c)
+        
+        index = 0
+        currentNode = root
+        self.distributeContainedCluster(currentNode, index)
+    
+    
+    def distributeContainedCluster(self, currentNode, index):
+        if len(currentNode.getContainedCluster())==0: return
+    
+        containedcluster = currentNode.getContainedCluster()    
+        childrentrack = dict()
+        import hashlib
+        
+        # Record distinct format values
+        for c in containedcluster[:]:
+            if len(c.get_formats())<=index: continue
+            fmt = c.get_format(index)
+            fmt_hash = hashlib.sha1(str(fmt)).hexdigest()
+            if fmt_hash not in childrentrack:
+                child = discoverer.formattree.FormatTreeNode(fmt,currentNode,index,"s{0}".format(self.__nextstate))
+                self.__nextstate+=1
+                currentNode.addChild(child)
+                childrentrack[fmt_hash]=child
+            child = childrentrack[fmt_hash]
+            child.addContainedCluster(c)
+            containedcluster.remove(c)
+        
+        if len(currentNode.getChildren())>50:
+            print "Maximum fanout exceeded. Aborting recursion"
+            return
+            
+        for child in currentNode.getChildren():
+            #print child.getName()
+            if child.getIndex()>100 and len(child.getContainedCluster())<2: continue
+            self.distributeContainedCluster(child, index+1)
+              
+        
+        
+        
         
         

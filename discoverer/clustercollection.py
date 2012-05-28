@@ -178,7 +178,7 @@ class ClusterCollection():
                 idx_inner += 1     
             # End of for each clusterloop
             
-            newCluster = Cluster(cluster1.get_representation(), "mergeDestination")
+            newCluster = Cluster(cluster1.get_representation(), "mergeDestination", self.__config)
             newCluster.set_semantics(cluster1.get_semantics())             
             newCluster.add_messages(cluster1.get_messages())
             splitpoint = ""
@@ -210,7 +210,7 @@ class ClusterCollection():
         rep = message.get_tokenrepresentation()
         c = self.get_cluster(rep)
         if c==None:
-            c = Cluster(rep, "initial")
+            c = Cluster(rep, "initial", self.__config)
             self.__cluster.append(c)
         c.add_messages([message])
         #c.get_messages().append(message)

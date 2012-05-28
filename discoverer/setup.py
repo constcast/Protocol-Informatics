@@ -55,7 +55,6 @@ class Setup:
     def get_cluster_collection(self):
         
         return self.cluster_collection
-    
     def debug(self):
         cluster = self.cluster_collection.get_all_cluster()        
         # Print cluster
@@ -65,4 +64,17 @@ class Setup:
                 l = c.get(key)
                 print "Key: {0} Elements: {1}".format(key,l)  
             
-        
+
+def calcMaxMessageLengthConfidenceInterval(sequences, confidence_interval = 0.05):
+    len_list = []
+    for directionTuple in sequences:
+        for seqs in directionTuple[0]:
+            flowInfo = directionTuple[0][seqs]
+            for seq in flowInfo.sequences:
+                len_list.append(len(seq.sequence))
+    import pystatistics
+    mean, median, stddev, min, max, confidence = pystatistics.stats(len_list, confidence_interval)
+    print "Mean: {0}, Median: {1}, Stddev: {2}, Min: {3}, Max: {4}, Confidence: {5}".format(mean, median, stddev, min, max, confidence)
+    return int(mean+confidence)
+                
+    

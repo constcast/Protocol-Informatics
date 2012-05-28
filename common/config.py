@@ -68,6 +68,9 @@ class Configuration:
         self.allowAdjacentFDs = True
         self.allowAdjacentTextFDs = False
         self.autoCreateXML = False
+        self.calculateMaxMessageLength = False
+        self.maxMessageLengthConfidenceInterval = 0.9
+        self.danglingRegEx = True
         # Used for NW alignment in Discoverer
         self.matchScore = 1
         self.mismatchScore = 1
