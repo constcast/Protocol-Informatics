@@ -100,7 +100,7 @@ class Cluster(dict):
         return self.__regEx
            
     def calc_regEx(self):
-        if Globals.getProtocolClassification()==Globals.protocolText:
+        if Globals.isText():
             # When we are text, only use visual regex
             return self.getRegExVisual()
         
@@ -216,7 +216,7 @@ class Cluster(dict):
                 #           
                 #===============================================================
             idx += 1
-        if not self.__config.calculateMaxMessageLength or self.__config.danglingRegEx:
+        if not (self.__config.calculateMaxMessageLength or self.__config.danglingRegEx):
             regexstr += "$"
         return regexstr 
     
@@ -444,7 +444,7 @@ class Cluster(dict):
                     elif curType==Message.typeText and nextType==Message.typeText:
                         regexstr += "[\\t| ]+"
             idx += 1
-        if not self.__config.calculateMaxMessageLength or self.__config.danglingRegEx:
+        if not (self.__config.calculateMaxMessageLength or self.__config.danglingRegEx):
             regexstr += "$"
         return regexstr 
                 

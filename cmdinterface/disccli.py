@@ -284,8 +284,11 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         print "Loaded {0} test sequences from input files".format(len(sequences[0][0])+len(sequences[1][0]))
         print "Memory usage after loading testdata: {0}".format(self.getMemoryUsage())
         self.profile("AfterLoadingTestdata")    
-        # Create quick setup    
+        # Create quick setup
+        tmpMaxPrefix = self.config.maxMessagePrefix
+        self.config.maxMessagePrefix = 2048    
         setup = discoverer.setup.Setup(sequences, self.config, performFullAnalysis=False)
+        self.config.maxMessagePrefix = tmpMaxPrefix
         print "Memory usage after preparing testsequences: {0}".format(self.getMemoryUsage())
         self.profile("AfterPreparingTestdata")    
         testcluster = setup.get_cluster_collection()
@@ -310,9 +313,9 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         self.env['sequences']=None
     
     def do_testsuite(self, args):
-        for suffix in range(0,2):
+        for suffix in range(0,10):
             print "Testing the {0}er batch".format(suffix)
-            self.config.testFile = "/Users/daubsi/Dropbox/ftp_big_splits_2000_{0}".format(suffix)
+            self.config.testFile = "/Users/daubsi/Dropbox/dns_2000_{0}".format(suffix)
             self.do_load_testdata("")
             self.do_statemachine_accepts("")
             
@@ -649,6 +652,12 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         print "Linking messages within flow"
         for flow in messageFlows:
             messages = messageFlows[flow]
+            flowLength = len(messages)
+            if flowLength>maxFlowLength:
+                maxFlowLength = flowLength
+            if flowLength<minFlowLength:
+                minFlowLength = flowLength
+            
             if len(messages)==1:
                 if self.config.debug:
                     print "Flow {0} has only 1 message. Skipping flow".format(flow)
@@ -659,12 +668,8 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             #for msg_id, message in messages.items():
             lastMsg = None
             (msg_id, message) = iterator.next()
-            flowLength = len(message)
+            
             message = message[0]
-            if flowLength>maxFlowLength:
-                maxFlowLength = flowLength
-            if flowLength<minFlowLength:
-                minFlowLength = flowLength
             while not iterator.isLast():
                 if lastMsg != None:
                     lastMsg.setNextInFlow(message)

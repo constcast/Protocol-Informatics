@@ -449,8 +449,9 @@ class Statemachine(object):
                 print_msg = re.sub("\x0a", "\\x0a", print_msg)
                 print_msg = re.sub("\x08", "\\x08", print_msg)
                 
-                self.log("Testing regex visual: {0}".format(print_msg), printSteps)
                 if Globals.isText():
+                    self.log("Testing regex visual: {0}".format(print_msg), printSteps)
+                if Globals.isBinary():
                     self.log("Testing regex:        {0}".format(t.getRegEx()), printSteps)
                 res = None
                 try:
@@ -822,6 +823,9 @@ class Statemachine(object):
                                 msg = message[0]
                                 foundExistingTrans = False
                                 for t in trans:
+                                    stateType = self.determineStateType(message[1])
+                                    if curstate.getType()!=stateType:
+                                        continue
                                     if Globals.isBinary():
                                         content = msg.get_payload_as_string()
                                         res = re.match(t.getHash(), content)
