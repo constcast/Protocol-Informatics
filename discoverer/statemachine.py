@@ -215,6 +215,14 @@ class Transition(object):
         # Return -1 if self<other
         # Return  0 if self==other
         # Return  1 if self>other
+        
+        ##############
+        # Important:
+        # When RegExes are transformed into "real" strings, it is important, that the WHOLE regex is transformed!
+        # If maxMessagePrefix is set too short and e.g. \x0d is truncated to \x0, this will sabotage everything...
+        ##############
+        
+        
         this_regex = self.getRegEx()
         other_regex = other.getRegEx()
         
@@ -225,8 +233,11 @@ class Transition(object):
             p = re.compile(this_regex)
             # What we do here, is converting our "target" regex to a WORD of the language where this
             # regex matches to!
-            
-            other_regex = other_regex[1:-1] # Remove the ^ and $ meta characters from matching regex    
+            if Globals.getConfig().danglingRegEx:
+                other_regex = other_regex[1:] # Remove the ^ but leave the $ meta characters from matching regex        
+            else:
+                other_regex = other_regex[1:-1] # Remove the ^ and $ meta characters from matching regex  
+                  
             if Globals.isBinary():
                 other_regex = other_regex.replace("(?:20)+","20") # Remove regex meta characters
                 other_regex = other_regex.replace("(?:20)*","") # Remove regex meta characters
@@ -250,8 +261,12 @@ class Transition(object):
                 other_regex = re.sub(find_fixed_one_dotstar, "00", other_regex)
                 
             else:
-                other_regex = other_regex.replace("[\\t| ]+"," ") # Remove regex meta characters
-                other_regex = other_regex.replace("[\\t| ]*","") # Remove regex meta characters
+                #other_regex = other_regex.replace("[\\t| ]+"," ") # Remove regex meta characters
+                #other_regex = other_regex.replace("[\\t| ]*","") # Remove regex meta characters
+                
+                other_regex = other_regex.replace("\\s+"," ") # Remove regex meta characters
+                other_regex = other_regex.replace("\\s*","") # Remove regex meta characters
+                
                 
                 # Undo additional maskings
                 other_regex = other_regex.replace("\(", "(")
@@ -272,6 +287,7 @@ class Transition(object):
                 # Replace control characters
                 replace_control_characters = "\\\\x(..)"
                 other_regex = re.sub(replace_control_characters, self.repl_control_characters_text, other_regex)
+                
                 
                 print "This: {0}".format(this_regex)
                 print "Other: {0}".format(other_regex)
@@ -307,13 +323,24 @@ class Transition(object):
         print '\t<regexvisual>{0}</regexvisual>'.format(escape(self.getRegExVisual()))
         
         print "</transition>" 
+
+def get_class( kls ):
+    parts = kls.split('.')
+    module = ".".join(parts[:-1])
+    m = __import__( module )
+    for comp in parts[1:]:
+        m = getattr(m, comp)            
+    return m
+
+
 class Statemachine(object):
     '''
     This class represents a statemachine derived from the given message sequences
     and their corresponding formats
     '''
 
-    def __init__(self, sequences, config):
+    
+    def __init__(self, sequences):
         '''
         Constructor
         '''
@@ -328,15 +355,15 @@ class Statemachine(object):
         self.__transitions_into = dict()
         self.numOfTransitions = 0
         self.__nextstate = 1
-        self.__config = config
         self.__alphabet = set()
-        if Globals.isBinary():
-            self.multipleChoiceChooser = RandomWeightedChooser()
-        else:
-            self.multipleChoiceChooser = MostSpecialFirstChooser()
+        # Dynamically instantiate our multiple choice chooser
+        self.multipleChoiceChooser = get_class("discoverer.statemachine." + Globals.getConfig().multipleChoiceChooserClass)()
         
-    def setConfig(self,config):
-        self.__config=config
+        
+        #if Globals.isBinary():
+        #    self.multipleChoiceChooser = RandomWeightedChooser()
+        #else:
+        
     def setTestFlows(self, testflows):
         self.__testflows = testflows
     
@@ -375,7 +402,7 @@ class Statemachine(object):
         if len(messages)==1:
             self.log("Flow {0} has only 1 message. Skipping flow".format(flowID))
             return dict({"testSuccessful":False, "isInTestFlows": True, "hasMoreThanOneMessage": False, "has_no_gaps": False, "is_alternating": False, "did_all_transitios": False, "finished_in_final":  False, "gotMultipleChoice": False})    
-        returntuple = common.flow_is_valid(self.__testflows,flowID, self.__config)
+        returntuple = common.flow_is_valid(self.__testflows,flowID)
         if returntuple[0]==False or returntuple[1] == False:
             print "Flow is not valid"
             if returntuple[0]==False:
@@ -383,7 +410,7 @@ class Statemachine(object):
             else:
                 return dict({"testSuccessful": False, "isInTestFlows": True, "hasMoreThanOneMessage": True, "has_no_gaps": True, "is_alternating": False, "did_all_transitions": False, "finished_in_final": False, "gotMultipleChoice" : False})
                               
-        if printSteps or ((not printSteps) and self.__config.debug):
+        if printSteps or ((not printSteps) and Globals.getConfig().debug):
             for key, value in testflow.items() :
                 self.log("{0} - {1}".format(key, value))
             self.log("")
@@ -430,13 +457,19 @@ class Statemachine(object):
                     print_rev = re.sub("\x0d", "\\x0d", print_rev)
                     print_rev = re.sub("\x0a", "\\x0a", print_rev)
                     self.log("Destination: {0}, visual regex: {1}, message: {2}".format(t.getDestination(), print_rev, print_msg, printSteps))
-            self.log("Current input:", printSteps)
-            self.log("Msg: {0}".format(f.get_message()), printSteps)
-            if Globals.isBinary:
+            self.log("Current input (replaced binaries):", printSteps)
+            print_msg = f.get_message()
+            print_msg = re.sub("\x0d", "\\x0d", print_msg)
+            print_msg = re.sub("\x0a", "\\x0a", print_msg)
+            print_msg = re.sub("\x08", "\\x08", print_msg)
+            print_msg = re.sub("\x09", "\\x09", print_msg)
+            
+            self.log("Msg: {0}".format(print_msg), printSteps)
+            if Globals.isBinary():
                 payload = f.get_payload_as_string()
             else:
                 payload = f.get_message()
-            if Globals.isBinary:
+            if Globals.isBinary():
                 self.log("Payload: {0}".format(payload), printSteps)
             gotOne = False
             
@@ -450,9 +483,9 @@ class Statemachine(object):
                 print_msg = re.sub("\x08", "\\x08", print_msg)
                 
                 if Globals.isText():
-                    self.log("Testing regex visual: {0}".format(print_msg), printSteps)
+                    self.log("Testing regex visual: {0} - {1}".format(t.getDestination(), print_msg), printSteps)
                 if Globals.isBinary():
-                    self.log("Testing regex:        {0}".format(t.getRegEx()), printSteps)
+                    self.log("Testing regex:        {0} - {1}".format(t.getDestination(), t.getRegEx()), printSteps)
                 res = None
                 try:
                     if Globals.isText():
@@ -460,7 +493,7 @@ class Statemachine(object):
                     else:
                         p = re.compile(r)
                     res = p.match(payload) # Match might freeze the code
-                except Exception as ae:
+                except Exception:
                     pass
                 if res:
                     gotOne = True
@@ -469,7 +502,7 @@ class Statemachine(object):
             if not gotOne:
                 # Search for epsilon transitions if nothing else works
                 for t in stateTransitions:
-                    if t.getHash=="{{epsilon}}":
+                    if t.getHash()=="{{epsilon}}":
                         gotOne = True
                         regexList.append(t)
                         
@@ -480,12 +513,12 @@ class Statemachine(object):
                 elif len(regexList)>1:
                     self.log("Found multiple matching transitions: {0} transitions found".format(len(regexList)), printSteps)
                     for t in regexList:
-                        self.log("\t{0}".format(t))
+                        self.log("\t{0}".format(t), printSteps)
                     # Try to find the best one of these transitions, put the most generic to the back of the list
                     regexList.sort(reverse=True)
                     
                     chosenOne = self.multipleChoiceChooser.choose(regexList)
-                    self.log("Using {0}".format(chosenOne))
+                    self.log("Using {0}".format(chosenOne), printSteps)
                     gotMultipleChoice = True
                     curState = chosenOne.getDestination()
                 
@@ -505,7 +538,10 @@ class Statemachine(object):
                             tryAgain = True
                             curState = t.getDestination()
                             break
-                        
+            # Check whether we finally reached a final            
+            if curState in self.__finals:
+                failed = False
+                            
         if failed:
             self.log("ERROR: Flow not accepted by statemachine", printSteps)
             return dict({"testSuccessful": False, "isInTestFlows": True, "hasMoreThanOneMessage": True, "has_no_gaps": True, "is_alternating": True, "did_all_transitions": False, "finished_in_final": False, "gotMultipleChoice": gotMultipleChoice})
@@ -624,14 +660,14 @@ class Statemachine(object):
         
     
     def log(self, msg, printDebug=False):
-        if self.__config.debug or printDebug:
+        if Globals.getConfig().debug or printDebug:
             print msg
             
     def build(self):
-        if self.__config.performReverXMinimization and not self.__config.fastReverXStage1 and not self.__config.nativeReverXStage1:
+        if Globals.getConfig().performReverXMinimization and not Globals.getConfig().fastReverXStage1 and not Globals.getConfig().nativeReverXStage1:
             # When ReverX minimization is desired we need either the fast or native stage 1!
             raise Exception("ReverX minimization is desired but neither 'nativeReverXStage1' nor 'fastReverXStage1' are set to true!")        
-        if self.__config.performReverXMinimization and self.__config.fastReverXStage1:
+        if Globals.getConfig().performReverXMinimization and Globals.getConfig().fastReverXStage1:
             print "Performing fast ReverX stage 1 during iterative build"
         
         # Rationale for "fast reverx" and "native reverx"
@@ -681,7 +717,7 @@ class Statemachine(object):
             if len(messages)==1:
                 self.log("Flow {0} has only 1 message. Skipping flow".format(flow))
                 continue
-            (has_no_gaps, is_alternating) = common.flow_is_valid(self.__sequences,flow, self.__config)
+            (has_no_gaps, is_alternating) = common.flow_is_valid(self.__sequences,flow)
             if not (has_no_gaps and is_alternating):                                                          
                 error += 1
                 continue
@@ -696,7 +732,7 @@ class Statemachine(object):
                     cluster = message[0].getCluster()
                     
                     # Build statemachine alternatively
-                    if self.__config.buildDFAViaRegEx:
+                    if Globals.getConfig().buildDFAViaRegEx:
                         hash = cluster.getRegEx() # Will internally return visual or normal regex, depending on the protocol classification
                     else:
                         hash = cluster.getFormatHash()
@@ -717,7 +753,7 @@ class Statemachine(object):
                     # TODO: Chech whether we need to use findTransition or findTransitionBySrc
                     existingTransition = self.findTransitionBySrc(curstate, hash)
                     
-                    if self.__config.fastReverXStage1 and self.__config.performReverXMinimization: # Perform quick stage 1 if ReverX minimization is desired at all
+                    if Globals.getConfig().fastReverXStage1 and Globals.getConfig().performReverXMinimization: # Perform quick stage 1 if ReverX minimization is desired at all
                         if existingTransition:
                             if existingTransition.getSource()==curstate:
                                 # Exactly this transition exists
@@ -725,7 +761,7 @@ class Statemachine(object):
                                 self.log("Exactly this transition already exists")
                                 # Do not create a final out of a "normal" transitions
                                 if msg_key == msg_keys[-1]: # Is this the last
-                                    if self.__config.lastMessageIsDirectlyFinal:
+                                    if Globals.getConfig().lastMessageIsDirectlyFinal:
                                         self.__finals.add(existingTransition.getDestination()) 
                                 curstate = existingTransition.getDestination()
                                 continue
@@ -734,13 +770,13 @@ class Statemachine(object):
                                 curstate = existingTransition.getDestination()
                                 self.log("A transition with this hash already exists, bending link to ({0},{1},{2})".format(curstate, hash, existingTransition.getDestination()))
                                 if msg_key == msg_keys[-1]: # Is this the last
-                                    if self.__config.lastMessageIsDirectlyFinal:
+                                    if Globals.getConfig().lastMessageIsDirectlyFinal:
                                         self.__finals.add(existingTransition.getDestination()) 
                                 continue
                         else: # This transition does not yet exist, add new transition with new state    
                             #newstate = "s{0}".format(self.__nextstate)
                             
-                            if self.__config.buildDFAViaRegEx:    
+                            if Globals.getConfig().buildDFAViaRegEx:    
                                 trans = self.getTransitionsFrom(curstate)
                                 # Check if any of the existing regexes/transitions already covers the new regex
                                 # In this case do not add a new transition
@@ -783,7 +819,7 @@ class Statemachine(object):
 
                                 
                             if msg_key == msg_keys[-1]: # Is this the last?
-                                if self.__config.lastMessageIsDirectlyFinal:
+                                if Globals.getConfig().lastMessageIsDirectlyFinal:
                                         self.__finals.add(curstate)
                                 else:
                                     # 20120326: Solution for many rejected acceptance tests
@@ -808,7 +844,7 @@ class Statemachine(object):
                             
                             # Do not create a final out of a "normal" transitions
                             if msg_key == msg_keys[-1]: # Is this the last
-                                if self.__config.lastMessageIsDirectlyFinal:
+                                if Globals.getConfig().lastMessageIsDirectlyFinal:
                                     self.__finals.add(existingTransition.getDestination()) 
                             curstate = existingTransition.getDestination()
                             continue
@@ -816,7 +852,7 @@ class Statemachine(object):
                             #newstate = "s{0}".format(self.__nextstate)
                             
                             
-                            if self.__config.buildDFAViaRegEx: 
+                            if Globals.getConfig().buildDFAViaRegEx: 
                                 trans = self.getTransitionsFrom(curstate)   
                                 # Check if any of the existing regexes/transitions already covers the new regex
                                 # In this case do not add a new transition
@@ -881,7 +917,7 @@ class Statemachine(object):
                             
                             
                             if msg_key == msg_keys[-1]: # Is this the last
-                                if self.__config.lastMessageIsDirectlyFinal:
+                                if Globals.getConfig().lastMessageIsDirectlyFinal:
                                     self.__finals.add(newstate)
                                 else:
                                     newstate = State("s{0}".format(self.__nextstate), State.typeIncomingNoneMsg, self)
@@ -900,7 +936,7 @@ class Statemachine(object):
                     
         self.collapse_finals()
         
-        if self.__config.performReverXMinimization:
+        if Globals.getConfig().performReverXMinimization:
             print "Performing ReverX merge. Number of states {0}, transitions {1}".format(len(self.__states), self.numOfTransitions)
             self.reverx_merge()
             print "Performed ReverX merge. Number of states {0}, transitions: {1}".format(len(self.__states), self.numOfTransitions)
@@ -909,7 +945,7 @@ class Statemachine(object):
             print("ReverX merge disabled by configuration")
         
         
-        if self.__config.debug:
+        if Globals.getConfig().debug:
             
             print "Finished"
             print "States: ", ",".join(x.getName() for x in self.__states)
@@ -973,10 +1009,10 @@ class Statemachine(object):
         # Then remove all transitions where these nodes are src or dest
         # Then perform recursion until nolonger nodes are deleted
         
-        if not self.__config.pruneDFAOutliers:
+        if not Globals.getConfig().pruneDFAOutliers:
             return
-        print "Trying to prune state machine outliers with link score below {0}".format(self.__config.pruneBelowLinkScore)
-        if self.__config.performReverXMinimization and self.__config.fastReverXStage1:
+        print "Trying to prune state machine outliers with link score below {0}".format(Globals.getConfig().pruneBelowLinkScore)
+        if Globals.getConfig().performReverXMinimization and Globals.getConfig().fastReverXStage1:
             print "WARNING: Statemachine was built with fast ReverX stage 1. Pruning will probably falsify results!"
         
         print "Pruning transitions..."
@@ -984,14 +1020,14 @@ class Statemachine(object):
         
         t_full_set = self.buildUnionTransitionSet()
         for t in t_full_set:
-            if t.getCounter()<self.__config.pruneBelowLinkScore:
+            if t.getCounter()<Globals.getConfig().pruneBelowLinkScore:
                 self.removeTransition(t)
                 prunedTransitions += 1
             
             
         #=======================================================================
         # for t in copy.copy(self.__transitions):
-        #    if t.getCounter()<self.__config.pruneBelowLinkScore:
+        #    if t.getCounter()<Globals.getConfig().pruneBelowLinkScore:
         #        self.__transitions.remove(t)
         #        prunedTransitions += 1
         # 
@@ -1080,7 +1116,7 @@ class Statemachine(object):
     
     def reverx_merge(self):
         import time
-        if self.__config.nativeReverXStage1:
+        if Globals.getConfig().nativeReverXStage1:
             start = time.time()
             print "Performing native ReverX merge stage 1"
             # merge states reached via the same message types
@@ -1114,7 +1150,7 @@ class Statemachine(object):
             
             
         # Begin ReverX Stage 2
-        if self.__config.performReverXStage2:
+        if Globals.getConfig().performReverXStage2:
         
                
             print "Performing ReverX merge stage 2"
@@ -1147,7 +1183,7 @@ class Statemachine(object):
                                         # There should only be epsilons which transition to final??
                                         # With these additions, all tests are passed but the DFA is not minimal
                                     
-                                    if self.__config.strictMergeOfOutgoingEdges:
+                                    if Globals.getConfig().strictMergeOfOutgoingEdges:
                                         p_t_list = self.getTransitionsFrom(p)
                                         q_t_list = self.getTransitionsFrom(q)
                                         p_set = set()
@@ -1228,7 +1264,7 @@ class Statemachine(object):
     #===========================================================================
     # def reverx_merge(self):
     #    import time
-    #    if self.__config.nativeReverXStage1:
+    #    if Globals.getConfig().nativeReverXStage1:
     #        start = time.time()
     #        print "Performing native ReverX merge stage 1"
     #        # merge states reached from similar message types
@@ -1310,7 +1346,7 @@ class Statemachine(object):
     #        elapsed = (time.time() - start)
     #                
     #        #===================================================================
-    #        # if self.__config.debug:
+    #        # if Globals.getConfig().debug:
     #        #    print "Transitions:"
     #        #    for t in self.__transitions:
     #        #        print t
@@ -1323,7 +1359,7 @@ class Statemachine(object):
     #        
     #        
     #    # Begin ReverX Stage 2
-    #    if not self.__config.performReverXStage2:
+    #    if not Globals.getConfig().performReverXStage2:
     #        return
     #       
     #    print "Performing ReverX merge stage 2"
@@ -1364,7 +1400,7 @@ class Statemachine(object):
     #===========================================================================
     # def reverx_merge(self):
     #    import time
-    #    if self.__config.nativeReverXStage1:
+    #    if Globals.getConfig().nativeReverXStage1:
     #        start = time.time()
     #        print "Performing native ReverX merge stage 1"
     #        # merge states reached from similar message types
@@ -1398,7 +1434,7 @@ class Statemachine(object):
     #                    
     #        elapsed = (time.time() - start)
     #                
-    #        if self.__config.debug:
+    #        if Globals.getConfig().debug:
     #            print "Transitions:"
     #            for t in self.__transitions:
     #                print t
@@ -1505,7 +1541,7 @@ class Statemachine(object):
         if not self.statesHaveSameType(p, q):
             #if p.getType()!=q.getType()):
             raise Exception("Must not merge states with different state types")
-        if self.__config.checkConsistencyOnMerge:
+        if Globals.getConfig().checkConsistencyOnMerge:
             filename = "/Users/daubsi/Dropbox/dot_debug_before.dot"
             self.dump_dot(filename)
             
@@ -1551,7 +1587,7 @@ class Statemachine(object):
             #    t.setDestination(q)
             #    self.__transitions.add(t)
             #===================================================================
-        if self.__config.checkConsistencyOnMerge:
+        if Globals.getConfig().checkConsistencyOnMerge:
             filename = "/Users/daubsi/Dropbox/dot_debug_after.dot"
             self.dump_dot(filename)
              # Sanity check
@@ -1643,7 +1679,7 @@ class Statemachine(object):
         return False
      
     def collapse_finals(self):
-        if self.__config.collapseFinals:
+        if Globals.getConfig().collapseFinals:
             
             print "Collapsing final states"
             # Collapse finals based on node type
@@ -1735,7 +1771,7 @@ class Statemachine(object):
         import DFA
         dfa = DFA.DFA(states,alphabet,delta,start,finals)
         #dfa.pretty_print()
-        if self.__config.minimizeDFA:            
+        if Globals.getConfig().minimizeDFA:            
             print "Minimizing DFA with {0} states... this could take some time...".format(len(states))
             import time
             start = time.time()
@@ -1751,7 +1787,7 @@ class Statemachine(object):
             for s in self.__states[:]:
                 if map[s]!=s: # s was merged into a new state
                     # delete missing state from states
-                    if self.__config.debug:
+                    if Globals.getConfig().debug:
                         print "{0} is an obsolete state. Removing...".format(s)
                     self.__states.remove(s)
                     # delete/change transitions from missing state to mapped state
@@ -1759,11 +1795,11 @@ class Statemachine(object):
                     for t in copy.copy(self.__transitions):
                         if t.getSource()==s: # delete outgoing edges
                             self.__transitions.remove(t)
-                            if self.__config.debug:
+                            if Globals.getConfig().debug:
                                 print "Deleted outgoing edge {0}".format(t)
                         if t.getDestination()==s: # bend incoming edges
                             t.setDestination(map[s])
-                            if self.__config.debug:
+                            if Globals.getConfig().debug:
                                 print "Bended incoming edge from {0} to {1}".format(s,t.getDestination())
                     
                 
@@ -1864,15 +1900,16 @@ class Statemachine(object):
         t_full_set = self.buildUnionTransitionSet()
                 
         for t in t_full_set:
-            if Globals.isText:
-                s = "'{0}'".format(t.getMessage()[:25].translate(trantab))
+            
+            if Globals.isText():
+                s = "'{0}'".format(t.getMessage()[:25].translate(trantab,"\t"))
             
                 s = re.sub("\x0d", "", s)
                 s = re.sub("\x0a", "", s)
                 if len(t.getMessage())>25:
                     s+="..."
             else:
-                s = "'{0}'".format(t.getRegEx()[:25].translate(trantab))
+                s = "'{0}'".format(t.getRegEx()[:25].translate(trantab,"\t"))
                 if len(t.getRegEx())>25:
                     s+="..."
             s+=" ({0})".format(t.getCounter())
@@ -1886,13 +1923,13 @@ class Statemachine(object):
                 color="black"
             
             penwidth = 1
-            if self.__config.highlightOutlier:
-                if t.getCounter()<self.__config.pruneBelowLinkScore: 
+            if Globals.getConfig().highlightOutlier:
+                if t.getCounter()<Globals.getConfig().pruneBelowLinkScore: 
                     penwidth = "2,style=dotted"
                     color="blue"
                 else:
                     penwidth = 1
-            elif self.__config.weightEdges:
+            elif Globals.getConfig().weightEdges:
                 penwidth = t.getCounter()
                             
             print '{0} -> {1} [color={2},fontsize=10,label="{3}",penwidth={4}];'.format(t.getSource(),t.getDestination(),color,s,penwidth)

@@ -1,10 +1,12 @@
 import common
 from peekable import peekable
 from tokenrepresentation import TokenRepresentation
+import formatinference
 from message import Message
 import uuid
+import Globals
 
-def perform_semantic_inference(cluster_collection, config):
+def perform_semantic_inference(cluster_collection):
     """
     This function performs semantic inference on a list of clusters given
     For each message in these clusters semantics are inferred by analyzing the token
@@ -48,7 +50,7 @@ def perform_semantic_inference(cluster_collection, config):
                 try:
                     isNumber = tokenRepresentation.get_tokenType()==Message.typeText and common.is_number(token)
                 except TypeError:
-                    if config.debug:
+                    if Globals.getConfig().debug:
                         print "Error checking token {0} for number semantics".format(token)
                     isNumber = False
                 if isNumber:
@@ -113,7 +115,7 @@ def perform_semantic_inference(cluster_collection, config):
                     # all protocols
                     diff_msg_length = abs(cmp_message_length - ref_message_length)
                     
-                    if config.requireTotalLengthChangeForLengthField:
+                    if Globals.getConfig().requireTotalLengthChangeForLengthField:
                         if not (diff_val == diff_next_length == diff_msg_length):
                             is_length = False
                         break
@@ -132,7 +134,7 @@ def perform_semantic_inference(cluster_collection, config):
         
         reference_message = messages[0]
         nextInFlow = reference_message.getNextInFlow()
-        if nextInFlow != None and not (len(messages)==1 and config.sessionIDOnlyWithClustersWithMoreThanOneMessage):
+        if nextInFlow != None and not (len(messages)==1 and Globals.getConfig().sessionIDOnlyWithClustersWithMoreThanOneMessage):
             tokenlist = reference_message.get_tokenlist()
             next_tokenlist = nextInFlow.get_tokenlist()
             ref_idx = 0
@@ -155,7 +157,7 @@ def perform_semantic_inference(cluster_collection, config):
                     # Retrieve next token type
                     nextTokType = next_tokenRepresentation.get_tokenType()
                     # If it is not a binary we don't see it as a cookie
-                    if config.sessionIDOnlyWithBinary:
+                    if Globals.getConfig().sessionIDOnlyWithBinary:
                         if nextTokType!=Message.typeBinary:
                             next_idx += 1
                             continue
@@ -215,13 +217,60 @@ def perform_semantic_inference(cluster_collection, config):
                     next_idx += 1
                 ref_idx += 1
                 
-            
-    
+        # Try to find random fields (16 bit)      
+        token_formats = c.get_formats()
+        idx = 0
+        for token_format in token_formats:
+            rep, form, semantics = token_format
+            if form.getType()==Message.typeVariable and rep==Message.typeBinary:
+                variance = c.getVariableStatistics()[idx].getVariance()
+                if variance>1000 and len(semantics)==0:
+                    # We've got a very high variance and no assigned semantics --> candidate for random
+                    # Have a look at the last but one token
+                    if idx-1>=0:
+                        rep, form, semantics = token_formats[idx-1]
+                        if form.getType()==Message.typeVariable and rep==Message.typeBinary:
+                            variance2 = c.getVariableStatistics()[idx-1].getVariance()
+                            if variance2>1000 and len(semantics)==0:
+                                # Consider the two as a CRC-16
+                                for message in messages: # Set for every message and the cluster itself
+                                    message.get_tokenlist()[idx-1].add_semantic("random")
+                                    message.get_tokenlist()[idx].add_semantic("random")
+                                c.add_semantic_for_token(idx-1,"random")
+                                c.add_semantic_for_token(idx,"random")
+            idx+=1
+                                
+        # Try to find sets (valued limited in variability with lower and upper bound)
+        token_formats = c.get_formats()
+        idx = 0
+        for token_format in token_formats:
+            rep, form, semantics = token_format
+            if form.getType()==Message.typeVariable:
+                stats = c.getVariableStatistics()[idx]
+                distinct = stats.numberOfDistinctSamples()
+                
+                # How will be find out whether a number of variable values is a set or really variable?
+                # We assume that there is an absolute maximum amount of distinct values which is independent
+                # of the actual number of messages. However we also need to consider that when the number of
+                # messages in a cluster definitily falls below the setAbsoluteMax value, we have to adapt
+                # the local maximum in this cluster. 
+                # For the moment we take a multiplier for the number of messages (default 0.3 == 30%) and 
+                # assume it is a set, when both, setAbsoluteMax and the localThreshold is underrun
+                # In addition we assume that we have no semantics for this token, as other semantics conflict
+                # with the notion of a set
+                
+                if (distinct <= Globals.getConfig().setAbsoluteMax and 
+                    distinct<=(c.getNumberOfMessages()*Globals.getConfig().setPercentageThreshold) and
+                    len(semantics)==0):
+                    for message in messages: # Set for every message and the cluster itself
+                        message.get_tokenlist()[idx].add_semantic("set")
+                    c.add_semantic_for_token(idx-1,"set")
+            idx+=1   
     # Push to cluster
-    pushUpToCluster(cluster_collection, config)    
+    pushUpToCluster(cluster_collection)    
     
     
-def pushUpToCluster(cluster_collection, config):
+def pushUpToCluster(cluster_collection):
     cluster = cluster_collection.get_all_cluster()        
     for c in cluster:
         messages = c.get_messages()

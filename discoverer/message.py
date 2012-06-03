@@ -4,6 +4,7 @@ import common
 #from peekable import peekable
 from curses.ascii import isprint
 from tokenrepresentation import TokenRepresentation
+import Globals
 
 class Message:
     """ 
@@ -38,11 +39,10 @@ class Message:
     def __repr__ (self): 
         return 'Msg: "%s" %s' % (self.__message, self.__tokenlist)
      
-    def __init__(self, payload, connident, mnumber, flowmnumber, msgDirection, config, performFullAnalysis=True):
-        self.__config = config
-        if len(payload)>config.maxMessagePrefix:
+    def __init__(self, payload, connident, mnumber, flowmnumber, msgDirection, performFullAnalysis=True):
+        if len(payload)>Globals.getConfig().maxMessagePrefix:
             # Strip payload to maxMessagePreif
-            self.__payload = payload[0:config.maxMessagePrefix]
+            self.__payload = payload[0:Globals.getConfig().maxMessagePrefix]
         else:
             self.__payload = payload
         self.__connident = connident
@@ -92,7 +92,7 @@ class Message:
     
     def __convertPayload(self):
         for i in self.__payload:
-            if isprint(chr(i)) or i in (0x0d,0x0a,0x20,0x08):
+            if isprint(chr(i)) or i in (0x0d,0x0a,0x20,0x08,0x09):
                 self.__message += chr(i)
             else:
                 self.__message += '.'
@@ -272,7 +272,7 @@ class Message:
         Tokenizes textSegment, creating new text resp. binary tokens from it
         Tokens are separated by whitespaces
         """
-        if len(textSegment)<self.__config.minWordLength:
+        if len(textSegment)<Globals.getConfig().minWordLength:
             # Word length to short
             # Create artificially binary token
             return self.convertTextSegmentToBinaryToken(textSegment,startsAt)   

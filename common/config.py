@@ -71,6 +71,9 @@ class Configuration:
         self.calculateMaxMessageLength = False
         self.maxMessageLengthConfidenceInterval = 0.9
         self.danglingRegEx = True
+        self.setAbsoluteMax = 5
+        self.setPercentageThreshold = 0.3
+        self.multipleChoiceChooserClass = "RandomWeightedChooser"
         # Used for NW alignment in Discoverer
         self.matchScore = 1
         self.mismatchScore = 1

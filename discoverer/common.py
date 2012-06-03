@@ -1,3 +1,6 @@
+import Globals
+
+
 def is_number(s):
     """
     Checks whether s is really a number and raises a ValueError if not
@@ -37,7 +40,7 @@ def hash(data):
     return hashlib.md5(d).hexdigest()
 
 
-def flow_is_valid(flows, flow, config):
+def flow_is_valid(flows, flow):
         messages = flows[flow]
         message_indices = messages.keys()
         
@@ -47,7 +50,7 @@ def flow_is_valid(flows, flow, config):
             print "ERROR: Flow {0} has gaps in sequences numberings. Skipping flow".format(flow)
             return tuple([False, False]) # return that it has failed has_gaps and is_alternating
         else:
-            if config.flowsMustBeStrictlyAlternating and not is_alternating(flows,flow,config):
+            if Globals.getConfig().flowsMustBeStrictlyAlternating and not is_alternating(flows,flow):
                 print "ERROR: Flow {0} is not strictly alternating between client and server. Skippng flow".format(flow)
                 return tuple([True, False]) # return that it has passed has_gaps but failed is_alternating
         return tuple([True, True]) # return that is has passed has_gaps and is_alternating
@@ -60,8 +63,8 @@ def has_gaps(numbers, gap_size):
                 return True
         return False
 
-def is_alternating(flows, flow, config):
-        if config.flowsMustBeStrictlyAlternating: return True
+def is_alternating(flows, flow):
+        if Globals.getConfig().flowsMustBeStrictlyAlternating: return True
         messages = flows[flow]
         direction = ""
         msg_keys = sorted(messages.keys())

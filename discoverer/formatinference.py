@@ -1,8 +1,9 @@
 from message import Message
 import string
 import sys
+import Globals
 
-def perform_format_inference_for_cluster(c, config):        
+def perform_format_inference_for_cluster(c):        
     """
     This function performs format inferrence on a cluster given.
     The value of the token for each message within a cluster is inspected and
@@ -24,13 +25,13 @@ def perform_format_inference_for_cluster(c, config):
         constant = True
         
         if not tokenRepresentation.get_tokenType()==Message.typeDirection:
-            if not config.considerOneMessageAsConstant and len(messages)==1:
+            if not Globals.getConfig().considerOneMessageAsConstant and len(messages)==1:
                 constant = False
             else:
                 for message in messages:
                     tl = message.get_tokenlist()
                     currentRepresentation = tl[tokenIndex]
-                    if config.constantsAreCaseSensitive:
+                    if Globals.getConfig().constantsAreCaseSensitive:
                         if not tokenRepresentation.get_token()==currentRepresentation.get_token():
                             constant = False
                             break                                                                  
@@ -51,7 +52,7 @@ def perform_format_inference_for_cluster(c, config):
     c.set_format_inference(result)                 
 
 
-def perform_format_inference_for_cluster_collection(cluster_collection, config):
+def perform_format_inference_for_cluster_collection(cluster_collection):
     """
     This function performs format inferrence on a cluster collection given.
     The value of the token for each message within a cluster is inspected and
@@ -60,7 +61,7 @@ def perform_format_inference_for_cluster_collection(cluster_collection, config):
     """
     cluster = cluster_collection.get_all_cluster()        
     for c in cluster:
-        perform_format_inference_for_cluster(c,config)
+        perform_format_inference_for_cluster(c)
         
 class FormatSpecification(object):
     
@@ -196,9 +197,12 @@ class VariableTextStatistics(VariableStatistics):
     
     def __init__(self):
         self.initialize()
-    
+        self.__sumPowerOne = 0
+        self.__sumPowerTwo = 0
+        
     def addValue(self, value):
         val_length = len(value)
+        
         if val_length<self.__minLength:
             self.__minLength = val_length
             self.__shortest = value
@@ -206,7 +210,6 @@ class VariableTextStatistics(VariableStatistics):
             self.__maxLength = val_length
             self.__longest = value
         super(VariableTextStatistics, self).addValue(value)
-    
             
     def initialize(self):
         super(VariableTextStatistics, self).initialize()

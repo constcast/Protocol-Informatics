@@ -13,7 +13,7 @@ import discoverer.statemachine
 import discoverer.splitter
 import resource
 import discoverer.formattree   
-            
+from discoverer import Globals            
 
 class DiscovererCommandLineInterface(cli.CommandLineInterface):
     def __init__(self, env, config):
@@ -22,6 +22,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         # Just for backing it up into the state
         self.env['config'] = config
         self.config = config
+        Globals.setConfig(config)
         self.__profile = collections.OrderedDict()
         self.__nextstate = 1
 
@@ -53,8 +54,8 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             print "FATAL: No sequences loaded yet!"
             return False    
         
-        #setup = discoverer.setup.Setup(sequences, direction, self.config)
-        setup = discoverer.setup.Setup(sequences, self.config)
+        #setup = discoverer.setup.Setup(sequences, direction, Globals.getConfig())
+        setup = discoverer.setup.Setup(sequences, Globals.getConfig())
         
         self.env['cluster_collection'] = setup.get_cluster_collection()
         print "Built {0} clusters".format(setup.get_cluster_collection().num_of_clusters())
@@ -64,14 +65,14 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         if not self.env.has_key('cluster_collection'):
             print "FATAL: Initial clustering not yet performed. Run 'setup' first pleaset!"
             return False    
-        discoverer.formatinference.perform_format_inference_for_cluster_collection(self.env['cluster_collection'], self.config)
+        discoverer.formatinference.perform_format_inference_for_cluster_collection(self.env['cluster_collection'])
     
     def do_semantic_inference(self, string):
         print "Performing semantic inference on messages"
         if not self.env.has_key('cluster_collection'):
             print "FATAL: Initial clustering not yet performed. Run 'setup' first pleaset!"
             return False    
-        discoverer.semanticinference.perform_semantic_inference(self.env['cluster_collection'], self.config)
+        discoverer.semanticinference.perform_semantic_inference(self.env['cluster_collection'])
     
     def do_recursive_clustering(self, string):
         print "Performing recursive clustering"
@@ -85,7 +86,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         if not self.env.has_key('cluster_collection'):
             print "FATAL: Initial clustering not yet performed. Run 'setup' first pleaset!"
             return False    
-        self.env['cluster_collection'].fix_tokenization_errors(self.config)
+        self.env['cluster_collection'].fix_tokenization_errors()
         # Next two calls are needed in order to reflect the new structure
         self.do_format_inference("")
         self.do_semantic_inference("")
@@ -99,7 +100,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         if self.env.has_key('cluster_collection'):
             del(self.env['cluster_collection'])
              
-        if self.config.loadClientAndServerParts == True:
+        if Globals.getConfig().loadClientAndServerParts == True:
             # Delete old generated structures
             
             
@@ -115,12 +116,12 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             # Perform discoverer for both parts
             
             # Check if we want to constrain our maximum length based on configured confidence intervals
-            if self.config.calculateMaxMessageLength:
-                maxPrefix = discoverer.setup.calcMaxMessageLengthConfidenceInterval(self.env['sequences'], 1-self.config.maxMessageLengthConfidenceInterval)
-                self.config.maxMessagePrefix = maxPrefix
-                print "Calculated maximum message prefix based on confidence interval of {0}: {1}".format(self.config.maxMessageLengthConfidenceInterval, maxPrefix)
+            if Globals.getConfig().calculateMaxMessageLength:
+                maxPrefix = discoverer.setup.calcMaxMessageLengthConfidenceInterval(self.env['sequences'], 1-Globals.getConfig().maxMessageLengthConfidenceInterval)
+                Globals.getConfig().maxMessagePrefix = maxPrefix
+                print "Calculated maximum message prefix based on confidence interval of {0}: {1}".format(Globals.getConfig().maxMessageLengthConfidenceInterval, maxPrefix)
             
-            print "Using maximum message prefix for training data: {0}".format(self.config.maxMessagePrefix)
+            print "Using maximum message prefix for training data: {0}".format(Globals.getConfig().maxMessagePrefix)
             self.go(self.env['sequences'])
             
             #self.go(self.env['sequences_client2server'], Message.directionClient2Server)
@@ -150,12 +151,13 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             self.do_dumpresult("")
             # Build statemachine
             print "Forcing regex rebuild"
-            self.env['cluster_collection'].updateClusterRegEx()
-            print "Performing sanity check over regexes"
-            self.env['cluster_collection'].performSanityCheckForRegEx()
-            print "Flushing all messages in all clusters"
-            #self.env['cluster_collection'].flushMessagesInCluster()
-            sm = discoverer.statemachine.Statemachine(self.env['messageFlows'], self.config)
+            if self.env.has_key('cluster_collection'):
+                self.env['cluster_collection'].updateClusterRegEx()
+                print "Performing sanity check over regexes"
+                self.env['cluster_collection'].performSanityCheckForRegEx()
+                print "Flushing all messages in all clusters"
+                #self.env['cluster_collection'].flushMessagesInCluster()
+            sm = discoverer.statemachine.Statemachine(self.env['messageFlows'])
             self.env['sm'] = sm
             start = time.time()
             print "Building statemachine"
@@ -167,8 +169,8 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             print "Memory usage with statemachine: {0}".format(self.getMemoryUsage())
             self.profile("AfterBuildStatemachine")
             
-            path = os.path.normpath(self.config.dumpFile)
-            file = os.path.basename(self.config.inputFile)
+            path = os.path.normpath(Globals.getConfig().dumpFile)
+            file = os.path.basename(Globals.getConfig().inputFile)
             (filename,ext) = os.path.splitext(file)
             storePath = "{0}{1}{2}.dot".format(path,os.sep,filename) 
             #sm.dfa()
@@ -188,7 +190,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             #anothersm = cPickle.loads(pickled)
             #anothersm.dump("/Users/daubsi/Dropbox/anotherdump")
             self.do_dump_state("")
-            if self.config.autoCreateXML:
+            if Globals.getConfig().autoCreateXML:
                 print "Memory usage before creating XML: {0}".format(self.getMemoryUsage())
                 self.profile("BeforeBuildXML")            
                 self.createXMLOutput()
@@ -205,8 +207,8 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
     
     def dump_sm_dot(self, filename=""):
         if filename=="":
-            path = os.path.normpath(self.config.dumpFile)
-            file = os.path.basename(self.config.inputFile)
+            path = os.path.normpath(Globals.getConfig().dumpFile)
+            file = os.path.basename(Globals.getConfig().inputFile)
             (filename,ext) = os.path.splitext(file)
             storePath = "{0}{1}{2}.dot".format(path,os.sep,filename) 
         else:
@@ -218,8 +220,8 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         
     def createPeachOutput(self):
         import os
-        path = os.path.normpath(self.config.dumpFile)
-        file = os.path.basename(self.config.inputFile)
+        path = os.path.normpath(Globals.getConfig().dumpFile)
+        file = os.path.basename(Globals.getConfig().inputFile)
         (filename,ext) = os.path.splitext(file)
         storePath = "{0}{1}{2}_peach.xml".format(path,os.sep,filename)
         import sys
@@ -235,8 +237,8 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
 
     def createXMLOutput(self):
         import os
-        path = os.path.normpath(self.config.dumpFile)
-        file = os.path.basename(self.config.inputFile)
+        path = os.path.normpath(Globals.getConfig().dumpFile)
+        file = os.path.basename(Globals.getConfig().inputFile)
         (filename,ext) = os.path.splitext(file)
         storePath = "{0}{1}{2}_output.xml".format(path,os.sep,filename)
         
@@ -266,7 +268,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             fileName = tok[0]
             element = int(tok[1])
             
-        fileName = self.config.testFile
+        fileName = Globals.getConfig().testFile
         import common
         import cmdinterface
         
@@ -275,20 +277,20 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         server2client_file = "{0}_server".format(fileName)
         print "Memory usage before loading testdata: {0}".format(self.getMemoryUsage())
         self.profile("BeforeLoadingTestdata")
-        print "Loading {0} entries from test data from {1}".format(self.config.numOfTestEntries,client2server_file) 
-        sequences_client2server = sequences = common.input.Bro(client2server_file, self.config.numOfTestEntries).getConnections()
-        print "Loading {0} entries from test data from {1}".format(self.config.numOfTestEntries, server2client_file)
-        sequences_server2client = sequences = common.input.Bro(server2client_file, self.config.numOfTestEntries).getConnections()
+        print "Loading {0} entries from test data from {1}".format(Globals.getConfig().numOfTestEntries,client2server_file) 
+        sequences_client2server = sequences = common.input.Bro(client2server_file, Globals.getConfig().numOfTestEntries).getConnections()
+        print "Loading {0} entries from test data from {1}".format(Globals.getConfig().numOfTestEntries, server2client_file)
+        sequences_server2client = sequences = common.input.Bro(server2client_file, Globals.getConfig().numOfTestEntries).getConnections()
         sequences = [(sequences_client2server, Message.directionClient2Server),(sequences_server2client, Message.directionServer2Client)] # Keep it compatible with existing code TODO        
         
         print "Loaded {0} test sequences from input files".format(len(sequences[0][0])+len(sequences[1][0]))
         print "Memory usage after loading testdata: {0}".format(self.getMemoryUsage())
         self.profile("AfterLoadingTestdata")    
         # Create quick setup
-        tmpMaxPrefix = self.config.maxMessagePrefix
-        self.config.maxMessagePrefix = 2048    
-        setup = discoverer.setup.Setup(sequences, self.config, performFullAnalysis=False)
-        self.config.maxMessagePrefix = tmpMaxPrefix
+        tmpMaxPrefix = Globals.getConfig().maxMessagePrefix
+        Globals.getConfig().maxMessagePrefix = 2048    
+        setup = discoverer.setup.Setup(sequences, performFullAnalysis=False)
+        Globals.getConfig().maxMessagePrefix = tmpMaxPrefix
         print "Memory usage after preparing testsequences: {0}".format(self.getMemoryUsage())
         self.profile("AfterPreparingTestdata")    
         testcluster = setup.get_cluster_collection()
@@ -302,7 +304,6 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         self.env['testflows']=testflows
         
         if self.env.has_key('sm'):
-            self.env['sm'].setConfig(self.config)
             self.env['sm'].setTestFlows(testflows)
     
     def getMemoryUsage(self):
@@ -313,9 +314,10 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         self.env['sequences']=None
     
     def do_testsuite(self, args):
+        
         for suffix in range(0,10):
             print "Testing the {0}er batch".format(suffix)
-            self.config.testFile = "/Users/daubsi/Dropbox/dns_2000_{0}".format(suffix)
+            Globals.getConfig().testFile = "/Users/daubsi/Dropbox/dns_2000_{0}".format(suffix)
             self.do_load_testdata("")
             self.do_statemachine_accepts("")
             
@@ -355,7 +357,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         import cmdinterface
         
         
-#        discoverer.formatinference.perform_format_inference_for_cluster_collection(testcluster, self.config)
+#        discoverer.formatinference.perform_format_inference_for_cluster_collection(testcluster, Globals.getConfig())
         #testflow = testflows[testflows.keys()[element]]
         if not self.env.has_key('testflows') or len(self.env['testflows']) == 0:
             self.do_load_testdata(args)
@@ -380,7 +382,6 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         gotMultipleChoice = 0
         test2go = len(testflows.keys())
         totalflows = test2go
-        self.env['sm'].setConfig(self.config)
         self.env['sm'].setTestFlows(testflows)
         # Make room ;-)
         self.env['sequences']=None
@@ -436,8 +437,8 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         # Dump results to file
         import os            
         
-        path = os.path.normpath(self.config.dumpFile)
-        file = os.path.basename(self.config.testFile)
+        path = os.path.normpath(Globals.getConfig().dumpFile)
+        file = os.path.basename(Globals.getConfig().testFile)
         (filename,ext) = os.path.splitext(file)
         storePath = "{0}{1}{2}_testresults.txt".format(path,os.sep,filename)            
         import sys
@@ -555,7 +556,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         testflows = self.env['testflows']
         
         nr = 0
-        outfilename = self.config.testFile
+        outfilename = Globals.getConfig().testFile
         fdoutclient = open("{0}_{1}_{2}_client".format(outfilename,chunksize, nr), "w")
         fdoutserver = open("{0}_{1}_{2}_server".format(outfilename,chunksize, nr), "w")
         
@@ -564,7 +565,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         print "Opened output file {0}_{1}_{2}".format(outfilename, chunksize, nr)
         flowcnt = 0
         for flow in testflows:
-            (has_no_gaps, is_alternating) = discoverer.common.flow_is_valid(testflows, flow, self.config)
+            (has_no_gaps, is_alternating) = discoverer.common.flow_is_valid(testflows, flow, Globals.getConfig())
             if not (has_no_gaps and is_alternating) or len(testflows[flow])==1:                                                          
                 continue    
             
@@ -659,7 +660,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
                 minFlowLength = flowLength
             
             if len(messages)==1:
-                if self.config.debug:
+                if Globals.getConfig().debug:
                     print "Flow {0} has only 1 message. Skipping flow".format(flow)
                 continue
             #message_indices = messages.keys()
@@ -683,23 +684,25 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
                 lastMsg.setNextInFlow(message)
                 message.setPrevInFlow(lastMsg)
             
-            if self.config.debug:
+            if Globals.getConfig().debug:
                 self.printflow(flow)
         print "Linked flows. Min flow length: {0}, max flow length: {1}".format(minFlowLength, maxFlowLength)
                  
     def do_dump_state(self, str):
         import cPickle
-        handle = open("/Users/daubsi/Dropbox/disc_state","wb")
+        handle = open(Globals.getConfig().dumpFile + "/disc_state","wb")
         sys.setrecursionlimit(50000)
+        self.env['protocolType']=discoverer.Globals.getProtocolClassification()
         cPickle.dump(self.env, handle,2)
         handle.close()
         
     def do_load_state(self, str):
         import cPickle
-        handle = open("/Users/daubsi/Dropbox/disc_state","rb")
+        handle = open(Globals.getConfig().dumpFile + "/disc_state","rb")
         self.env = cPickle.load(handle)
         # Update config with settings from backup
-        self.config = self.env['config']
+        Globals.setConfig(self.env['config'])
+        discoverer.Globals.setProtocolClassification(self.env['protocolType'])
         handle.close()
                     
     def go(self, sequences):
@@ -717,7 +720,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         elapsed = (time.time() - start)
         print "Setup took {:.3f} seconds".format(elapsed)
         #=======================================================================
-        # if discoverer.statistics.get_classification() == "text" and self.config.breakSequences == True:
+        # if discoverer.statistics.get_classification() == "text" and Globals.getConfig().breakSequences == True:
         #    print "Protocol is considered as 'text' and breakSequences is configured to 'true'. Reloading input..."
         #    import cmdinterface
         #    cmdinterface.cli.CommandLineInterface.do_read(breakSequences=True)
@@ -756,21 +759,21 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         while self.env['cluster_collection'].mergeClustersWithSameFormat():
             pass
         
-        #self.env['cluster_collection'].mergeClustersWithSameFormat(self.config)
-        #self.env['cluster_collection'].mergeClustersWithSameFormat(self.config)
-        #self.env['cluster_collection'].mergeClustersWithSameFormat(self.config)
+        #self.env['cluster_collection'].mergeClustersWithSameFormat(Globals.getConfig())
+        #self.env['cluster_collection'].mergeClustersWithSameFormat(Globals.getConfig())
+        #self.env['cluster_collection'].mergeClustersWithSameFormat(Globals.getConfig())
         elapsed = (time.time() - start)
         print "Merging took {:.3f} seconds".format(elapsed)
         print "Finished"
         
         # Perform one last format inference and semantic inference
-        oldvalue = self.config.considerOneMessageAsConstant
-        self.config.considerOneMessageAsConstant = True
+        oldvalue = Globals.getConfig().considerOneMessageAsConstant
+        Globals.getConfig().considerOneMessageAsConstant = True
         self.do_format_inference("")
-        self.config.considerOneMessageAsConstant = oldvalue
+        Globals.getConfig().considerOneMessageAsConstant = oldvalue
         self.do_semantic_inference("")
         
-        if self.config.debug:                
+        if Globals.getConfig().debug:                
             self.env['cluster_collection'].print_clusterCollectionInfo()
             
         #=======================================================================
@@ -789,13 +792,13 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         #=======================================================================
                
     def do_dumpflow(self,file):
-        if not self.config.loadClientAndServerParts:
+        if not Globals.getConfig().loadClientAndServerParts:
             print "Flow dumping is only available when analyzing client and server flows"
             return
         if file!="":
             import os.path
-            path = os.path.normpath(self.config.dumpFile)
-            file = os.path.basename(self.config.inputFile)         
+            path = os.path.normpath(Globals.getConfig().dumpFile)
+            file = os.path.basename(Globals.getConfig().inputFile)         
             (filename,ext) = os.path.splitext(file)
             storePath = "{0}{1}{2}_flow_dump.txt".format(path,os.sep,filename)
             import sys
@@ -823,10 +826,10 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
     def do_dumpresult(self, string):
         if not self.env.has_key('cluster_collection'): return
         
-        if self.config.loadClientAndServerParts == True:
+        if Globals.getConfig().loadClientAndServerParts == True:
             # Dump 2 collections to two files
-            path = os.path.normpath(self.config.dumpFile)
-            file = os.path.basename(self.config.inputFile)
+            path = os.path.normpath(Globals.getConfig().dumpFile)
+            file = os.path.basename(Globals.getConfig().inputFile)
             (filename,ext) = os.path.splitext(file)
             storePath = "{0}{1}{2}_formats_dump.txt".format(path,os.sep,filename)
             self.dump2File(self.env['cluster_collection'],storePath)
@@ -836,8 +839,8 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             #self.dump2File(self.env['cluster_collection_server'],storePath)
         else:
             # Dump only one file (client traffic)
-            path = os.path.normpath(self.config.dumpFile)
-            file = os.path.basename(self.config.inputFile)
+            path = os.path.normpath(Globals.getConfig().dumpFile)
+            file = os.path.basename(Globals.getConfig().inputFile)
             (filename,ext) = os.path.splitext(file)
             storePath = "{0}{1}{2}_dump.txt".format(path,os.sep,filename)
             self.dump2File(self.env['cluster_collection'],storePath)

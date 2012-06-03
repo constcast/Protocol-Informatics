@@ -1,5 +1,6 @@
 from cStringIO import StringIO
 import re
+import Globals
 
 class FormatTreeNode(object):
     

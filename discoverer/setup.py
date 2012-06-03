@@ -9,12 +9,12 @@ class Setup:
     performs type inference and and clusters them ("Initial clustering" step) 
     """
 
-    def __init__(self,flowBasedSequences, config, performFullAnalysis=True):
+    def __init__(self,flowBasedSequences, performFullAnalysis=True):
         if flowBasedSequences==None:
             print "FATAL: No sequences loaded yet"
             return False
 
-        self.cluster_collection = ClusterCollection(config)    
+        self.cluster_collection = ClusterCollection()    
         
         
         for directionTuple in flowBasedSequences:
@@ -30,7 +30,7 @@ class Setup:
                         #    if myseq[1] == 0xa:
                         #        print "Found 0D0A in seq ", myseq, " in flowInfo ", flowInfo
                         #===========================================================
-                        newMessage = Message(seq.sequence, seq.connIdent, seq.mNumber, seq.flowNumber, flowDirection, config, performFullAnalysis)
+                        newMessage = Message(seq.sequence, seq.connIdent, seq.mNumber, seq.flowNumber, flowDirection, performFullAnalysis)
                         self.cluster_collection.add_message_to_cluster(newMessage)
                         
                         #print newMessage.get_payload()

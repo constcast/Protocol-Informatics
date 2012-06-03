@@ -22,7 +22,6 @@ def perform_recursive_clustering(cluster_collection, startAt):
     
     """
     
-    config = cluster_collection.get_config()
     # Scan for FD token, Phase 1
     clusters = cluster_collection.get_all_cluster()[:] # <-- "[:]" Very very important... otherwise our iterated list will change because of deletions...
     
@@ -30,7 +29,7 @@ def perform_recursive_clustering(cluster_collection, startAt):
     __startAt = startAt
      
     for cluster in clusters:
-        if config.debug:
+        if Globals.getConfig().debug:
             print "Starting processing for next cluster ({0} messages)".format(len(cluster.get_messages()))
         
         startAt = __startAt
@@ -46,7 +45,7 @@ def perform_recursive_clustering(cluster_collection, startAt):
                 # Current token is a length token. Do not treat as FD
                 startAt += 1
                 continue
-            if not config.allowAdjacentFDs:
+            if not Globals.getConfig().allowAdjacentFDs:
                 if startAt>0:
                     if "FD"in set(cluster.get_semantics_for_token(startAt-1)): # We have an adjacent FD
                         print "Two adjacent FDs forbidden by configuration, skipping to next token"
@@ -56,19 +55,19 @@ def perform_recursive_clustering(cluster_collection, startAt):
                 l.append(message.get_tokenAt(startAt).get_token())
             numOfDistinctValuesForToken = len(set(l))
             
-            if config.minDistinctFDValues < numOfDistinctValuesForToken <= config.maxDistinctFDValues:
+            if Globals.getConfig().minDistinctFDValues < numOfDistinctValuesForToken <= Globals.getConfig().maxDistinctFDValues:
                 # FD candidate found
                 # Check number of potential clusters
                 sumUp = Counter(l)
                 wouldCluster = False
                 for key in sumUp.keys():
-                    if sumUp.get(key)>config.minimumClusterSize: # Minimum cluster size of at least one cluster
+                    if sumUp.get(key)>Globals.getConfig().minimumClusterSize: # Minimum cluster size of at least one cluster
                         wouldCluster = True
                         break
                 if wouldCluster:
                     # Check if adjacent text/text FDs are allowed in text protocols
                     if Globals.getProtocolClassification()==Globals.protocolText:
-                        if not config.allowAdjacentTextFDs:
+                        if not Globals.getConfig().allowAdjacentTextFDs:
                             if startAt>0:
                                 # Check whether the previous one is a text FD (type text and no semantic numeric)
                                 if "FD" in set(cluster.get_semantics_for_token(startAt-1)):
@@ -77,24 +76,24 @@ def perform_recursive_clustering(cluster_collection, startAt):
                                         print "Two adjacent text FDs forbidden by configuration, skipping to next token"
                                         continue
                     # Create new cluster
-                    if config.debug:
+                    if Globals.getConfig().debug:
                         print "Subcluster prerequisites fulfilled. Adding FD semantic, splitting cluster and entering recursion"
                     # Senseless here: message.get_tokenAt(startAt).add_semantic("FD")
                     cluster.add_semantic_for_token(startAt,"FD")
-                    newCollection = ClusterCollection(config)
+                    newCollection = ClusterCollection()
                     for key in sumUp.keys():
                             messagesWithValue = cluster.get_messages_with_value_at(startAt,key)
-                            newCluster = Cluster(messagesWithValue[0].get_tokenrepresentation(), "recursion", config)
+                            newCluster = Cluster(messagesWithValue[0].get_tokenrepresentation(), "recursion")
                             newCluster.setSplitpoint("{0}".format(startAt))
                             newCluster.add_messages(messagesWithValue)                            
                             newCluster.add_semantic_for_token(startAt, "FD")
                             newCollection.add_cluster(newCluster)
-                    if config.debug:
+                    if Globals.getConfig().debug:
                         print "{0} sub clusters generated".format(len(sumUp.keys()))
                     
                     # Perform format inference on new cluster collection
-                    formatinference.perform_format_inference_for_cluster_collection(newCollection, config)
-                    semanticinference.perform_semantic_inference(newCollection, config)
+                    formatinference.perform_format_inference_for_cluster_collection(newCollection)
+                    semanticinference.perform_semantic_inference(newCollection)
                     
                     # Merge clusters with same format
                     while newCollection.mergeClustersWithSameFormat():
@@ -120,7 +119,7 @@ def perform_recursive_clustering(cluster_collection, startAt):
                     pass
                     #print "Subclustering prerequisites not fulfilled. Will not sub-cluster"
             startAt+=1
-        if config.debug:
+        if Globals.getConfig().debug:
             print "Recursive clustering analysis for cluster finished"
     
     

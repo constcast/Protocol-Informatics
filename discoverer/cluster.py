@@ -23,14 +23,13 @@ class Cluster(dict):
     A filtering function that only returns with a specific value at token position X can be called
     via get_messages_with_value_at()
     """
-    def __init__(self, representation, origin, config):
+    def __init__(self, representation, origin):
         self.update({'messages':[], 'representation':representation, 'format_inference':[], 'semantics':{}, 'variable_statistics': []})        
         self.__internalname = uuid.uuid1()
         self.__origin = origin
         self.__splitpoint = "n/a"
         self.__regExVisual = ""
         self.__regEx = ""
-        self.__config = config
         
     def getOrigin(self):
         return self.__origin
@@ -40,7 +39,10 @@ class Cluster(dict):
     
     def setSplitpoint(self, splitpoint):
         self.__splitpoint = str(splitpoint)
-        
+    
+    def getNumberOfMessages(self):
+        return len(self.get_messages())
+       
     def getInternalName(self):
         return self.__internalname
     
@@ -57,6 +59,7 @@ class Cluster(dict):
                     stats = VariableNumberStatistics()
                 else:
                     stats = VariableTextStatistics()
+                    
                 for m in self.get_messages():
                     tokAt = m.get_tokenAt(idx)
                     val = tokAt.get_token()
@@ -216,7 +219,7 @@ class Cluster(dict):
                 #           
                 #===============================================================
             idx += 1
-        if not (self.__config.calculateMaxMessageLength or self.__config.danglingRegEx):
+        if not (Globals.getConfig().calculateMaxMessageLength or Globals.getConfig().danglingRegEx):
             regexstr += "$"
         return regexstr 
     
@@ -372,7 +375,10 @@ class Cluster(dict):
                 # Add a \s* before the first text token
                 if not iterator.isLast():
                     if self.get('representation')[idx+1]==Message.typeText:
-                        regexstr += "[\\t| ]*"
+                        # Only adding [\\t| ]* will not work for multiline texts like in ftp banners. Here we will need the \r \n as well.
+                        # So get back to \s instead of "[\t| ]*"
+                        #regexstr += "[\\t| ]*"
+                        regexstr += "\\s*"
             else:            
                 if isinstance(item,formatinference.Constant):
                     #if isinstance(item.getConstValue(),str):
@@ -435,16 +441,22 @@ class Cluster(dict):
                 curType = self.get('representation')[idx]
                 if iterator.isLast():
                     if curType==Message.typeText:
-                        regexstr += "[\\t| ]*"
+                        # See comment on top why "[\\t| ]*" is not enough
+                        #regexstr += "[\\t| ]*"
+                        regexstr += "\\s*"
                 else:
                     nextType = self.get('representation')[idx+1]
                     if (curType==Message.typeBinary and nextType==Message.typeText) or ( 
                         curType==Message.typeText and nextType==Message.typeBinary):
-                        regexstr += "[\\t| ]*"
+                        # See comment on top why "[\\t| ]*" is not enough
+                        #regexstr += "[\\t| ]*"
+                        regexstr += "\\s*"
                     elif curType==Message.typeText and nextType==Message.typeText:
-                        regexstr += "[\\t| ]+"
+                        # See comment on top why "[\\t| ]+" is not enough
+                        #regexstr += "[\\t| ]+"
+                        regexstr += "\\s+"
             idx += 1
-        if not (self.__config.calculateMaxMessageLength or self.__config.danglingRegEx):
+        if not (Globals.getConfig().calculateMaxMessageLength or Globals.getConfig().danglingRegEx):
             regexstr += "$"
         return regexstr 
                 

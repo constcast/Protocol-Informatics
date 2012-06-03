@@ -8,6 +8,7 @@ import formatinference
 from message import Message
 from xml.sax.saxutils import escape
 from cStringIO import StringIO
+import Globals
 
 class ClusterCollection():
     """
@@ -19,12 +20,8 @@ class ClusterCollection():
     function mergeClusterWithSameFormat merges two clusters which exhibit the same
     representation.
     """
-    def __init__(self,config):
+    def __init__(self):
         self.__cluster = []
-        self.__config = config
-    
-    def get_config(self):
-        return self.__config
     def get_all_cluster(self):
         return self.__cluster
     
@@ -87,15 +84,13 @@ class ClusterCollection():
         if len(self.__cluster)==1:
             return False # We cannot merge a single cluster
         
-        config = self.__config
-        
-        if not config.mergeSimilarClusters:
+        if not Globals.getConfig().mergeSimilarClusters:
             print "Cluster merging disabled via configuration"
             return False
         
         copiedCollection = self.__cluster[:]  
         ori_len = len(copiedCollection)
-        tempCollection = ClusterCollection(config)
+        tempCollection = ClusterCollection()
 
         while len(copiedCollection)>0:            
             mergeCandidates = []            
@@ -178,7 +173,7 @@ class ClusterCollection():
                 idx_inner += 1     
             # End of for each clusterloop
             
-            newCluster = Cluster(cluster1.get_representation(), "mergeDestination", self.__config)
+            newCluster = Cluster(cluster1.get_representation(), "mergeDestination")
             newCluster.set_semantics(cluster1.get_semantics())             
             newCluster.add_messages(cluster1.get_messages())
             splitpoint = ""
@@ -187,7 +182,7 @@ class ClusterCollection():
                 copiedCollection.remove(cluster)
                 splitpoint = "{0}, {1}".format(splitpoint, cluster.getSplitpoint())
             newCluster.setSplitpoint(splitpoint)
-            discoverer.formatinference.perform_format_inference_for_cluster(newCluster,config)    
+            discoverer.formatinference.perform_format_inference_for_cluster(newCluster)    
             # TODO: Build up new semantic information in newCluster
             copiedCollection.remove(cluster1)               
             tempCollection.add_cluster(newCluster)            
@@ -210,7 +205,7 @@ class ClusterCollection():
         rep = message.get_tokenrepresentation()
         c = self.get_cluster(rep)
         if c==None:
-            c = Cluster(rep, "initial", self.__config)
+            c = Cluster(rep, "initial")
             self.__cluster.append(c)
         c.add_messages([message])
         #c.get_messages().append(message)
@@ -247,7 +242,7 @@ class ClusterCollection():
         #print "Binary token {} is text candidate".fmt(idx)
         
         
-    def fix_tokenization_errors(self, config):
+    def fix_tokenization_errors(self):
         """ 
         Fixes tokenization errors. Tries to build text tokens (1<size<minWordLength)
         out of binary tokens that fulfill the following criteria:
@@ -351,7 +346,7 @@ class ClusterCollection():
                 sys.stdout = handle
                 print "Dump of 'Discoverer' analysis"
                 print "Current config:"
-                self.__config.print_config()
+                Globals.getConfig().print_config()
             print "{0} cluster(s) have been generated".format(len(cluster))
             
             print "Statistics: {0}".format(discoverer.statistics.stats)        
@@ -461,7 +456,7 @@ class ClusterCollection():
                     # We've got a variable only cluster
                     totalNumOfNoConstCluster.append(c.getInternalName())
                     print ">>> CLUSTER IS VARIABLE ONLY <<<"
-                if self.__config.printMessagesOfCluster:
+                if Globals.getConfig().printMessagesOfCluster:
                     if len(messages)>1:
                         print "Messages of cluster ({0} messages):".format(len(messages))
                         for idx, m in enumerate(messages):
