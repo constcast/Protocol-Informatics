@@ -74,6 +74,7 @@ class Configuration:
         self.setAbsoluteMax = 5
         self.setPercentageThreshold = 0.3
         self.multipleChoiceChooserClass = "RandomWeightedChooser"
+        self.testbasename = "/Users/daubsi/Dropbox/ftp_big_2000"
         # Used for NW alignment in Discoverer
         self.matchScore = 1
         self.mismatchScore = 1

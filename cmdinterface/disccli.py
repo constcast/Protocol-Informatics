@@ -314,10 +314,10 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         self.env['sequences']=None
     
     def do_testsuite(self, args):
-        
+        basename = Globals.getConfig().testbasename
         for suffix in range(0,10):
             print "Testing the {0}er batch".format(suffix)
-            Globals.getConfig().testFile = "/Users/daubsi/Dropbox/dns_2000_{0}".format(suffix)
+            Globals.getConfig().testFile = basename+"_{0}".format(suffix)
             self.do_load_testdata("")
             self.do_statemachine_accepts("")
             
