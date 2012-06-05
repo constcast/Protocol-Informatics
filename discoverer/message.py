@@ -92,11 +92,12 @@ class Message:
     
     def __convertPayload(self):
         for i in self.__payload:
-            if isprint(chr(i)) or i in (0x0d,0x0a,0x20,0x08,0x09):
-                self.__message += chr(i)
-            else:
-                self.__message += '.'
-
+            #if isprint(chr(i)) or i in (0x0d,0x0a,0x20,0x08,0x09,0x22):
+            #    self.__message += chr(i)
+            #else:
+            #    self.__message += '.'
+            self.__message += chr(i) 
+            
     def get_length(self):
         return len(self.__payload)
         

@@ -277,6 +277,9 @@ class Transition(object):
                 other_regex = other_regex.replace("\]", "]")
                 other_regex = other_regex.replace("\.", ".")
                 other_regex = other_regex.replace("\*", "*")
+                other_regex = other_regex.replace("\?", "?")
+                other_regex = other_regex.replace("\$", "$")
+                other_regex = other_regex.replace("\\\\", "\\")
                 #find_fixed_dotstar = "(\(\?:\[0\-9a\-f\]\{2\}\)\{([1-9][0-9]*)\})"
                 find_fixed_dotstar = "(\.\{([1-9][0-9]*)\})"
                 other_regex = re.sub(find_fixed_dotstar, self.repl_dotstar_text, other_regex)

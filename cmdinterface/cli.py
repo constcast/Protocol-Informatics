@@ -29,6 +29,8 @@ class CommandLineInterface(cmd.Cmd):
             self.applyConfig()
         else:
             self.config = common.config.Configuration()
+        if self.config.autoRun:
+            self.do_disc("")
 
     def cmdloop(self):
         try:
@@ -86,6 +88,13 @@ class CommandLineInterface(cmd.Cmd):
         import disccli        
         inst = disccli.DiscovererCommandLineInterface(self.env, self.config)
         inst.prompt = self.prompt[:-1]+':Discoverer> '
+        if self.config.autoRun:
+            print "Autorun enabled! Calling 'go'"
+            inst.do_go("")
+            inst.do_testsuite("")
+            import sys
+            sys.exit()
+            
         inst.cmdloop()        
         print "Finishing discoverer mode ..."
         self.config = inst.config

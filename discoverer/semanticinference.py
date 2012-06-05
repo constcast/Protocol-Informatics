@@ -223,7 +223,11 @@ def perform_semantic_inference(cluster_collection):
         for token_format in token_formats:
             rep, form, semantics = token_format
             if form.getType()==Message.typeVariable and rep==Message.typeBinary:
-                variance = c.getVariableStatistics()[idx].getVariance()
+                try:
+                    variance = c.getVariableStatistics()[idx].getVariance()
+                except Exception:
+                    pass
+                
                 if variance>1000 and len(semantics)==0:
                     # We've got a very high variance and no assigned semantics --> candidate for random
                     # Have a look at the last but one token

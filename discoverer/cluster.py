@@ -236,7 +236,16 @@ class Cluster(dict):
                 raise Exception("RegEx did not match to payload")
         if Globals.getProtocolClassification()==Globals.protocolText:    
             regex_str = self.getRegExVisual()
-            res = re.match(regex_str, testmsg.get_message())
+            res = None
+            try:
+                res = re.match(regex_str, testmsg.get_message())
+            except Exception:
+                print "Exception in sanity check:"
+                print "Regex: {0}".format(regex_str)
+                print "Testmsg: {0}".format(testmsg.get_message())
+                print "Payload: {0}".format(testmsg.get_payload_as_string())
+                import sys
+                print "Exception: {0}".format(sys.exc_info())
             if res==None:
                 print "Error: calculated visual regex did not match it's message"
                 print "Message:      {0}".format(testmsg.get_message())
@@ -384,6 +393,8 @@ class Cluster(dict):
                     #if isinstance(item.getConstValue(),str):
                     if self.get('representation')[idx]==Message.typeText:
                         val = item.getConstValue()
+                        # Order matters!
+                        val = string.replace(val, "\\", "\\\\")
                         val = string.replace(val, "(", "\(")
                         val = string.replace(val, ")", "\)")
                         val = string.replace(val, ".", "\.")
@@ -392,6 +403,8 @@ class Cluster(dict):
                         val = string.replace(val, "]", "\]")
                         val = string.replace(val, "[", "\[")
                         val = string.replace(val, "*", "\*")
+                        val = string.replace(val, "?", "\?")
+                        val = string.replace(val, "$", "\$")
                         
                         
                         regexstr += val
