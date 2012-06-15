@@ -118,8 +118,8 @@ class PICommandLineInterface(cli.CommandLineInterface):
         for seqs in self.env['alist']:
             print "Output of cluster %d" % i
             if self.config.textBased == True:
-                out = PI.output.TextBased(seqs)
-                all_cons.append(out.cons, gapped)
+                out = PI.output.TextBased(seqs, gapped)
+                all_cons.append(out.cons)
             else:
                 PI.output.Ansi(seqs, gapped)
             i += 1
@@ -135,6 +135,16 @@ class PICommandLineInterface(cli.CommandLineInterface):
         Will output the results eventually. Please note that all previously generated
         state (such as distance matrix) will be reset by this step.
         """
+
+        # merge multiple connections into a single object
+        # we need to do this because PI does require this
+        import seqcli
+        self.env['sequences'] = seqcli.perform_merge(self.env['sequences'])
+
+        if self.config.onlyUniq:
+            print "Uniquing sequences..."
+            self.env['sequences'] = seqcli.perform_unique(self.env['sequences'])
+            
         print "Creating distance matrix ..."
         self.do_distance("")
         print "Creating phylogenetic tree ..."

@@ -5,6 +5,21 @@ import cli
 
 import common
 
+def perform_merge(conns):
+        ret = dict()
+        single_conn = common.sequences.FlowInfo("single")
+        for i in conns:
+            for seq in conns[i].sequences:
+                single_conn.addSequence(seq)
+                
+        ret["single"] = single_conn
+        return ret
+
+def perform_unique(conns):
+    for i in conns:
+        conns[i].uniqSequences()
+    return conns
+
 class SequencesCommandLineInterface(cli.CommandLineInterface):
     def __init__(self, env, config):
         cmd.Cmd.__init__(self)
@@ -25,16 +40,7 @@ class SequencesCommandLineInterface(cli.CommandLineInterface):
             like PI do not distinguish between multiple connections. This function merges them
             into a single one
         """
-        conns = self.env['sequences']
-        ret = dict()
-        single_conn = common.sequences.FlowInfo("single")
-        for i in conns:
-            for seq in conns[i].sequences:
-                single_conn.addSequence(seq)
-                
-        ret["single"] = single_conn
-
-        self.env['sequences'] = ret
+        self.env['sequences'] = perform_merge(self.env['sequences'])
 
     def do_uniq(self, string):
         """
@@ -44,9 +50,7 @@ class SequencesCommandLineInterface(cli.CommandLineInterface):
         Use do_merge() in order to put all sequences into a single connection context if you want to 
         globally remove duplicates
         """
-        conns = self.env['sequences']
-        for i in conns:
-            conns[i].uniqSequences()
+        self.env['sequences'] = perform_unique(selv.env['sequences'])
 
             
     def do_split(self, string):
