@@ -315,7 +315,12 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
     
     def do_testsuite(self, args):
         basename = Globals.getConfig().testbasename
-        for suffix in range(0,10):
+        highloop=0
+        if args=="":
+            highloop=4
+        else:
+            highloop=int(args)
+        for suffix in range(0,highloop):
             print "Testing the {0}er batch".format(suffix)
             Globals.getConfig().testFile = basename+"_{0}".format(suffix)
             self.do_load_testdata("")
@@ -565,7 +570,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         print "Opened output file {0}_{1}_{2}".format(outfilename, chunksize, nr)
         flowcnt = 0
         for flow in testflows:
-            (has_no_gaps, is_alternating) = discoverer.common.flow_is_valid(testflows, flow, Globals.getConfig())
+            (has_no_gaps, is_alternating) = discoverer.common.flow_is_valid(testflows, flow)
             if not (has_no_gaps and is_alternating) or len(testflows[flow])==1:                                                          
                 continue    
             

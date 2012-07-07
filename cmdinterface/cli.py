@@ -91,7 +91,7 @@ class CommandLineInterface(cmd.Cmd):
         if self.config.autoRun:
             print "Autorun enabled! Calling 'go'"
             inst.do_go("")
-            inst.do_testsuite("")
+            inst.do_testsuite(self.config.autoRunHigh)
             import sys
             sys.exit()
             
