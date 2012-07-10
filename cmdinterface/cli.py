@@ -45,9 +45,10 @@ class CommandLineInterface(cmd.Cmd):
         try:
             cmd.Cmd.cmdloop(self)
         except Exception as inst:
-            print "Whoa. Caught an exception: %s" % (inst)
+            logging.info("Whoa. Caught an exception: %s" % (inst))
             import traceback
             traceback.print_exc(file=sys.stdout)
+            logging.info(traceback.print_exc())
 
     def do_EOF(self, string):
         print string

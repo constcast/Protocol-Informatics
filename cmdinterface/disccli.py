@@ -756,20 +756,20 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         start = time.time()
         self.do_format_inference("")
         elapsed = (time.time() - start)
-        print "Format inference took {:.3f} seconds".format(elapsed)
+        logging.info("Format inference took {:.3f} seconds".format(elapsed))
         start = time.time()
         self.do_semantic_inference("")
         elapsed = (time.time() - start)
-        print "Semantic inference took {:.3f} seconds".format(elapsed)
+        logging.info("Semantic inference took {:.3f} seconds".format(elapsed))
         start = time.time()
         self.do_recursive_clustering("")        
         elapsed = (time.time() - start)
-        print "Recursive clustering took {:.3f} seconds".format(elapsed)
+        logging.info("Recursive clustering took {:.3f} seconds".format(elapsed))
         start = time.time()
         
         self.do_fix_tokenization_errors("")
         elapsed = (time.time() - start)
-        print "Fixing tokenization errors took {:.3f} seconds".format(elapsed)
+        logging.info("Fixing tokenization errors took {:.3f} seconds".format(elapsed))
         
         
         
