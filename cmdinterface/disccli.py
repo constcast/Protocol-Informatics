@@ -15,6 +15,9 @@ import resource
 import discoverer.formattree   
 from discoverer import Globals            
 import log4py
+import log4py.config
+import logging
+
 
 class DiscovererCommandLineInterface(cli.CommandLineInterface):
     def __init__(self, env, config):
@@ -26,12 +29,15 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         Globals.setConfig(config)
         self.__profile = collections.OrderedDict()
         self.__nextstate = 1
-        self.log = log4py.Logger().get_instance(self)
-        self.log.add_target("log/logfile.log")
-        self.log.add_target("log/logfile-.log")
-        self.log.set_rotation(log4py.ROTATE_DAILY)
-        self.log.set_loglevel(log4py.LOGLEVEL_VERBOSE)
-        self.log.info("Discoverer CLI initialized")
+        #log4py.config.fileConfig("log4py.properties")
+        log4py.config.fileConfig("log4py.properties")
+        
+        #self.log = log4py.Logger("$HOME/log4py.conf").get_instance(self)
+        #self.log.add_target("log/logfile.log")
+        #self.log.add_target("log/logfile-.log")
+        #self.log.set_rotation(log4py.ROTATE_DAILY)
+        #self.log.set_loglevel(log4py.LOGLEVEL_VERBOSE)
+        logging.info("Discoverer CLI initialized")
     def do_EOF(self, string):
         return True
 
@@ -282,23 +288,29 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             
         client2server_file = "{0}_client".format(fileName)
         server2client_file = "{0}_server".format(fileName)
-        self.log.debug("Using: {0} / {1} as testdata".format(client2server_file, server2client_file))
-        self.log.info("Memory usage before loading testdata: {0}".format(self.getMemoryUsage()))
+        logging.debug("Using: {0} / {1} as testdata".format(client2server_file, server2client_file))
+        logging.info("Memory usage before loading testdata: {0}".format(self.getMemoryUsage()))
         self.profile("BeforeLoadingTestdata")
-        self.log.info("Loading {0} entries from test data from {1}".format(Globals.getConfig().numOfTestEntries,client2server_file))
+        logging.info("Loading {0} entries from test data from {1}".format(Globals.getConfig().numOfTestEntries,client2server_file))
         sequences_client2server = sequences = common.input.Bro(client2server_file, Globals.getConfig().numOfTestEntries).getConnections()
-        self.log.info("Loading {0} entries from test data from {1}".format(Globals.getConfig().numOfTestEntries, server2client_file))
+        logging.info("Loading {0} entries from test data from {1}".format(Globals.getConfig().numOfTestEntries, server2client_file))
         sequences_server2client = sequences = common.input.Bro(server2client_file, Globals.getConfig().numOfTestEntries).getConnections()
         sequences = [(sequences_client2server, Message.directionClient2Server),(sequences_server2client, Message.directionServer2Client)] # Keep it compatible with existing code TODO        
         
+<<<<<<< HEAD
         self.log.info("Loaded {0} test sequences from input files".format(len(sequences[0][0])+len(sequences[1][0])))
         self.log.info("Memory usage after loading testdata: {0}".format(self.getMemoryUsage()))
+=======
+        logging.info("Loaded {0} test sequences from input files".format(len(sequences[0][0])+len(sequences[1][0])))
+        logging.info("Memory usage after loading testdata: {0}".format(self.getMemoryUsage()))
+>>>>>>> e117bd31b75cd557df0b1652585d273c7dbc726e
         self.profile("AfterLoadingTestdata")    
         # Create quick setup
         tmpMaxPrefix = Globals.getConfig().maxMessagePrefix
         Globals.getConfig().maxMessagePrefix = 2048    
         setup = discoverer.setup.Setup(sequences, performFullAnalysis=False)
         Globals.getConfig().maxMessagePrefix = tmpMaxPrefix
+<<<<<<< HEAD
         self.log.info("Memory usage after preparing testsequences: {0}".format(self.getMemoryUsage()))
         self.profile("AfterPreparingTestdata")    
         testcluster = setup.get_cluster_collection()
@@ -308,6 +320,17 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         
         self.linkmessages(testflows)
         self.log.info("Memory usage after linking testsequences: {0}".format(self.getMemoryUsage()))
+=======
+        logging.info("Memory usage after preparing testsequences: {0}".format(self.getMemoryUsage()))
+        self.profile("AfterPreparingTestdata")    
+        testcluster = setup.get_cluster_collection()
+        testflows = self.combineflows(testcluster)
+        logging.info("Memory usage after combining testsequences: {0}".format(self.getMemoryUsage()))
+        self.profile("AfterCombiningTestdata")    
+        
+        self.linkmessages(testflows)
+        logging.info("Memory usage after linking testsequences: {0}".format(self.getMemoryUsage()))
+>>>>>>> e117bd31b75cd557df0b1652585d273c7dbc726e
         self.profile("AfterLinkingTestdata")
         self.env['testflows']=testflows
         
@@ -328,9 +351,11 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             highloop=4
         else:
             highloop=int(args)
+        logging.info("Using {0} as highloop".format(highloop))
         for suffix in range(0,highloop):
-            print "Testing the {0}er batch".format(suffix)
+            logging.info("Testing the {0}er batch".format(suffix))
             Globals.getConfig().testFile = basename+"_{0}".format(suffix)
+            logging.info("Set config.testFile to {0}".format(Globals.getConfig().testFile))
             self.do_load_testdata("")
             self.do_statemachine_accepts("")
             
