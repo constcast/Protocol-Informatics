@@ -14,6 +14,7 @@ import discoverer.splitter
 import resource
 import discoverer.formattree   
 from discoverer import Globals            
+import log4py
 
 class DiscovererCommandLineInterface(cli.CommandLineInterface):
     def __init__(self, env, config):
@@ -25,7 +26,12 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         Globals.setConfig(config)
         self.__profile = collections.OrderedDict()
         self.__nextstate = 1
-
+        self.log = log4py.Logger().get_instance(self)
+        self.log.add_target("log/logfile.log")
+        self.log.add_target("log/logfile-.log")
+        self.log.set_rotation(log4py.ROTATE_DAILY)
+        self.log.set_loglevel(log4py.LOGLEVEL_VERBOSE)
+        self.log.info("Discoverer CLI initialized")
     def do_EOF(self, string):
         return True
 
@@ -269,37 +275,39 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             element = int(tok[1])
             
         fileName = Globals.getConfig().testFile
+        
         import common
         import cmdinterface
         
             
         client2server_file = "{0}_client".format(fileName)
         server2client_file = "{0}_server".format(fileName)
-        print "Memory usage before loading testdata: {0}".format(self.getMemoryUsage())
+        self.log.debug("Using: {0} / {1} as testdata".format(client2server_file, server2client_file))
+        self.log.info("Memory usage before loading testdata: {0}".format(self.getMemoryUsage()))
         self.profile("BeforeLoadingTestdata")
-        print "Loading {0} entries from test data from {1}".format(Globals.getConfig().numOfTestEntries,client2server_file) 
+        self.log.info("Loading {0} entries from test data from {1}".format(Globals.getConfig().numOfTestEntries,client2server_file))
         sequences_client2server = sequences = common.input.Bro(client2server_file, Globals.getConfig().numOfTestEntries).getConnections()
-        print "Loading {0} entries from test data from {1}".format(Globals.getConfig().numOfTestEntries, server2client_file)
+        self.log.info("Loading {0} entries from test data from {1}".format(Globals.getConfig().numOfTestEntries, server2client_file))
         sequences_server2client = sequences = common.input.Bro(server2client_file, Globals.getConfig().numOfTestEntries).getConnections()
         sequences = [(sequences_client2server, Message.directionClient2Server),(sequences_server2client, Message.directionServer2Client)] # Keep it compatible with existing code TODO        
         
-        print "Loaded {0} test sequences from input files".format(len(sequences[0][0])+len(sequences[1][0]))
-        print "Memory usage after loading testdata: {0}".format(self.getMemoryUsage())
+        self.log("Loaded {0} test sequences from input files".format(len(sequences[0][0])+len(sequences[1][0])))
+        self.log("Memory usage after loading testdata: {0}".format(self.getMemoryUsage()))
         self.profile("AfterLoadingTestdata")    
         # Create quick setup
         tmpMaxPrefix = Globals.getConfig().maxMessagePrefix
         Globals.getConfig().maxMessagePrefix = 2048    
         setup = discoverer.setup.Setup(sequences, performFullAnalysis=False)
         Globals.getConfig().maxMessagePrefix = tmpMaxPrefix
-        print "Memory usage after preparing testsequences: {0}".format(self.getMemoryUsage())
+        self.log("Memory usage after preparing testsequences: {0}".format(self.getMemoryUsage()))
         self.profile("AfterPreparingTestdata")    
         testcluster = setup.get_cluster_collection()
         testflows = self.combineflows(testcluster)
-        print "Memory usage after combining testsequences: {0}".format(self.getMemoryUsage())
+        self.log("Memory usage after combining testsequences: {0}".format(self.getMemoryUsage()))
         self.profile("AfterCombiningTestdata")    
         
         self.linkmessages(testflows)
-        print "Memory usage after linking testsequences: {0}".format(self.getMemoryUsage())
+        self.log("Memory usage after linking testsequences: {0}".format(self.getMemoryUsage()))
         self.profile("AfterLinkingTestdata")
         self.env['testflows']=testflows
         
