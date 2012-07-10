@@ -16,11 +16,13 @@ import discoverer
 import entropy
 import common
 
-import sys, getopt, yaml, os
+import sys, getopt, yaml, os, log4py, log4py.config, logging
 
 def main():
     configFile = None
 
+    log4py.config.fileConfig("log4py.properties")
+    logging.debug("ProtoX starting up")
     #
     # Parse command line options and do sanity checking on arguments
     #
