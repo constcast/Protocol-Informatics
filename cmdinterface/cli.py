@@ -1,6 +1,6 @@
 # vim: set sts=4 sw=4 cindent nowrap expandtab:
 
-import cmd, sys, os, signal, time
+import cmd, sys, os, signal, time, log4py
 
 lastEOF = 0
 
@@ -23,6 +23,12 @@ class CommandLineInterface(cmd.Cmd):
         
         self.env = dict()
 
+        self.log = log4py.Logger().get_instance(self)
+        self.log.add_target("log/logfile.log")
+        self.log.add_target("log/logfile-.log")
+        self.log.set_rotation(log4py.ROTATE_DAILY)
+        self.log.set_loglevel(log4py.LOGLEVEL_VERBOSE)
+        self.log.info("PI CLI initialized")
         import common
         if config != None:
             self.config = config
@@ -30,6 +36,7 @@ class CommandLineInterface(cmd.Cmd):
         else:
             self.config = common.config.Configuration()
         if self.config.autoRun:
+            self.log.debug("Calling do_disc")
             self.do_disc("")
 
     def cmdloop(self):
@@ -89,8 +96,9 @@ class CommandLineInterface(cmd.Cmd):
         inst = disccli.DiscovererCommandLineInterface(self.env, self.config)
         inst.prompt = self.prompt[:-1]+':Discoverer> '
         if self.config.autoRun:
-            print "Autorun enabled! Calling 'go'"
+            self.log.info("Autorun enabled! Calling 'go'")
             inst.do_go("")
+            self.log.info("Calling do_testsuite with autoRunHigh={0}".format(self.config.autoRunHigh))
             inst.do_testsuite(self.config.autoRunHigh)
             import sys
             sys.exit()

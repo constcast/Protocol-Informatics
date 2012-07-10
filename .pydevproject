@@ -10,5 +10,6 @@
 <pydev_pathproperty name="org.python.pydev.PROJECT_EXTERNAL_SOURCE_PATH">
 <path>/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages/PyYAML-3.10-py2.7-macosx-10.6-intel.egg</path>
 <path>/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages/pcapy-0.10.5-py2.7-macosx-10.6-intel.egg</path>
+<path>/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages/log4py.pyc</path>
 </pydev_pathproperty>
 </pydev_project>
