@@ -50,7 +50,7 @@ class ConsoleAppender(logging.StreamHandler,object):
   # Supported log4j Options
   Target = property(fget=getTarget, fset=setTarget)
   def activateOptions(self):
-    logging.StreamHandler.__init__(self, strm=self.stream)
+    logging.StreamHandler.__init__(self, stream=self.stream)
 
 class FileAppender(logging.FileHandler,object):
 

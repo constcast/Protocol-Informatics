@@ -37,7 +37,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         #self.log.add_target("log/logfile-.log")
         #self.log.set_rotation(log4py.ROTATE_DAILY)
         #self.log.set_loglevel(log4py.LOGLEVEL_VERBOSE)
-        self.log.info("Discoverer CLI initialized")
+        logging.info("Discoverer CLI initialized")
     def do_EOF(self, string):
         return True
 
