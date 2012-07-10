@@ -4,7 +4,7 @@
   constantsAreCaseSensitive: true, danglingRegEx: true, debug: false, dumpFile: /home/daubersc/result/,
   ethOffset: 14, fastReverXStage1: false, fieldDelimiter: null, flowsMustBeStrictlyAlternating: true,
   format: bro, gapScore: 1, gnuplotFile: null, graph: false, highlightOutlier: true,
-  inputFile: /home/daubersc/result/dns_1000_0, interactive: true, lastMessageIsDirectlyFinal: false,
+  inputFile: /home/daubersc/result/dns_1000_20, interactive: true, lastMessageIsDirectlyFinal: false,
   loadClientAndServerParts: true, matchScore: 1, maxDistinctFDValues: 10, maxFlows: 1000,
   maxMessageLengthConfidenceInterval: 0.95, maxMessagePrefix: 12, mergeSimilarClusters: true,
   messageDelimiter: null, minDistinctFDValues: 1, minWordLength: 3, minimizeDFA: false,
