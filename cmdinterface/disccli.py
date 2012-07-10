@@ -288,7 +288,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             
         client2server_file = "{0}_client".format(fileName)
         server2client_file = "{0}_server".format(fileName)
-        logging.debug("Using: {0} / {1} as testdata".format(client2server_file, server2client_file))
+        logging.debug("Using: {0} & {1} as testdata".format(client2server_file, server2client_file))
         logging.info("Memory usage before loading testdata: {0}".format(self.getMemoryUsage()))
         self.profile("BeforeLoadingTestdata")
         logging.info("Loading {0} entries from test data from {1}".format(Globals.getConfig().numOfTestEntries,client2server_file))
@@ -756,20 +756,20 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         start = time.time()
         self.do_format_inference("")
         elapsed = (time.time() - start)
-        print "Format inference took {:.3f} seconds".format(elapsed)
+        logging.info("Format inference took {:.3f} seconds".format(elapsed))
         start = time.time()
         self.do_semantic_inference("")
         elapsed = (time.time() - start)
-        print "Semantic inference took {:.3f} seconds".format(elapsed)
+        logging.info("Semantic inference took {:.3f} seconds".format(elapsed))
         start = time.time()
         self.do_recursive_clustering("")        
         elapsed = (time.time() - start)
-        print "Recursive clustering took {:.3f} seconds".format(elapsed)
+        logging.info("Recursive clustering took {:.3f} seconds".format(elapsed))
         start = time.time()
         
         self.do_fix_tokenization_errors("")
         elapsed = (time.time() - start)
-        print "Fixing tokenization errors took {:.3f} seconds".format(elapsed)
+        logging.info("Fixing tokenization errors took {:.3f} seconds".format(elapsed))
         
         
         
@@ -784,8 +784,8 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         #self.env['cluster_collection'].mergeClustersWithSameFormat(Globals.getConfig())
         #self.env['cluster_collection'].mergeClustersWithSameFormat(Globals.getConfig())
         elapsed = (time.time() - start)
-        print "Merging took {:.3f} seconds".format(elapsed)
-        print "Finished"
+        logging.info("Merging took {:.3f} seconds".format(elapsed))
+        logging.info("Finished")
         
         # Perform one last format inference and semantic inference
         oldvalue = Globals.getConfig().considerOneMessageAsConstant
