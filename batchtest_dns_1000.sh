@@ -7,7 +7,7 @@ set -x
 COPYDIR=dns_1000
 PREFIX=dns_1000
 FULLPATH=/home/daubersc/result/
-NUMOFFILES=90
+NUMOFFILES=0
 CONFIGFILE=config_dns_1000.yml
 for TESTNUM in `seq 0 $NUMOFFILES`;
 do

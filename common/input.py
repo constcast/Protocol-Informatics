@@ -24,7 +24,6 @@ class Input:
 
     def __init__(self, filename, maxFlows):
         """Import specified filename"""
-        log4py.config.fileConfig("log4py.properties")
         
         self.set = set()
         self.index = 0
@@ -261,7 +260,7 @@ class Bro(Input):
 
 
     def __init__(self, filename, maxFlows):
-        logging.debug("Trying to load {0} with format 'bro'".format(filename))
+        logging.info("Trying to load {0} with format 'bro'".format(filename))
         self.connections = dict()
         Input.__init__(self, filename, maxFlows)
 

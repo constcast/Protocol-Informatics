@@ -30,7 +30,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         self.__profile = collections.OrderedDict()
         self.__nextstate = 1
         #log4py.config.fileConfig("log4py.properties")
-        log4py.config.fileConfig("log4py.properties")
+#        log4py.config.fileConfig("log4py.properties")
         
         #self.log = log4py.Logger("$HOME/log4py.conf").get_instance(self)
         #self.log.add_target("log/logfile.log")
@@ -297,30 +297,14 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         sequences_server2client = sequences = common.input.Bro(server2client_file, Globals.getConfig().numOfTestEntries).getConnections()
         sequences = [(sequences_client2server, Message.directionClient2Server),(sequences_server2client, Message.directionServer2Client)] # Keep it compatible with existing code TODO        
         
-<<<<<<< HEAD
-        self.log.info("Loaded {0} test sequences from input files".format(len(sequences[0][0])+len(sequences[1][0])))
-        self.log.info("Memory usage after loading testdata: {0}".format(self.getMemoryUsage()))
-=======
         logging.info("Loaded {0} test sequences from input files".format(len(sequences[0][0])+len(sequences[1][0])))
         logging.info("Memory usage after loading testdata: {0}".format(self.getMemoryUsage()))
->>>>>>> e117bd31b75cd557df0b1652585d273c7dbc726e
         self.profile("AfterLoadingTestdata")    
         # Create quick setup
         tmpMaxPrefix = Globals.getConfig().maxMessagePrefix
         Globals.getConfig().maxMessagePrefix = 2048    
         setup = discoverer.setup.Setup(sequences, performFullAnalysis=False)
         Globals.getConfig().maxMessagePrefix = tmpMaxPrefix
-<<<<<<< HEAD
-        self.log.info("Memory usage after preparing testsequences: {0}".format(self.getMemoryUsage()))
-        self.profile("AfterPreparingTestdata")    
-        testcluster = setup.get_cluster_collection()
-        testflows = self.combineflows(testcluster)
-        self.log.info("Memory usage after combining testsequences: {0}".format(self.getMemoryUsage()))
-        self.profile("AfterCombiningTestdata")    
-        
-        self.linkmessages(testflows)
-        self.log.info("Memory usage after linking testsequences: {0}".format(self.getMemoryUsage()))
-=======
         logging.info("Memory usage after preparing testsequences: {0}".format(self.getMemoryUsage()))
         self.profile("AfterPreparingTestdata")    
         testcluster = setup.get_cluster_collection()
@@ -330,7 +314,6 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         
         self.linkmessages(testflows)
         logging.info("Memory usage after linking testsequences: {0}".format(self.getMemoryUsage()))
->>>>>>> e117bd31b75cd557df0b1652585d273c7dbc726e
         self.profile("AfterLinkingTestdata")
         self.env['testflows']=testflows
         

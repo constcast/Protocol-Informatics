@@ -23,8 +23,6 @@ class CommandLineInterface(cmd.Cmd):
         
         self.env = dict()
 
-        log4py.config.fileConfig("log4py.properties")
-        
         #logging = log4py.Logger().get_instance(self)
         #logging.add_target("log/logfile.log")
         #logging.add_target("log/logfile-.log")
@@ -45,9 +43,9 @@ class CommandLineInterface(cmd.Cmd):
         try:
             cmd.Cmd.cmdloop(self)
         except Exception as inst:
-            print "Whoa. Caught an exception: %s" % (inst)
+            logging.error("Whoa. Caught an exception: %s" % (inst))
             import traceback
-            traceback.print_exc(file=sys.stdout)
+            logging.error(traceback.print_exc())
 
     def do_EOF(self, string):
         print string
@@ -247,9 +245,9 @@ class CommandLineInterface(cmd.Cmd):
                 print "Error: Format \"" + format + "\" unknown to reader"
                 return
         except Exception as inst:
-            print ("FATAL: Error reading input file '%s':\n %s" % (filename, inst))
+            logging.error ("FATAL: Error reading input file '%s':\n %s" % (filename, inst))
             import traceback
-            traceback.print_exc(file=sys.stdout)
+            logging.error(traceback.print_exc())
             return
         return sequences
         
