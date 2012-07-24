@@ -55,7 +55,8 @@ class Cluster(dict):
         return self['variable_statistics']
     
     def calculateVariableStatistics(self):
-        logging.info("Calculating variable token statistics")
+        #logging.info("Calculating variable token statistics")
+        self['variable_statistics']=[]
         for idx, elem in enumerate(self['format_inference']):
             if elem.getType()==Message.typeVariable:
                 stats = None
