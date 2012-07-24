@@ -9,6 +9,9 @@ from message import Message
 from xml.sax.saxutils import escape
 from cStringIO import StringIO
 import Globals
+import log4py
+import log4py.config
+import logging
 
 class ClusterCollection():
     """
@@ -85,7 +88,8 @@ class ClusterCollection():
             return False # We cannot merge a single cluster
         
         if not Globals.getConfig().mergeSimilarClusters:
-            print "Cluster merging disabled via configuration"
+            logging.info("Cluster merging disabled via configuration")
+
             return False
         
         copiedCollection = self.__cluster[:]  
@@ -192,10 +196,10 @@ class ClusterCollection():
         # Copy all clusters from tempCollection to our self
         self.add_clusters(tempCollection.get_all_cluster())
         if ori_len == len(self.__cluster):
-            print "No mergable clusters within collection identified"
+            logging.info("No mergable clusters within collection identified")
             return False
         else:
-            print ("Cluster collection shrunk from {0} to {1} by merging".format(ori_len, len(self.__cluster)))
+            logging.info("Cluster collection shrunk from {0} to {1} by merging".format(ori_len, len(self.__cluster)))
             return True
     
     def get_random_cluster(self):             
@@ -295,6 +299,7 @@ class ClusterCollection():
                             groupStart -= 1
                 idx-=1
             #print "Finished"
+	    cluster.calculateVariableStatistics
     
     def print_clusterCollectionInfo(self, file=""):
         """

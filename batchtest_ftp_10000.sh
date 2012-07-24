@@ -4,8 +4,8 @@ set -x
 # Performs a batch test for discoverer
 #
 # Some variables
-COPYDIR=ftp_10000
-PREFIX=ftp_10000
+COPYDIR=ftp_big_10000
+PREFIX=ftp_big_10000
 FULLPATH=/home/daubersc/result/
 NUMOFFILES=3
 CONFIGFILE=config_ftp_10000.yml
@@ -26,6 +26,6 @@ do
 	done
 	cd /home/daubersc/Protocol-Informatics
 	# Change config file for next rum
-	cat ${CONFIGFILE} | sed "s§inputFile: ${FULLPATH}${PREFIX}_$TESTNUM§inputFile: ${FULLPATH}${PREFIX}_$[TESTNUM+1]§" > config2.yml
-	mv config2.yml ${CONFIGFILE} 
+	cat ${CONFIGFILE} | sed "s§inputFile: ${FULLPATH}${PREFIX}_$TESTNUM§inputFile: ${FULLPATH}${PREFIX}_$[TESTNUM+1]§" > ${CONFIGFILE}2.yml
+	mv ${CONFIGFILE}2.yml ${CONFIGFILE} 
 done

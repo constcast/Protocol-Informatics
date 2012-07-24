@@ -5,6 +5,9 @@ import formatinference
 from message import Message
 import uuid
 import Globals
+import log4py
+import log4py.config
+import logging
 
 def perform_semantic_inference(cluster_collection):
     """
@@ -234,7 +237,14 @@ def perform_semantic_inference(cluster_collection):
                     if idx-1>=0:
                         rep, form, semantics = token_formats[idx-1]
                         if form.getType()==Message.typeVariable and rep==Message.typeBinary:
-                            variance2 = c.getVariableStatistics()[idx-1].getVariance()
+                            stats = c.getVariableStatistics()[idx-1]
+			    if stats != None:
+				    variance2 = stats.getVariance()
+			    else:
+				    logging.error("Did not receive cluster statistics for token {0} (len of formats {1}, len of stats {2})".format(idx,len(token_formats),len(c.getVariableStatistics())))
+				    idx+=1
+				    continue
+
                             if variance2>1000 and len(semantics)==0:
                                 # Consider the two as a CRC-16
                                 for message in messages: # Set for every message and the cluster itself
@@ -251,8 +261,12 @@ def perform_semantic_inference(cluster_collection):
             rep, form, semantics = token_format
             if form.getType()==Message.typeVariable:
                 stats = c.getVariableStatistics()[idx]
-                distinct = stats.numberOfDistinctSamples()
-                
+		if stats != None:
+			distinct = stats.numberOfDistinctSamples()
+        	else:
+			logging.error("Did not receive cluster statistics for token {0} (len of formats {1}, len of stats {2})".format(idx,len(token_formats),len(c.getVariableStatistics())))
+			idx+=1
+			continue
                 # How will be find out whether a number of variable values is a set or really variable?
                 # We assume that there is an absolute maximum amount of distinct values which is independent
                 # of the actual number of messages. However we also need to consider that when the number of
