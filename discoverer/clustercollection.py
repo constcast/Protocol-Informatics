@@ -299,7 +299,7 @@ class ClusterCollection():
                             groupStart -= 1
                 idx-=1
             #print "Finished"
-	    cluster.calculateVariableStatistics
+            cluster.calculateVariableStatistics
     
     def print_clusterCollectionInfo(self, file=""):
         """

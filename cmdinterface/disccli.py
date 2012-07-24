@@ -101,9 +101,15 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         self.env['cluster_collection'].fix_tokenization_errors()
         # Next two calls are needed in order to reflect the new structure
         self.do_format_inference("")
+        self.calculate_statistics()
         self.do_semantic_inference("")
         print "Finished fixing tokenization errors"
-        
+    
+    def calculate_statistics(self):
+        clusters = self.env['cluster_collection'].get_all_cluster()
+        for cluster in clusters:
+            cluster.calculateVariableStatistics()
+                
     def help_go(self):
         print "Automatically executes all steps needed to perfom the 'Discoverer' algorithm on the set of messages"
             
