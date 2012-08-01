@@ -61,49 +61,49 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         s.split(chunksize)
         
     def setup(self, sequences): #, direction):        
-        print "Performing initial message analysis and clustering"
+        logging.info("Performing initial message analysis and clustering")
         if sequences == None:        
-            print "FATAL: No sequences loaded yet!"
+            logging.error("FATAL: No sequences loaded yet!")
             return False    
         
         #setup = discoverer.setup.Setup(sequences, direction, Globals.getConfig())
         setup = discoverer.setup.Setup(sequences, Globals.getConfig())
         
         self.env['cluster_collection'] = setup.get_cluster_collection()
-        print "Built {0} clusters".format(setup.get_cluster_collection().num_of_clusters())
+        logging.info("Built {0} clusters".format(setup.get_cluster_collection().num_of_clusters()))
       
     def do_format_inference(self, string):
-        print "Performing format inference on initial clusters"
+        logging.info("Performing format inference on initial clusters")
         if not self.env.has_key('cluster_collection'):
-            print "FATAL: Initial clustering not yet performed. Run 'setup' first pleaset!"
+            logging.error("FATAL: Initial clustering not yet performed. Run 'setup' first pleaset!")
             return False    
         discoverer.formatinference.perform_format_inference_for_cluster_collection(self.env['cluster_collection'])
     
     def do_semantic_inference(self, string):
-        print "Performing semantic inference on messages"
+        logging.info("Performing semantic inference on messages")
         if not self.env.has_key('cluster_collection'):
-            print "FATAL: Initial clustering not yet performed. Run 'setup' first pleaset!"
+            logging.error("FATAL: Initial clustering not yet performed. Run 'setup' first pleaset!")
             return False    
         discoverer.semanticinference.perform_semantic_inference(self.env['cluster_collection'])
     
     def do_recursive_clustering(self, string):
-        print "Performing recursive clustering"
+        logging.info("Performing recursive clustering")
         if not self.env.has_key('cluster_collection'):
-            print "FATAL: Initial clustering not yet performed. Run 'setup' first pleaset!"
+            logging.error("FATAL: Initial clustering not yet performed. Run 'setup' first pleaset!")
             return False    
         discoverer.recursiveclustering.perform_recursive_clustering(self.env['cluster_collection'], 0)
     
     def do_fix_tokenization_errors(self, string):
-        print "Fixing tokenization errors"
+        logging.info("Fixing tokenization errors")
         if not self.env.has_key('cluster_collection'):
-            print "FATAL: Initial clustering not yet performed. Run 'setup' first pleaset!"
+            logging.error("FATAL: Initial clustering not yet performed. Run 'setup' first pleaset!")
             return False    
         self.env['cluster_collection'].fix_tokenization_errors()
         # Next two calls are needed in order to reflect the new structure
         self.do_format_inference("")
         self.calculate_statistics()
         self.do_semantic_inference("")
-        print "Finished fixing tokenization errors"
+        logging.info("Finished fixing tokenization errors")
     
     def calculate_statistics(self):
         clusters = self.env['cluster_collection'].get_all_cluster()
@@ -137,9 +137,9 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             if Globals.getConfig().calculateMaxMessageLength:
                 maxPrefix = discoverer.setup.calcMaxMessageLengthConfidenceInterval(self.env['sequences'], 1-Globals.getConfig().maxMessageLengthConfidenceInterval)
                 Globals.getConfig().maxMessagePrefix = maxPrefix
-                print "Calculated maximum message prefix based on confidence interval of {0}: {1}".format(Globals.getConfig().maxMessageLengthConfidenceInterval, maxPrefix)
+                logging.info("Calculated maximum message prefix based on confidence interval of {0}: {1}".format(Globals.getConfig().maxMessageLengthConfidenceInterval, maxPrefix))
             
-            print "Using maximum message prefix for training data: {0}".format(Globals.getConfig().maxMessagePrefix)
+            logging.info("Using maximum message prefix for training data: {0}".format(Globals.getConfig().maxMessagePrefix))
             self.go(self.env['sequences'])
             
             #self.go(self.env['sequences_client2server'], Message.directionClient2Server)
@@ -168,17 +168,17 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
                 
             self.do_dumpresult("")
             # Build statemachine
-            print "Forcing regex rebuild"
+            logging.info("Forcing regex rebuild")
             if self.env.has_key('cluster_collection'):
                 self.env['cluster_collection'].updateClusterRegEx()
-                print "Performing sanity check over regexes"
+                logging.info("Performing sanity check over regexes")
                 self.env['cluster_collection'].performSanityCheckForRegEx()
-                print "Flushing all messages in all clusters"
+                logging.info("Flushing all messages in all clusters")
                 #self.env['cluster_collection'].flushMessagesInCluster()
             sm = discoverer.statemachine.Statemachine(self.env['messageFlows'])
             self.env['sm'] = sm
             start = time.time()
-            print "Building statemachine"
+            logging.info("Building statemachine")
             print "Memory usage w/o statemachine: {0}".format(self.getMemoryUsage())
             self.profile("BeforeBuildStatemachine")
             sm.build()
@@ -193,7 +193,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             storePath = "{0}{1}{2}.dot".format(path,os.sep,filename) 
             #sm.dfa()
             #sm.fake()
-            print "Dumping state machine"
+            logging.info("Dumping state machine")
             sm.dump_dot(storePath)
             sm.dumpTransitions()
             storePath = "{0}{1}{2}_statemachine.xml".format(path,os.sep,filename) 
@@ -251,7 +251,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         handle.close()         
         sys.stdout = old_stdout
         import os            
-        print "Finished Peach output. File size {0}".format(self.convert_bytes(os.path.getsize(storePath)))         
+        logging.info("Finished Peach output. File size {0}".format(self.convert_bytes(os.path.getsize(storePath))))         
 
     def createXMLOutput(self):
         import os
@@ -275,7 +275,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         handle.close()         
         sys.stdout = old_stdout
         import os            
-        print "Finished XML output. File size {0}".format(self.convert_bytes(os.path.getsize(storePath)))         
+        logging.info("Finished XML output. File size {0}".format(self.convert_bytes(os.path.getsize(storePath))))         
 
     def do_createXMLOutput(self, string):
         self.createXMLOutput()
@@ -443,9 +443,9 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         print "Finished"
         print "Memory usage after statemachine test: {0}".format(self.getMemoryUsage())
         self.profile("AfterEndTests")
-        print "Testresults"
-        print "==========="
-        print "Number of flows: {0}, Success: {1}, Failures: {2}".format(success+failures, success, failures)
+        logging.info("Testresults")
+        logging.info("===========")
+        logging.info("Number of flows: {0}, Success: {1}, Failures: {2}".format(success+failures, success, failures))
         self.printProfile()
         if failures>0:
             print "Test flowID not in test flows: {0}".format(not_in_testflows)
@@ -472,9 +472,9 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         old_stdout = sys.stdout
         handle = open(storePath,"w")
         sys.stdout = handle
-        print "Testresults"
-        print "==========="
-        print "Number of flows: {0}, Success: {1}, Failures: {2}".format(success+failures, success, failures)
+        logging.info("Testresults")
+        logging.info("===========")
+        logging.info("Number of flows: {0}, Success: {1}, Failures: {2}".format(success+failures, success, failures))
         self.printProfile()
             
         if failures>0:
@@ -506,7 +506,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         
         handle.close()         
         sys.stdout = old_stdout
-        print "Finished. Test results written to file {0}, file size {1}".format(storePath,self.convert_bytes(os.path.getsize(storePath)))               
+        logging.info("Finished. Test results written to file {0}, file size {1}".format(storePath,self.convert_bytes(os.path.getsize(storePath))))               
     
     def profile(self, testpoint):
         self.__profile[testpoint] = self.getMemoryUsage()
@@ -677,7 +677,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         maxFlowLength = 0
         minFlowLength = sys.maxint
         
-        print "Linking messages within flow"
+        logging.info("Linking messages within flow")
         for flow in messageFlows:
             messages = messageFlows[flow]
             flowLength = len(messages)
@@ -713,7 +713,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             
             if Globals.getConfig().debug:
                 self.printflow(flow)
-        print "Linked flows. Min flow length: {0}, max flow length: {1}".format(minFlowLength, maxFlowLength)
+        logging.info("Linked flows. Min flow length: {0}, max flow length: {1}".format(minFlowLength, maxFlowLength))
                  
     def do_dump_state(self, str):
         import cPickle
@@ -738,14 +738,14 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             return
         import discoverer.statistics
         discoverer.statistics.reset_statistics()
-        print "Performing discoverer algorithm"
+        logging.info("Performing discoverer algorithm")
         
         start = time.time()
         
         self.setup(sequences)
             
         elapsed = (time.time() - start)
-        print "Setup took {:.3f} seconds".format(elapsed)
+        logging.info("Setup took {:.3f} seconds".format(elapsed))
         #=======================================================================
         # if discoverer.statistics.get_classification() == "text" and Globals.getConfig().breakSequences == True:
         #    print "Protocol is considered as 'text' and breakSequences is configured to 'true'. Reloading input..."
