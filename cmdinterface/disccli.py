@@ -472,9 +472,9 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         old_stdout = sys.stdout
         handle = open(storePath,"w")
         sys.stdout = handle
-        logging.info("Testresults")
-        logging.info("===========")
-        logging.info("Number of flows: {0}, Success: {1}, Failures: {2}".format(success+failures, success, failures))
+        print "Testresults"
+        print "==========="
+        print "Number of flows: {0}, Success: {1}, Failures: {2}".format(success+failures, success, failures)
         self.printProfile()
             
         if failures>0:
