@@ -29,24 +29,19 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         Globals.setConfig(config)
         self.__profile = collections.OrderedDict()
         self.__nextstate = 1
-        #log4py.config.fileConfig("log4py.properties")
-#        log4py.config.fileConfig("log4py.properties")
-        
-        #self.log = log4py.Logger("$HOME/log4py.conf").get_instance(self)
-        #self.log.add_target("log/logfile.log")
-        #self.log.add_target("log/logfile-.log")
-        #self.log.set_rotation(log4py.ROTATE_DAILY)
-        #self.log.set_loglevel(log4py.LOGLEVEL_VERBOSE)
         logging.info("Discoverer CLI initialized")
     def do_EOF(self, string):
         return True
 
+    # Exit Discoverer mode
     def do_exit(self, string):
         return True
-
+    # Exit Discoverer mode
     def do_quit(self, string):
         return True
     
+    # Splits a big input file into smaller pieces 
+    # Note: Deprecated, use split_loaded instead
     def do_split(self, inargs=""):
         if inargs=="":
             print "Usage: split <filename> <numOfFlows>"
@@ -59,19 +54,21 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         chunksize = args[1]
         s = discoverer.splitter.Splitter(filename)
         s.split(chunksize)
-        
+       
+    # Initialize discoverer analysis    
     def setup(self, sequences): #, direction):        
         logging.info("Performing initial message analysis and clustering")
         if sequences == None:        
             logging.error("FATAL: No sequences loaded yet!")
             return False    
         
-        #setup = discoverer.setup.Setup(sequences, direction, Globals.getConfig())
+        # Perform initial token analysis
         setup = discoverer.setup.Setup(sequences, Globals.getConfig())
         
         self.env['cluster_collection'] = setup.get_cluster_collection()
         logging.info("Built {0} clusters".format(setup.get_cluster_collection().num_of_clusters()))
       
+    # Perform format inference  
     def do_format_inference(self, string):
         logging.info("Performing format inference on initial clusters")
         if not self.env.has_key('cluster_collection'):
@@ -79,6 +76,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             return False    
         discoverer.formatinference.perform_format_inference_for_cluster_collection(self.env['cluster_collection'])
     
+    # Perform the semantic inference
     def do_semantic_inference(self, string):
         logging.info("Performing semantic inference on messages")
         if not self.env.has_key('cluster_collection'):
@@ -86,6 +84,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             return False    
         discoverer.semanticinference.perform_semantic_inference(self.env['cluster_collection'])
     
+    # Perform the recursive clustering step
     def do_recursive_clustering(self, string):
         logging.info("Performing recursive clustering")
         if not self.env.has_key('cluster_collection'):
@@ -93,46 +92,35 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             return False    
         discoverer.recursiveclustering.perform_recursive_clustering(self.env['cluster_collection'], 0)
     
+    # Fix tokenization errors
     def do_fix_tokenization_errors(self, string):
         logging.info("Fixing tokenization errors")
         if not self.env.has_key('cluster_collection'):
             logging.error("FATAL: Initial clustering not yet performed. Run 'setup' first pleaset!")
             return False    
         self.env['cluster_collection'].fix_tokenization_errors()
-        # Next two calls are needed in order to reflect the new structure
+        # Next three calls are needed in order to reflect the new structure
         self.do_format_inference("")
         self.calculate_statistics()
         self.do_semantic_inference("")
         logging.info("Finished fixing tokenization errors")
     
+    # Calculates the statistics of the variable clusters
     def calculate_statistics(self):
         clusters = self.env['cluster_collection'].get_all_cluster()
         for cluster in clusters:
             cluster.calculateVariableStatistics()
-                
+    
+    # online help for the "go" mode (automatic execution of Discoverer algorithm)       
     def help_go(self):
-        print "Automatically executes all steps needed to perfom the 'Discoverer' algorithm on the set of messages"
+        print "Automatically executes all steps needed to perform the 'Discoverer' algorithm on the set of messages"
             
-            
+    # execute the Discoverer algorithm        
     def do_go(self, string):
         if self.env.has_key('cluster_collection'):
             del(self.env['cluster_collection'])
              
         if Globals.getConfig().loadClientAndServerParts == True:
-            # Delete old generated structures
-            
-            
-            
-            #===================================================================
-            # if self.env.has_key('cluster_collection_client'):
-            #    del(self.env['cluster_collection_client'])
-            # if self.env.has_key('cluster_collection_server'):
-            #    del(self.env['cluster_collection_server'])
-            # 
-            # 
-            #===================================================================
-            # Perform discoverer for both parts
-            
             # Check if we want to constrain our maximum length based on configured confidence intervals
             if Globals.getConfig().calculateMaxMessageLength:
                 maxPrefix = discoverer.setup.calcMaxMessageLengthConfidenceInterval(self.env['sequences'], 1-Globals.getConfig().maxMessageLengthConfidenceInterval)
@@ -140,32 +128,10 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
                 logging.info("Calculated maximum message prefix based on confidence interval of {0}: {1}".format(Globals.getConfig().maxMessageLengthConfidenceInterval, maxPrefix))
             
             logging.info("Using maximum message prefix for training data: {0}".format(Globals.getConfig().maxMessagePrefix))
+
+            # perform Discoverer analysis
             self.go(self.env['sequences'])
-            
-            #self.go(self.env['sequences_client2server'], Message.directionClient2Server)
-            #self.env['cluster_collection_client'] = self.env['cluster_collection']
-            
-            #self.combineflows(self.env['cluster_collection_client'],Message.directionClient2Server)
-            #===================================================================
-            # if self.env.has_key('cluster_collection'):
-            #    del(self.env['cluster_collection'])
-            # 
-            #===================================================================
-            #print "-----------------Server2client-----------------------"
-            #self.go(self.env['sequences_server2client'],Message.directionServer2Client)
-            #self.env['cluster_collection_server'] = self.env['cluster_collection']
-            #self.combineflows(self.env['cluster_collection_server'],Message.directionServer2Client)
-             
-            
-            #===================================================================
-            # for c in self.env['cluster_collection'].get_all_cluster():
-            #    print "Cluster:"
-            #    print c.get_formats()
-            #    print c.getRegEx()
-            #    print c.getRegExVisual()
-            #    print
-            #===================================================================
-                
+            # writes out the analysis results
             self.do_dumpresult("")
             # Build statemachine
             logging.info("Forcing regex rebuild")
@@ -174,41 +140,34 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
                 logging.info("Performing sanity check over regexes")
                 self.env['cluster_collection'].performSanityCheckForRegEx()
                 logging.info("Flushing all messages in all clusters")
-                #self.env['cluster_collection'].flushMessagesInCluster()
+            # Construct statemachine
             sm = discoverer.statemachine.Statemachine(self.env['messageFlows'])
             self.env['sm'] = sm
+            # Log time
             start = time.time()
             logging.info("Building statemachine")
             print "Memory usage w/o statemachine: {0}".format(self.getMemoryUsage())
             self.profile("BeforeBuildStatemachine")
+            # perform the build
             sm.build()
             duration = time.time()-start
             print "Statemachine building took {:.3f} seconds".format(duration)
             print "Memory usage with statemachine: {0}".format(self.getMemoryUsage())
             self.profile("AfterBuildStatemachine")
             
+            # Save the statemachine's dot file
             path = os.path.normpath(Globals.getConfig().dumpFile)
             file = os.path.basename(Globals.getConfig().inputFile)
             (filename,ext) = os.path.splitext(file)
             storePath = "{0}{1}{2}.dot".format(path,os.sep,filename) 
-            #sm.dfa()
-            #sm.fake()
             logging.info("Dumping state machine")
             sm.dump_dot(storePath)
             sm.dumpTransitions()
             storePath = "{0}{1}{2}_statemachine.xml".format(path,os.sep,filename) 
-            #sm.dumpStructure()
-            
-            
-            #sm.dumpStructure(storePath)
-            
-            
-            #pickled = sm.pickle()
-            #import cPickle
-            #anothersm = cPickle.loads(pickled)
-            #anothersm.dump("/Users/daubsi/Dropbox/anotherdump")
+            # Save the calculation state for later use
             self.do_dump_state("")
             if Globals.getConfig().autoCreateXML:
+                # Dump the XML file
                 print "Memory usage before creating XML: {0}".format(self.getMemoryUsage())
                 self.profile("BeforeBuildXML")            
                 self.createXMLOutput()
@@ -216,13 +175,15 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
                 print "Memory usage after creating XML: {0}".format(self.getMemoryUsage())
                 self.profile("AfterBuildXML")
             
+            # Perform the acceptance test
             self.do_statemachine_accepts("")
-            #self.do_testsuite("")
             
         else:
             # Perform discoverer only for client pat
             self.go(self.env['sequences'],"unknownDirection")
-    
+    '''
+    Dumps the statemachine as a GraphViz / .dot file
+    '''
     def dump_sm_dot(self, filename=""):
         if filename=="":
             path = os.path.normpath(Globals.getConfig().dumpFile)
@@ -232,10 +193,16 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         else:
             storePath = filename               
         self.env['sm'].dump_dot(storePath)
-         
+    
+    '''
+    CLI function to dump the statmachine
+    '''     
     def do_dump_sm_dot(self, string):
         self.dump_sm_dot()
-        
+    
+    '''
+    Generate XML output for Peach fuzzer
+    '''   
     def createPeachOutput(self):
         import os
         path = os.path.normpath(Globals.getConfig().dumpFile)
@@ -253,6 +220,9 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         import os            
         logging.info("Finished Peach output. File size {0}".format(self.convert_bytes(os.path.getsize(storePath))))         
 
+    '''
+    Creates the XML result file
+    '''
     def createXMLOutput(self):
         import os
         path = os.path.normpath(Globals.getConfig().dumpFile)
@@ -268,7 +238,9 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         
         print '<?xml version="1.0" encoding="utf-8" ?>'
         print "<protocolInformatics>"
+        # Get the Discoverer XML result representation from the cluster collection object
         print self.getCCXMLRepresentation()
+        # Get the statemachine XML result representation
         print self.env['sm'].getXMLRepresentation()  
         print "</protocolInformatics>"
         
@@ -277,9 +249,15 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         import os            
         logging.info("Finished XML output. File size {0}".format(self.convert_bytes(os.path.getsize(storePath))))         
 
+    '''
+    CLI function to create the XML result file 
+    '''
     def do_createXMLOutput(self, string):
         self.createXMLOutput()
     
+    '''
+    CLI function to load the test data into memory
+    '''
     def do_load_testdata(self, args=""):
         if len(args)!=0:
             tok = args.split()
@@ -298,8 +276,10 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         logging.info("Memory usage before loading testdata: {0}".format(self.getMemoryUsage()))
         self.profile("BeforeLoadingTestdata")
         logging.info("Loading {0} entries from test data from {1}".format(Globals.getConfig().numOfTestEntries,client2server_file))
+        # Load the client flows
         sequences_client2server = sequences = common.input.Bro(client2server_file, Globals.getConfig().numOfTestEntries).getConnections()
         logging.info("Loading {0} entries from test data from {1}".format(Globals.getConfig().numOfTestEntries, server2client_file))
+        # load the server flows
         sequences_server2client = sequences = common.input.Bro(server2client_file, Globals.getConfig().numOfTestEntries).getConnections()
         sequences = [(sequences_client2server, Message.directionClient2Server),(sequences_server2client, Message.directionServer2Client)] # Keep it compatible with existing code TODO        
         
@@ -317,22 +297,32 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         testflows = self.combineflows(testcluster)
         logging.info("Memory usage after combining testsequences: {0}".format(self.getMemoryUsage()))
         self.profile("AfterCombiningTestdata")    
-        
         self.linkmessages(testflows)
         logging.info("Memory usage after linking testsequences: {0}".format(self.getMemoryUsage()))
         self.profile("AfterLinkingTestdata")
         self.env['testflows']=testflows
-        
+        # Hand test flows over to statemachine
         if self.env.has_key('sm'):
             self.env['sm'].setTestFlows(testflows)
     
+    '''
+    Returns the current memory usage by this application
+    '''
     def getMemoryUsage(self):
         memusage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss    
         return self.convert_bytes(memusage)
-        
+    
+    '''
+    CLI function to clears loaded analysis
+    '''    
     def do_clear(self, string):
         self.env['sequences']=None
     
+    '''
+    CLI function to perform the test suite
+    Parameter highloop represents the number up to which flow block number the test suite should
+    run
+    ''' 
     def do_testsuite(self, args):
         basename = Globals.getConfig().testbasename
         highloop=0
@@ -346,6 +336,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             Globals.getConfig().testFile = basename+"_{0}".format(suffix)
             logging.info("Set config.testFile to {0}".format(Globals.getConfig().testFile))
             self.do_load_testdata("")
+            # Perform the actual test
             self.do_statemachine_accepts("")
             
         
@@ -383,9 +374,8 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         import common
         import cmdinterface
         
-        
-#        discoverer.formatinference.perform_format_inference_for_cluster_collection(testcluster, Globals.getConfig())
-        #testflow = testflows[testflows.keys()[element]]
+
+        # load the test data if needed        
         if not self.env.has_key('testflows') or len(self.env['testflows']) == 0:
             self.do_load_testdata(args)
         
@@ -396,7 +386,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             print "ERROR: Statemachine not yet built"
             return
         testflows = self.env['testflows']
-        # Test all flows
+        # Prepare test statistic counters
         failedelements = []
         success = 0
         failures = 0
@@ -410,12 +400,13 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         test2go = len(testflows.keys())
         totalflows = test2go
         self.env['sm'].setTestFlows(testflows)
-        # Make room ;-)
+        # Make room and clean up the loaded sequences ;-)
         self.env['sequences']=None
         print "Memory usage before test: {0}".format(self.getMemoryUsage())
         self.profile("BeforeStartingTest")
         for elem in testflows.keys():
             print "{0} flows left to test ({1} failed so far, failrate {2} %)".format(test2go, failures, (1.0*failures/totalflows)*100)
+            # Test the current flow
             res = self.statemachine_accepts_flow(elem, printSteps=False)
             test2go -= 1
             
@@ -424,7 +415,7 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
                 success += 1
             else:
                 failures += 1
-                
+                # Parse failure reason
                 if not res['isInTestFlows']: not_in_testflows += 1
                 elif not res['hasMoreThanOneMessage']: only_one_msg += 1
                 elif not res['has_no_gaps']: has_gaps += 1
@@ -485,37 +476,39 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             print "Flow rejected prematurely: {0}".format(not_all_transitioned)
             print "Flow did not end in final state: {0}".format(not_ended_in_final)
             print "Encountered into multiple choice when failed: {0}".format(gotMultipleChoice)
-            
             print
-            
-            
             if len(failedelements)>0:
                 print "Failed test flows (only tested flows):"
                 for elem in failedelements:
                     print "{0}".format(elem)
-        
-        
                 print "Rerunning failed tests and logging output"
                 self.do_load_testdata(args)
                 for elem in failedelements:
                     print 100*"+"
                     print "Failed flow: {0}".format(elem)
+                    # Run test again, this time logging every transition
                     self.statemachine_accepts_flow(elem, printSteps=True)
                     print 100*"+"
-                    
-        
         handle.close()         
         sys.stdout = old_stdout
         logging.info("Finished. Test results written to file {0}, file size {1}".format(storePath,self.convert_bytes(os.path.getsize(storePath))))               
     
+    '''
+    Convenience function to protocol current memory usage
+    '''
     def profile(self, testpoint):
         self.__profile[testpoint] = self.getMemoryUsage()
-        
+    
+    '''
+    Prints the current memory usage log 
+    '''    
     def printProfile(self):
         
         for key in self.__profile.keys():
             print "Testpoint: {0}, Memory consumption: {1}".format(key, self.__profile[key])
-            
+    '''
+    Converts a byte value into various bigger values
+    '''        
     def convert_bytes(self,bytes):
         '''
         Source: http://www.5dollarwhitebox.org/drupal/node/84
@@ -537,10 +530,16 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             size = '%.2fb' % bytes
         return size
 
-        
+    '''
+    CLI function to test a single flow
+    '''    
     def do_statemachine_accepts_flow(self, flow):
         self.statemachine_accepts_flow(flow, printSteps=True)
-        
+    
+    '''
+    Function to test a single flow in our statemachine
+    If parameter printSteps==True, every transition is logged, otherwise only the result is returned
+    ''' 
     def statemachine_accepts_flow(self, flow, printSteps=True):
         if not self.env.has_key('testflows'):
             print "Test flows not loaded yet!"
@@ -551,14 +550,18 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
                
         flowitems = self.env['testflows'][flow]
         return self.env['sm'].accepts_flow(flowitems,flow, printSteps)
-    
+    '''
+    CLI function to dumps the statemachine's transitions to file
+    '''
     def do_dump_transitions(self,str):
         if self.env.has_key('sm'):
             self.env['sm'].dumpTransitions()
         else:
             print "No statemachine built, cannot dump transitions"
     
-    
+    '''
+    Combines the client and server flows into a single big flow structure
+    '''
     def combineflows(self, cluster_collection):
         #if not self.env.has_key('messageFlows'):
         #    self.env['messageFlows'] = {}
@@ -571,7 +574,11 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
                 subflow[message.getFlowSequenceNumber()] = (message, message.getDirection())
                 # subflow[message.getFlowSequenceNumber()] = (message, flowDirection)
         return tmp_flows
-    
+    '''
+    CLI function to split loaded test flows info chunks of equal length.
+    This function is useful to generate chunks for the automatic testing.
+    args == number of flows per chunk
+    '''
     def do_split_loaded(self, args):
         chunksize = 0
         if args=="":
@@ -627,10 +634,14 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         fdoutserver.close()
             
         
-        
+    '''
+    CLI function to list all loaded flow IDs
+    '''    
     def do_listflowIDs(self,str):
         self.listflowIDs()
-        
+    '''
+    Function to list all loaded flow IDs
+    '''    
     def listflowIDs(self):
         if not self.env.has_key('messageFlows'):
             print "ERROR: No message flows loaded yet"
@@ -643,10 +654,17 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         flowKeys = messageFlows.keys()
         for flowKey in flowKeys:
             print "\t{0}".format(flowKey) 
-            
+    '''
+    CLI function to print a flow representation
+    flowID == the internal flow identifier
+    '''        
     def do_printflow(self, flowID):
         self.printflow(flowID)
-        
+    
+    '''
+    Function to print a flow representation
+    flowID == the internal flow identifier
+    '''
     def printflow(self, flowID):
         if flowID=="":
             print "ERROR: Usage: printflow <flowID>"
@@ -672,7 +690,11 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             while nextMsg != None:
                 print "\t{0}".format(nextMsg.get_message())                
                 nextMsg = nextMsg.getNextInFlow()
-        
+    
+    '''
+    Builds a linked list with the elements of a flow in order to
+    allow easy navigation forward and backward in the flow structure
+    '''     
     def linkmessages(self, messageFlows):
         maxFlowLength = 0
         minFlowLength = sys.maxint
@@ -714,7 +736,10 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             if Globals.getConfig().debug:
                 self.printflow(flow)
         logging.info("Linked flows. Min flow length: {0}, max flow length: {1}".format(minFlowLength, maxFlowLength))
-                 
+    
+    '''
+    CLI function to save the current processing state to disc
+    '''             
     def do_dump_state(self, str):
         import cPickle
         handle = open(Globals.getConfig().dumpFile + "/disc_state","wb")
@@ -722,7 +747,9 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         self.env['protocolType']=discoverer.Globals.getProtocolClassification()
         cPickle.dump(self.env, handle,2)
         handle.close()
-        
+    '''
+    CLI function to load the current processing state from disc
+    '''     
     def do_load_state(self, str):
         import cPickle
         handle = open(Globals.getConfig().dumpFile + "/disc_state","rb")
@@ -731,7 +758,9 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         Globals.setConfig(self.env['config'])
         discoverer.Globals.setProtocolClassification(self.env['protocolType'])
         handle.close()
-                    
+    '''
+    Function to execute the whole discoverer analysis sequence
+    '''                
     def go(self, sequences):
         if self.env['sequences']==None:
             print "FATAL: No sequences loaded!"
@@ -741,54 +770,41 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         logging.info("Performing discoverer algorithm")
         
         start = time.time()
-        
+        # Perform the initial clustering
         self.setup(sequences)
             
         elapsed = (time.time() - start)
         logging.info("Setup took {:.3f} seconds".format(elapsed))
-        #=======================================================================
-        # if discoverer.statistics.get_classification() == "text" and Globals.getConfig().breakSequences == True:
-        #    print "Protocol is considered as 'text' and breakSequences is configured to 'true'. Reloading input..."
-        #    import cmdinterface
-        #    cmdinterface.cli.CommandLineInterface.do_read(breakSequences=True)
-        #    del(self.env['cluster_collection'])
-        #    
-        #    self.do_setup(breakSequences=True)
-        #=======================================================================
-        
+        # Combines server and client flows
         self.env['messageFlows'] = self.combineflows(self.env['cluster_collection'])
-        #self.combineflows(self.env['cluster_collection'])
+        # Create a linked list
         self.linkmessages(self.env['messageFlows'])
         start = time.time()
+        # Perform format inference
         self.do_format_inference("")
         elapsed = (time.time() - start)
         logging.info("Format inference took {:.3f} seconds".format(elapsed))
         start = time.time()
+        # Performs the semantic inference
         self.do_semantic_inference("")
         elapsed = (time.time() - start)
         logging.info("Semantic inference took {:.3f} seconds".format(elapsed))
         start = time.time()
+        # Performs the recursive clustering step
         self.do_recursive_clustering("")        
         elapsed = (time.time() - start)
         logging.info("Recursive clustering took {:.3f} seconds".format(elapsed))
         start = time.time()
-        
+        # Fixes tokenization errors 
         self.do_fix_tokenization_errors("")
         elapsed = (time.time() - start)
         logging.info("Fixing tokenization errors took {:.3f} seconds".format(elapsed))
-        
-        
-        
         #self.print_clusterCollectionInfo()
         start = time.time()
         print "Merging..."
-        
+        # Merge while merging potential is present
         while self.env['cluster_collection'].mergeClustersWithSameFormat():
             pass
-        
-        #self.env['cluster_collection'].mergeClustersWithSameFormat(Globals.getConfig())
-        #self.env['cluster_collection'].mergeClustersWithSameFormat(Globals.getConfig())
-        #self.env['cluster_collection'].mergeClustersWithSameFormat(Globals.getConfig())
         elapsed = (time.time() - start)
         logging.info("Merging took {:.3f} seconds".format(elapsed))
         logging.info("Finished")
@@ -803,21 +819,9 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         if Globals.getConfig().debug:                
             self.env['cluster_collection'].print_clusterCollectionInfo()
             
-        #=======================================================================
-        # # Needlewunsch test
-        # print "Now performing Needleman Wunsch alignment of two cluster representations"
-        # import random
-        # cluster1 = random.choice(cluster)
-        # cluster2 = random.choice(cluster)
-        # format1 = cluster1.get_formats()
-        # format2 = cluster2.get_formats()
-        # print "Current formats:"
-        # print format1
-        # print format2
-        # print "Needlewunsch results:"
-        # discoverer.needlewunsch.needlewunsch(format1, format2)
-        #=======================================================================
-               
+    '''
+    CLI function to dumps the flows to a file
+    '''           
     def do_dumpflow(self,file):
         if not Globals.getConfig().loadClientAndServerParts:
             print "Flow dumping is only available when analyzing client and server flows"
@@ -841,7 +845,10 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             handle.close()         
             sys.stdout = old_stdout           
             print "Finished. File size {0}".format(self.convert_bytes(os.path.getsize(storePath)))
-            
+    
+    '''
+    CLI function to print info about the cluster
+    '''        
     def do_print_clusterinfo(self, string):
         if not self.env.has_key('cluster_collection'):
             print "No cluster loaded yet"
@@ -849,7 +856,9 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         self.env['cluster_collection'].print_clusterCollectionInfo()
     
               
-    
+    '''
+    CLI function ot dump the results to file
+    ''' 
     def do_dumpresult(self, string):
         if not self.env.has_key('cluster_collection'): return
         
@@ -872,16 +881,28 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
             storePath = "{0}{1}{2}_dump.txt".format(path,os.sep,filename)
             self.dump2File(self.env['cluster_collection'],storePath)
     
+    '''
+    Internal function to get the XML representation of the cluster collection
+    '''
     def getCCXMLRepresentation(self):
         return self.env['cluster_collection'].getXMLRepresentation()        
+    
+    '''
+    Internal function to dump the cluster collection infos into a file
+    '''
     def dump2File(self, cluster_collection, storePath):
         print "Dumping result to file {0}".format(storePath)
         cluster_collection.print_clusterCollectionInfo(storePath)
-        
+    
+    '''
+    CLI function to switch to discoverer mode
+    '''    
     def do_discoverer(self, string):
         print "We are already in Discoverer mode!"
     
-    
+    '''
+    CLI function to dump the format tree analysis results to file
+    '''
     def do_dump_format_tree(self, string):
         print "Dumping tree"
         tree = self.env['ft'].dump()
@@ -890,7 +911,9 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         handle.close()
         print "Finished"
         
-        
+    '''
+    CLI function to perform the format tree analysis
+    '''    
     def do_build_format_tree(self, string):
         if not self.env.has_key('cluster_collection'): return
         
@@ -904,7 +927,9 @@ class DiscovererCommandLineInterface(cli.CommandLineInterface):
         currentNode = root
         self.distributeContainedCluster(currentNode, index)
     
-    
+    '''
+    Internal function for the format tree construction
+    '''
     def distributeContainedCluster(self, currentNode, index):
         if len(currentNode.getContainedCluster())==0: return
     

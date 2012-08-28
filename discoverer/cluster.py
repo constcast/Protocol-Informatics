@@ -328,7 +328,7 @@ class Cluster(dict):
                 if isinstance(elem,formatinference.VariableNumberStatistics):
                     print '<variableStatistic type="NumberStatistic">'
                     print '\t<minimum>{0}</minimum>'.format(elem.getMin())
-                    print '\t<maxmimum>{0}</maximum>'.format(elem.getMax())
+                    print '\t<maximum>{0}</maximum>'.format(elem.getMax())
                     print '\t<mean>{0}</mean>'.format(elem.getMean())
                     print '\t<variance>{0}</variance>'.format(elem.getVariance())
                     print '\t<numOfDistinctSamples>{0}</numOfDistinctSamples>'.format(elem.numberOfDistinctSamples())
