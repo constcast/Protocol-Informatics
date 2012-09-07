@@ -11,6 +11,9 @@ from xml.sax.saxutils import escape
 from cStringIO import StringIO
 import Globals
 import re
+import log4py
+import log4py.config
+import logging
 
 class Cluster(dict):
     """
@@ -52,6 +55,8 @@ class Cluster(dict):
         return self['variable_statistics']
     
     def calculateVariableStatistics(self):
+        #logging.info("Calculating variable token statistics")
+        self['variable_statistics']=[]
         for idx, elem in enumerate(self['format_inference']):
             if elem.getType()==Message.typeVariable:
                 stats = None
@@ -323,7 +328,7 @@ class Cluster(dict):
                 if isinstance(elem,formatinference.VariableNumberStatistics):
                     print '<variableStatistic type="NumberStatistic">'
                     print '\t<minimum>{0}</minimum>'.format(elem.getMin())
-                    print '\t<maxmimum>{0}</maximum>'.format(elem.getMax())
+                    print '\t<maximum>{0}</maximum>'.format(elem.getMax())
                     print '\t<mean>{0}</mean>'.format(elem.getMean())
                     print '\t<variance>{0}</variance>'.format(elem.getVariance())
                     print '\t<numOfDistinctSamples>{0}</numOfDistinctSamples>'.format(elem.numberOfDistinctSamples())

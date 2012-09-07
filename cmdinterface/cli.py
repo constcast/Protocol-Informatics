@@ -1,6 +1,6 @@
 # vim: set sts=4 sw=4 cindent nowrap expandtab:
 
-import cmd, sys, os, signal, time
+import cmd, sys, os, signal, time, log4py, log4py.config, logging
 
 lastEOF = 0
 
@@ -23,6 +23,12 @@ class CommandLineInterface(cmd.Cmd):
         
         self.env = dict()
 
+        #logging = log4py.Logger().get_instance(self)
+        #logging.add_target("log/logfile.log")
+        #logging.add_target("log/logfile-.log")
+        #logging.set_rotation(log4py.ROTATE_DAILY)
+        #logging.set_loglevel(log4py.LOGLEVEL_VERBOSE)
+        logging.info("PI CLI initialized")
         import common
         if config != None:
             self.config = config
@@ -30,15 +36,16 @@ class CommandLineInterface(cmd.Cmd):
         else:
             self.config = common.config.Configuration()
         if self.config.autoRun:
+            logging.debug("Calling do_disc")
             self.do_disc("")
 
     def cmdloop(self):
         try:
             cmd.Cmd.cmdloop(self)
         except Exception as inst:
-            print "Whoa. Caught an exception: %s" % (inst)
+            logging.error("Whoa. Caught an exception: %s" % (inst))
             import traceback
-            traceback.print_exc(file=sys.stdout)
+            logging.error(traceback.print_exc())
 
     def do_EOF(self, string):
         print string
@@ -89,9 +96,10 @@ class CommandLineInterface(cmd.Cmd):
         inst = disccli.DiscovererCommandLineInterface(self.env, self.config)
         inst.prompt = self.prompt[:-1]+':Discoverer> '
         if self.config.autoRun:
-            print "Autorun enabled! Calling 'go'"
+            logging.info("Autorun enabled! Calling 'go'")
             inst.do_go("")
-            inst.do_testsuite("")
+            logging.info("Calling do_testsuite with autoRunHigh={0}".format(self.config.autoRunHigh))
+            inst.do_testsuite(self.config.autoRunHigh)
             import sys
             sys.exit()
             
@@ -237,9 +245,9 @@ class CommandLineInterface(cmd.Cmd):
                 print "Error: Format \"" + format + "\" unknown to reader"
                 return
         except Exception as inst:
-            print ("FATAL: Error reading input file '%s':\n %s" % (filename, inst))
+            logging.error ("FATAL: Error reading input file '%s':\n %s" % (filename, inst))
             import traceback
-            traceback.print_exc(file=sys.stdout)
+            logging.error(traceback.print_exc())
             return
         return sequences
         
@@ -332,4 +340,4 @@ class CommandLineInterface(cmd.Cmd):
         print ""
         print "Shows the help for keyword <keyword>. If <keyword> is "
         print "omitted, the list of available commadns is shown."
-        
+            

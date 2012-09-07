@@ -36,7 +36,7 @@ def perform_format_inference_for_cluster(c):
                             constant = False
                             break                                                                  
                     else:    
-                        if not string.upper(tokenRepresentation.get_token())==string.upper(currentRepresentation.get_token()):                                                                  
+                        if not string.upper(str(tokenRepresentation.get_token()))==string.upper(str(currentRepresentation.get_token())):                                                                  
                             constant = False
                             break
 

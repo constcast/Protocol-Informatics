@@ -76,6 +76,7 @@ class Configuration:
         self.multipleChoiceChooserClass = "RandomWeightedChooser"
         self.testbasename = "/Users/daubsi/Dropbox/ftp_big_2000"
         self.autoRun = True
+	self.autoRunHigh = 18;
         # Used for NW alignment in Discoverer
         self.matchScore = 1
         self.mismatchScore = 1

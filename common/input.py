@@ -14,6 +14,7 @@ from pcapy  import *
 from socket import *
 import re
 import sequences
+import log4py, log4py.config, logging
 
 __all__ = ["Input", "Pcap", "ASCII", "Bro"]
 
@@ -23,7 +24,7 @@ class Input:
 
     def __init__(self, filename, maxFlows):
         """Import specified filename"""
-
+        
         self.set = set()
         self.index = 0
         self.maxFlows = maxFlows
@@ -259,6 +260,7 @@ class Bro(Input):
 
 
     def __init__(self, filename, maxFlows):
+        logging.info("Trying to load {0} with format 'bro'".format(filename))
         self.connections = dict()
         Input.__init__(self, filename, maxFlows)
 
